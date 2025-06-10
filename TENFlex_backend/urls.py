@@ -21,7 +21,7 @@ from rest_framework.authtoken.views import obtain_auth_token
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('accounts/', include('accounts.urls')),
+    path('accounts/', include('base.urls')),
     path('', lambda request: redirect('login')),  # Redirect root to the login page
     path('api/', include('reviews.urls')),
     path('api-token-auth/', obtain_auth_token, name='api_token_auth'),
