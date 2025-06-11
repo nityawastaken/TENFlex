@@ -162,7 +162,7 @@ const Navbar = () => {
 
       {/* Secondary Navbar - Fiverr style */}
       <nav
-        className="w-full fixed top-[70px] z-40 bg-[#18181b] border-b border-gray-800 shadow-sm"
+        className="w-full fixed top-[88px] z-40 bg-[#18181b] border-b border-gray-800 shadow-sm"
         style={{ left: 0 }}
       >
         <div className="overflow-x-auto scrollbar-hide">
