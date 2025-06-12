@@ -4,6 +4,8 @@ from django.contrib.auth.models import AbstractUser
 # User profile model
 class User_profile(models.Model):
     email = models.EmailField(unique=True)
+    name = models.CharField(max_length=100)
+    password = models.CharField(max_length=128)
     is_freelancer = models.BooleanField(default=False)
     profile_picture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
     bio = models.TextField(max_length=500, blank=True)
@@ -11,25 +13,10 @@ class User_profile(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.username
-
-# Review model
-class Review(models.Model):
-    gig = models.ForeignKey(Gig, on_delete=models.CASCADE, related_name='reviews')
-    user = models.ForeignKey(User_profile, on_delete=models.CASCADE)
-    rating = models.DecimalField(max_digits=3, decimal_places=1)
-    comment = models.TextField(blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f'Review by {self.user.username} for {self.gig.title}'
+        return self.name
 
 # Gig model
 class Gig(models.Model):
-    pass
-
-# Service model
-class Service(models.Model):
     freelancer = models.ForeignKey(User_profile, on_delete=models.CASCADE, related_name='services')
     title = models.CharField(max_length=200)
     description = models.TextField()
@@ -37,7 +24,7 @@ class Service(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.freelancer.username} - {self.title}"
+        return f"{self.freelancer.name} - {self.title}"
 
 # Order model
 class Order(models.Model):
@@ -47,7 +34,7 @@ class Order(models.Model):
         ('completed', 'Completed'),
     ]
 
-    service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='orders')
+    Gig = models.ForeignKey(Gig, on_delete=models.CASCADE, related_name='orders')
     buyer = models.ForeignKey(User_profile, on_delete=models.CASCADE, related_name='orders')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -70,4 +57,24 @@ class Order(models.Model):
             'Ongoing': Order.get_orders_by_status(user, user_type, 'in_progress'),
             'Pending': Order.get_orders_by_status(user, user_type, 'pending'),
         }
-        
+
+# Review model
+class Review(models.Model):
+    gig = models.ForeignKey(Gig, on_delete=models.CASCADE, related_name='reviews')
+    user = models.ForeignKey(User_profile, on_delete=models.CASCADE)
+    rating = models.DecimalField(max_digits=3, decimal_places=1)
+    comment = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'Review by {self.user.name} for {self.gig.title}'
+
+
+class GigList(models.Model):
+    user = models.ForeignKey(User_profile, on_delete=models.CASCADE, related_name='giglists')
+    name = models.CharField(max_length=100)
+    gigs = models.ManyToManyField(Gig, blank=True, related_name='giglists')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.user})"

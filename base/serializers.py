@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Review, Gig, User_profile, Order
+from .models import *
 
 class ReviewSerializer(serializers.ModelSerializer):
     user_id = serializers.IntegerField(source='user.id', read_only=True)
@@ -50,3 +50,15 @@ class OrderSerializer(serializers.ModelSerializer):
         service_id = validated_data.pop('service_id')
         service = Gig.objects.get(id=service_id)  # Get the actual Service instance
         return Order.objects.create(service=service, **validated_data)
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User_profile
+        fields = ['id', 'email', 'name', 'profile_picture', 'bio','location']
+        read_only_fields = ['id']
+
+class GigListSerializer(serializers.ModelSerializer):
+    gigs = GigSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = GigList
+        fields = ['id', 'name', 'gigs', 'created_at']
