@@ -126,3 +126,30 @@ def delete_giglist(request, list_id):
 
     giglist.delete()
     return Response({'message': 'Gig list deleted'}, status=204)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def detail_giglist(request, list_id):
+    try:
+        giglist = GigList.objects.get(id=list_id, user=request.user)
+    except GigList.DoesNotExist:
+        return Response({'error': 'Gig list not found'}, status=404)
+
+    serializer = GigListSerializer(giglist)
+    return Response(serializer.data)
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def rename_giglist(request, list_id):
+    try:
+        giglist = GigList.objects.get(id=list_id, user=request.user)
+    except GigList.DoesNotExist:
+        return Response({'error': 'Gig list not found'}, status=404)
+
+    new_name = request.data.get('name')
+    if not new_name:
+        return Response({'error': 'Name is required'}, status=400)
+
+    giglist.name = new_name
+    giglist.save()
+    return Response({'message': 'Gig list renamed successfully', 'name': giglist.name})
