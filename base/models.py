@@ -70,3 +70,4 @@ class Order(models.Model):
             'Ongoing': Order.get_orders_by_status(user, user_type, 'in_progress'),
             'Pending': Order.get_orders_by_status(user, user_type, 'pending'),
         }
+        
