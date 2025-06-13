@@ -5,15 +5,19 @@ import Image from "next/image";
 import Link from "next/link";
 import { FaArrowRight } from "react-icons/fa6";
 import { FaUserCircle } from "react-icons/fa";
+import { useRouter } from "next/navigation";
 
 const Navbar = () => {
   const sideMenuRef = useRef(null);
   const [isScroll, setIsScroll] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [search, setSearch] = useState("");
 
   // Simulated user state (replace with real auth logic)
   const [user, setUser] = useState(null);
   // Example: setUser({ name: "John Doe" }) after sign in
+
+  const router = useRouter();
 
   const openMenu = () => {
     if (sideMenuRef.current) {
@@ -26,6 +30,18 @@ const Navbar = () => {
     if (sideMenuRef.current) {
       sideMenuRef.current.style.transform = "translateX(-100%)";
       setIsMenuOpen(false);
+    }
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    const query = search.trim().toLowerCase();
+    if (query.includes("people")) {
+      router.push("/discover-people");
+    } else if (query.includes("service")) {
+      router.push("/discover-services");
+    } else {
+      alert("Please search for 'people' or 'service'");
     }
   };
 
@@ -48,36 +64,27 @@ const Navbar = () => {
     <>
       {/* Main Navbar */}
       <nav
-        className={`w-full flex justify-between items-center px-4 md:px-10 py-5 fixed top-0 z-50 border-b border-white transition duration-300 ${
-          isScroll ? "bg-black shadow-md backdrop-blur-lg" : "bg-black"
-        }`}
+        className="w-full flex justify-between items-center px-2 sm:px-4 md:px-10 py-4 fixed top-0 z-50 border-b border-white bg-transparent transition duration-300"
       >
         {/* Logo and search */}
-        <div className="flex items-center gap-4 md:gap-10">
+        <div className="flex items-center gap-2 sm:gap-4 md:gap-10">
           <div className="logo">
-            {/* Using the TENFLEX text logo as before */}
-            <h1 className="font-bold tracking-wider text-2xl md:text-3xl text-white">
+            <h1 className="font-bold tracking-wider text-xl sm:text-2xl md:text-3xl text-white">
               TENFLE<span className="text-[#A020F0]">x</span>
             </h1>
-            {/* If you prefer an image logo later, you can use:
-            <Link href="/">
-              <Image
-                src="/your-logo.png" // Replace with your actual logo path
-                alt="TENFLEX Logo"
-                width={120}
-                height={36}
-                className="h-8 w-auto"
-              />
-            </Link>
-            */}
           </div>
-          <div className="search hidden md:block">
-            {/* Hide on small screens */}
-            <form className="flex items-center gap-2 transition-all duration-300">
+          {/* Search bar: hidden on xs, visible on md+ */}
+          <div className="hidden md:block">
+            <form
+              className="flex items-center gap-2 transition-all duration-300"
+              onSubmit={handleSearch}
+            >
               <input
                 type="text"
                 placeholder="Search..."
-                className="px-4 py-2 border border-gray-300 bg-black text-white rounded-full focus:outline-none focus:ring-2 focus:ring-[#A020F0] w-48 lg:w-64" // Added width classes
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="px-3 py-2 border border-gray-300 bg-black text-white rounded-full focus:outline-none focus:ring-2 focus:ring-[#A020F0] w-32 sm:w-48 lg:w-64"
               />
               <button type="submit" className="text-[#A020F0] hover:ml-2 transition-all duration-300">
                 <FaArrowRight />
@@ -87,46 +94,39 @@ const Navbar = () => {
         </div>
 
         {/* Desktop Navigation Links */}
-        <div className="hidden lg:flex items-center space-x-6">
-          <ul className="relative nav-links flex gap-5 lg:gap-8 px-12 py-3 text-white text-xl">
-            {/*
-              { name: "Business", href: "/business" },
-              { name: "Explore", href: "/#explore" },
-              { name: "Freelance", href: "/#seller" },
-            */}
-            {/*
-            // Keeping the original links commented out for reference
-            { name: "Business", href: "/business" },
-            { name: "Explore", href: "/#explore" },
-            { name: "Freelance", href: "/#seller" },
-          ].map((item) => (
-            <li key={item.name}>
-              <Link
-                href={item.href}
-                className="relative font-Ovo text-white after:content-[''] after:absolute after:left-0 after:-bottom-1 after:w-full after:h-[2px] after:bg-[#A020F0] after:scale-x-0 after:origin-right after:transition-transform after:duration-300 hover:after:scale-x-100 hover:after:origin-left"
-              >
-                {item.name}
+        <div className="hidden lg:flex items-center space-x-4 sm:space-x-6">
+          <ul className="flex gap-3 sm:gap-5 lg:gap-8 px-2 sm:px-6 lg:px-12 py-3 text-white text-base sm:text-lg lg:text-xl">
+            <li>
+              <Link href="/business" className="relative font-Ovo text-white after:content-[''] after:absolute after:left-0 after:-bottom-1 after:w-full after:h-[2px] after:bg-[#A020F0] after:scale-x-0 after:origin-right after:transition-transform after:duration-300 hover:after:scale-x-100 hover:after:origin-left">
+                Business
               </Link>
             </li>
-          ))}
-          */}
+            <li>
+              <Link href="/#explore" className="relative font-Ovo text-white after:content-[''] after:absolute after:left-0 after:-bottom-1 after:w-full after:h-[2px] after:bg-[#A020F0] after:scale-x-0 after:origin-right after:transition-transform after:duration-300 hover:after:scale-x-100 hover:after:origin-left">
+                Explore
+              </Link>
+            </li>
+            <li>
+              <Link href="/#seller" className="relative font-Ovo text-white after:content-[''] after:absolute after:left-0 after:-bottom-1 after:w-full after:h-[2px] after:bg-[#A020F0] after:scale-x-0 after:origin-right after:transition-transform after:duration-300 hover:after:scale-x-100 hover:after:origin-left">
+                Freelance
+              </Link>
+            </li>
           </ul>
-
           {/* Auth/Profile Section */}
           {user ? (
-            <Link href="/profile" className="flex items-center gap-2 text-xl text-white">
+            <Link href="/profile" className="flex items-center gap-2 text-lg lg:text-xl text-white">
               <FaUserCircle className="text-3xl" />
               <span className="hidden md:inline">{user.name}</span>
             </Link>
           ) : (
             <>
-              <Link href="/signin" className="text-xl text-white">
+              <Link href="/signin" className="text-lg lg:text-xl text-white">
                 <span className="relative text-white after:content-[''] after:absolute after:left-0 after:-bottom-1 after:w-full after:h-[2.5px] after:bg-[#A020F0] after:scale-x-0 after:origin-right after:transition-transform after:duration-300 hover:after:scale-x-100 hover:after:origin-left">
                   Sign <span className="font-bold text-[#A020F0]">In</span>
                 </span>
               </Link>
               <Link
-                className="group relative flex items-center gap-3 px-10 py-2.5 border border-white rounded-full ml-4 overflow-hidden transition-all duration-300"
+                className="group relative flex items-center gap-3 px-6 sm:px-10 py-2.5 border border-white rounded-full ml-2 sm:ml-4 overflow-hidden transition-all duration-300"
                 href="/signup"
               >
                 <span className="relative z-10 text-white transition-all duration-300">
@@ -157,68 +157,6 @@ const Navbar = () => {
               ></path>
             </svg>
           </button>
-        </div>
-      </nav>
-
-      {/* Secondary Navbar - Fiverr style */}
-      <nav
-        className="w-full fixed top-[88px] z-40 bg-[#18181b] border-b border-gray-800 shadow-sm"
-        style={{ left: 0 }}
-      >
-        <div className="overflow-x-auto scrollbar-hide">
-          <ul className="flex whitespace-nowrap gap-6 px-4 md:px-10 py-2 text-white text-base font-medium">
-            <li>
-              <Link href="/categories/graphics-design" className="hover:text-[#A020F0] transition-colors duration-200">
-                Graphics & Design
-              </Link>
-            </li>
-            <li>
-              <Link href="/categories/digital-marketing" className="hover:text-[#A020F0] transition-colors duration-200">
-                Digital Marketing
-              </Link>
-            </li>
-            <li>
-              <Link href="/categories/writing-translation" className="hover:text-[#A020F0] transition-colors duration-200">
-                Writing & Translation
-              </Link>
-            </li>
-            <li>
-              <Link href="/categories/video-animation" className="hover:text-[#A020F0] transition-colors duration-200">
-                Video & Animation
-              </Link>
-            </li>
-            <li>
-              <Link href="/categories/music-audio" className="hover:text-[#A020F0] transition-colors duration-200">
-                Music & Audio
-              </Link>
-            </li>
-            <li>
-              <Link href="/categories/programming-tech" className="hover:text-[#A020F0] transition-colors duration-200">
-                Programming & Tech
-              </Link>
-            </li>
-            <li>
-              <Link href="/categories/business" className="hover:text-[#A020F0] transition-colors duration-200">
-                Business
-              </Link>
-            </li>
-            <li>
-              <Link href="/categories/lifestyle" className="hover:text-[#A020F0] transition-colors duration-200">
-                Lifestyle
-              </Link>
-            </li>
-            <li>
-              <Link href="/categories/data" className="hover:text-[#A020F0] transition-colors duration-200">
-                Data
-              </Link>
-            </li>
-            <li>
-              <Link href="/categories/photography" className="hover:text-[#A020F0] transition-colors duration-200">
-                Photography
-              </Link>
-            </li>
-            {/* Add more categories as needed */}
-          </ul>
         </div>
       </nav>
 
@@ -264,7 +202,6 @@ const Navbar = () => {
           )}
         </div>
       </div>
-      {/* Overlay to close side menu when clicking outside */}
       {isMenuOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
