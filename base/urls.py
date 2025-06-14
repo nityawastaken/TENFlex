@@ -4,14 +4,16 @@ from .views import *
 
 router = DefaultRouter()
 router.register(r'reviews', ReviewViewSet)
-router.register(r'users', UserViewSet)
+# router.register(r'users', UserViewSet)
 
 urlpatterns = [
     # path('signup/', views.signup_view, name='signup'),
     # path('login/', views.login_view, name='login'),
-    path('buyer/orders/', BuyerOrdersView.as_view(), name='buyer_orders'),
-    path('freelancer/orders/', FreelancerOrdersView.as_view(), name='freelancer_orders'),
+    path('buyer/orders/', BuyerOrdersView.as_view({'get': 'list'}), name='buyer_orders'),
+    path('freelancer/orders/', FreelancerOrdersView.as_view({'get': 'list'}), name='freelancer_orders'),
 
+    path('user/create/', create_profile_view, name='create-profile'),
+    path('users/<int:pk>/', profile_detail_view, name='profile-detail'),
     # Gig list operations
     path('giglists/',list_giglists, name='giglist-list'),
     path('giglists/create/',create_giglist, name='giglist-create'),

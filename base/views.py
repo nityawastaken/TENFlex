@@ -12,6 +12,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import TemplateView
 from .filters import ReviewFilter
 from django_filters.rest_framework import DjangoFilterBackend
+from .permissions import CanViewOrEditProfile
 
 # View for sign up
 # class SignUpView(FormView):
@@ -64,17 +65,19 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 
 # View for client orders
+@permission_classes([IsAuthenticated])
 class BuyerOrdersView(viewsets.ReadOnlyModelViewSet):
     serializer_class = OrderSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    # permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         return Order.get_orders_summary(self.request.user, "client")
 
 # View for freelancer orders
+@permission_classes([IsAuthenticated])
 class FreelancerOrdersView(viewsets.ReadOnlyModelViewSet):
     serializer_class = OrderSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    # permission_classes = [permissions.IsAuthenticated]
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -82,10 +85,53 @@ class FreelancerOrdersView(viewsets.ReadOnlyModelViewSet):
         return context
 
 
-class UserViewSet(viewsets.ModelViewSet):
-    queryset = User_profile.objects.all()
-    serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated] 
+# class UserViewSet(viewsets.ModelViewSet):
+#     queryset = User_profile.objects.all()
+#     serializer_class = UserSerializer
+#     permission_classes = [IsAuthenticatedOrReadOnly] 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_profile_view(request):
+    user = request.user
+
+    if hasattr(user, 'user_profile'):
+        return Response({'detail': 'Profile already exists.'}, status=400)
+
+    data = request.data.copy()
+    data['user'] = user.id
+    serializer = UserSerializer(data=data)
+    if serializer.is_valid():
+        serializer.save(user=user)
+        return Response(serializer.data, status=201)
+    return Response(serializer.errors, status=400)
+
+@api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def profile_detail_view(request, pk):
+    from django.shortcuts import get_object_or_404
+    profile = get_object_or_404(User_profile, pk=pk)
+
+    permission = CanViewOrEditProfile()
+    if request.method == 'GET':
+        if not permission.has_object_permission(request, None, profile):
+            return Response({'detail': 'You do not have permission to view this profile.'}, status=403)
+        serializer = UserSerializer(profile)
+        return Response(serializer.data)
+
+    if profile.user != request.user:
+        return Response({'detail': 'You do not have permission to modify this profile.'}, status=403)
+
+    if request.method in ['PUT', 'PATCH']:
+        serializer = UserSerializer(profile, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
+
+    elif request.method == 'DELETE':
+        profile.delete()
+        return Response({'detail': 'Profile deleted successfully.'}, status=204)
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

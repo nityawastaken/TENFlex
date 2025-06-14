@@ -23,6 +23,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('base/', include('base.urls')),
     # path('', lambda request: redirect('login')),  # Redirect root to the login page
-    path('api/', include('reviews.urls')),
+    # path('api/', include('reviews.urls')),
     path('api-token-auth/', obtain_auth_token, name='api_token_auth'),
 ]

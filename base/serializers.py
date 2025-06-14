@@ -83,6 +83,8 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['id', 'email', 'name', 'profile_picture', 'bio','location']
         read_only_fields = ['id']
 
+class GigSerializer(serializers.ModelSerializer):
+    pass
 class GigListSerializer(serializers.ModelSerializer):
     gigs = GigSerializer(many=True, read_only=True)
 
