@@ -8,3 +8,4 @@ class ReviewAdmin(admin.ModelAdmin):
 admin.site.register(Order)
 admin.site.register(User_profile)
 admin.site.register(Gig)
+admin.site.register(GigList)

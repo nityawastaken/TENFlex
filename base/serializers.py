@@ -77,6 +77,7 @@ class OrderSerializer(serializers.ModelSerializer):
         service_id = validated_data.pop('service_id')
         service = Gig.objects.get(id=service_id)  # Get the actual Service instance
         return Order.objects.create(service=service, **validated_data)
+    
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User_profile
