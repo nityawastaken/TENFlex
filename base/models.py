@@ -58,6 +58,22 @@ class Order(models.Model):
             'Ongoing': Order.get_orders_by_status(user, user_type, 'in_progress'),
             'Pending': Order.get_orders_by_status(user, user_type, 'pending'),
         }
+    
+    # Create a new order based on the current order.
+    def repeat_order(self):
+        return Order.objects.create(
+            Gig=self.Gig,
+            buyer=self.buyer,
+            status='pending',  # New orders start as pending
+        )
+    
+    # Fetch orders categorized for the given user.
+    def get_orders_for_you(user):
+        return {
+            'Completed': Order.objects.filter(buyer=user, status='completed'),
+            'Ongoing': Order.objects.filter(buyer=user, status='in_progress'),
+            'Pending': Order.objects.filter(buyer=user, status='pending'),
+        }
 
 # Review model
 class Review(models.Model):
