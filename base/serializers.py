@@ -1,19 +1,46 @@
 from rest_framework import serializers
 from .models import *
 
+#Review Serializer 
 class ReviewSerializer(serializers.ModelSerializer):
-    user_id = serializers.IntegerField(source='user.id', read_only=True)
-    gig_id = serializers.IntegerField(write_only=True)  # input only
+    reviewer_id = serializers.IntegerField()  
+    gig_id = serializers.IntegerField()
+    reviewer_name = serializers.CharField(source='reviewer.name', read_only=True)  
+    gig_title = serializers.CharField(source='gig.title', read_only=True)  
 
     class Meta:
         model = Review
-        fields = ['id', 'user_id', 'gig_id', 'rating', 'comment', 'created_at']
-        read_only_fields = ['user_id', 'created_at']
+        fields = ['id', 'reviewer_id', 'reviewer_name', 'gig_id', 'gig_title', 'rating', 'comment', 'created_at']
+        read_only_fields = ['id', 'created_at', 'reviewer_name', 'gig_title']
 
     def create(self, validated_data):
+        reviewer_id = validated_data.pop('reviewer_id')
         gig_id = validated_data.pop('gig_id')
-        gig = Gig.objects.get(id=gig_id)  # Get the actual Gig instance
-        return Review.objects.create(gig=gig, **validated_data)
+
+        try:
+            reviewer = User_profile.objects.get(id=reviewer_id)  
+        except User_profile.DoesNotExist:
+            raise serializers.ValidationError({'reviewer_id': 'User not found'})
+
+        try:
+            gig = Gig.objects.get(id=gig_id)
+        except Gig.DoesNotExist:
+            raise serializers.ValidationError({'gig_id': 'Gig not found'})
+
+        reviewee = gig.freelancer  
+
+        return Review.objects.create(
+            reviewer=reviewer,
+            reviewee=reviewee,
+            gig=gig,
+            **validated_data
+        )
+
+    def update(self, instance, validated_data):
+        validated_data.pop('reviewer_id', None)
+        validated_data.pop('gig_id', None)
+        return super().update(instance, validated_data)
+
 
 # SignUp Serializer
 class SignUpSerializer(serializers.ModelSerializer):

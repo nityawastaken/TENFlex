@@ -60,14 +60,15 @@ class Order(models.Model):
 
 # Review model
 class Review(models.Model):
-    gig = models.ForeignKey(Gig, on_delete=models.CASCADE, related_name='reviews')
-    user = models.ForeignKey(User_profile, on_delete=models.CASCADE)
-    rating = models.DecimalField(max_digits=3, decimal_places=1)
-    comment = models.TextField(blank=True)
+    reviewer = models.ForeignKey(User_profile, related_name='given_reviews', on_delete=models.CASCADE)
+    reviewee = models.ForeignKey(User_profile, related_name='received_reviews', on_delete=models.CASCADE)
+    gig = models.ForeignKey(Gig, on_delete=models.CASCADE)
+    rating = models.DecimalField(max_digits=2, decimal_places=1)
+    comment = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f'Review by {self.user.name} for {self.gig.title}'
+        return f"Review by {self.reviewer.name} for {self.reviewee.name}"
 
 
 class GigList(models.Model):

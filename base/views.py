@@ -1,5 +1,6 @@
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework import viewsets, status, filters
+from rest_framework.permissions import IsAuthenticated,IsAuthenticatedOrReadOnly
 from rest_framework.decorators import api_view, permission_classes
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.forms import AuthenticationForm
@@ -9,6 +10,8 @@ from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from .models import *
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import TemplateView
+from .filters import ReviewFilter
+from django_filters.rest_framework import DjangoFilterBackend
 
 # View for sign up
 # class SignUpView(FormView):
@@ -34,9 +37,31 @@ class ReviewViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
+    filterset_class = ReviewFilter
+    ordering_fields = ['created_at', 'rating']
+    ordering = ['-created_at']
+    search_fields = ['comment', 'rating']
 
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)  # Assign user here
+    def destroy(self, request, *args, **kwargs):
+        reviewer_id = request.query_params.get('reviewer_id')
+        reviewee_id = request.query_params.get('reviewee_id')
+
+        if reviewer_id:
+            deleted_count, _ = Review.objects.filter(reviewer__id=reviewer_id).delete()
+            return Response(
+                {"message": f"{deleted_count} reviews deleted for reviewer_id {reviewer_id}"},
+                status=status.HTTP_204_NO_CONTENT
+            )
+        elif reviewee_id:
+            deleted_count, _ = Review.objects.filter(reviewee__id=reviewee_id).delete()
+            return Response(
+                {"message": f"{deleted_count} reviews deleted for reviewee_id {reviewee_id}"},
+                status=status.HTTP_204_NO_CONTENT
+            )
+
+        return super().destroy(request, *args, **kwargs)
+
 
 # View for client orders
 class BuyerOrdersView(viewsets.ReadOnlyModelViewSet):
