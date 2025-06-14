@@ -14,7 +14,7 @@ export default function SignUpForm() {
   };
 
   return (
-    <div className="bg-gray-950 text-white font-sans min-h-screen flex flex-col items-center py-12 px-4">
+    <div className="bg-gray-950 text-white font-sans min-h-screen flex flex-col items-center py-12 px-4 mt-20">
       <h2 className="text-3xl font-bold mb-6 text-center">Create an Account</h2>
       <form onSubmit={handleSignUpSubmit} className="w-full max-w-md p-8 bg-gray-900 rounded-2xl shadow-2xl">
         <label className="block mb-2 text-sm">Full Name</label>

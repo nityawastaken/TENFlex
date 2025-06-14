@@ -64,7 +64,7 @@ const Navbar = () => {
     <>
       {/* Main Navbar */}
       <nav
-        className="w-full flex justify-between items-center px-2 sm:px-4 md:px-10 py-4 fixed top-0 z-50 border-b border-white bg-transparent transition duration-300"
+        className="w-full flex justify-between items-center px-2 sm:px-4 md:px-10 py-4 fixed top-0 z-50 border-b border-white bg-black transition duration-300"
       >
         {/* Logo and search */}
         <div className="flex items-center gap-2 sm:gap-4 md:gap-10">

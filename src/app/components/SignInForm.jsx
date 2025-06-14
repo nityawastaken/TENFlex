@@ -13,7 +13,7 @@ export default function SignInForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-md mx-auto mt-16">
+    <form onSubmit={handleSubmit} className="bg-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-md mx-auto mt-35">
       <h2 className="text-3xl font-bold mb-6 text-center text-white">Sign In</h2>
       <input type="email" placeholder="Email" required className="w-full p-3 mb-4 rounded-lg bg-gray-800 text-white" />
       <input type="password" placeholder="Password" required className="w-full p-3 mb-6 rounded-lg bg-gray-800 text-white" />
