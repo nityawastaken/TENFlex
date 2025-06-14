@@ -9,8 +9,10 @@ router.register(r'reviews', ReviewViewSet)
 urlpatterns = [
     # path('signup/', views.signup_view, name='signup'),
     # path('login/', views.login_view, name='login'),
-    path('buyer/orders/', BuyerOrdersView.as_view({'get': 'list'}), name='buyer_orders'),
-    path('freelancer/orders/', FreelancerOrdersView.as_view({'get': 'list'}), name='freelancer_orders'),
+    
+    # Buyer and Freelancer Orders
+    path('buyer/orders/', buyer_orders, name='buyer-orders'),
+    path('freelancer/orders/', freelancer_orders, name='freelancer-orders'),
 
     path('user/create/', create_profile_view, name='create-profile'),
     path('users/<int:pk>/', profile_detail_view, name='profile-detail'),
