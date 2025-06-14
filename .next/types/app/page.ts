@@ -1,4 +1,4 @@
-// File: C:\Users\User\Desktop\frever\TENFlex-3\src\app\page.jsx
+// File: /Users/dishanthooda/Projects/TENFLEX/tenflex_main_front/TENFlex/src/app/page.jsx
 import * as entry from '../../../src/app/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
