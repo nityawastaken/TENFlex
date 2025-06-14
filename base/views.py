@@ -65,25 +65,32 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 
 # View for client orders
+@api_view(['GET'])
 @permission_classes([IsAuthenticated])
-class BuyerOrdersView(viewsets.ReadOnlyModelViewSet):
-    serializer_class = OrderSerializer
-    # permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        return Order.get_orders_summary(self.request.user, "client")
+def buyer_orders(request):
+    orders = Order.get_orders_summary(request.user, "client")
+    serializer = OrderSerializer(orders, many=True)
+    return Response(serializer.data)
 
 # View for freelancer orders
+@api_view(['GET'])
 @permission_classes([IsAuthenticated])
-class FreelancerOrdersView(viewsets.ReadOnlyModelViewSet):
-    serializer_class = OrderSerializer
-    # permission_classes = [permissions.IsAuthenticated]
+def freelancer_orders(request):
+    orders = Order.get_orders_summary(request.user, "freelancer")
+    serializer = OrderSerializer(orders, many=True)
+    return Response(serializer.data)
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['orders'] = Order.get_orders_summary(self.request.user, "freelancer")
-        return context
+# View to repeat orders
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def repeat_order(request, order_id):
+    try:
+        order = Order.objects.get(id=order_id, buyer=request.user)
+    except Order.DoesNotExist:
+        return Response({'error': 'Order not found or unauthorized'}, status=404)
 
+    new_order = order.repeat_order()
+    return Response(OrderSerializer(new_order).data, status=201)
 
 # class UserViewSet(viewsets.ModelViewSet):
 #     queryset = User_profile.objects.all()
