@@ -27,4 +27,13 @@ urlpatterns = [
     path('giglists/<int:list_id>/gigs/add/',add_gig_to_list, name='giglist-gig-add'),
     path('giglists/<int:list_id>/gigs/remove/',remove_gig_from_list, name='giglist-gig-remove'),
     path('', include(router.urls)),
+    
+    #Post Bidding system
+    path('projects/create/', create_project_post, name='create-project'),
+    path('projects/', list_project_posts, name='list-projects'),
+    path('projects/<int:project_id>/bid/', place_bid, name='place-bid'),
+    path('bids/<int:bid_id>/accept/', accept_bid, name='accept-bid'),
+
+
+
 ]

@@ -9,3 +9,7 @@ admin.site.register(Order)
 admin.site.register(User_profile)
 admin.site.register(Gig)
 admin.site.register(GigList)
+
+#POST BIDDING SYSTEM
+admin.site.register(ProjectPost)
+admin.site.register(Bid)
