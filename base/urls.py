@@ -33,7 +33,9 @@ urlpatterns = [
     path('projects/', list_project_posts, name='list-projects'),
     path('projects/<int:project_id>/bid/', place_bid, name='place-bid'),
     path('bids/<int:bid_id>/accept/', accept_bid, name='accept-bid'),
-
+    path('projects/<int:project_id>/update/', update_project_post, name='update-project'),
+    path('projects/<int:project_id>/delete/', delete_project_post, name='delete-project'),
+    path('projects/<int:project_id>/reopen/', reopen_project_post, name='reopen-project'),
 
 
 ]

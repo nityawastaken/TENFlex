@@ -131,10 +131,9 @@ class BidMiniSerializer(serializers.ModelSerializer):
         model = Bid
         fields = ['id', 'freelancer_name', 'bid_amount', 'message', 'is_accepted', 'created_at']
 
-# Full serializer for project + attached bids
 class ProjectPostWithBidsSerializer(serializers.ModelSerializer):
     client_name = serializers.CharField(source='client.name', read_only=True)
-    bids = BidMiniSerializer(many=True, read_only=True)  # Pulls from related_name='bids' in model
+    bids = serializers.SerializerMethodField()
     class Meta:
         model = ProjectPost
         fields = [
@@ -143,3 +142,6 @@ class ProjectPostWithBidsSerializer(serializers.ModelSerializer):
             'skills_required', 'categories', 'is_open', 'accepted_bid',
             'created_at', 'bids'
         ]
+    def get_bids(self, obj):
+        bids = getattr(obj, 'bids_filtered', obj.bids.all().order_by('-created_at'))
+        return BidMiniSerializer(bids, many=True).data
