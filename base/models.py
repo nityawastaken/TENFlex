@@ -17,8 +17,6 @@ class User_profile(models.Model):
         return self.name
 
 # Gig model
-
-    
 class Gig(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='gigs')
     title = models.CharField(max_length=100)
@@ -36,7 +34,7 @@ class Gig(models.Model):
 
     def __str__(self):
         return f"{self.title} by {self.user.username}"
-    
+
 # Order model
 class Order(models.Model):
     STATUS_CHOICES = [
@@ -45,45 +43,13 @@ class Order(models.Model):
         ('completed', 'Completed'),
     ]
 
-    Gig = models.ForeignKey(Gig, on_delete=models.CASCADE, related_name='orders')
+    gig = models.ForeignKey(Gig, on_delete=models.CASCADE, related_name='orders')
     buyer = models.ForeignKey(User_profile, on_delete=models.CASCADE, related_name='orders')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"Order #{self.id} - {self.status}"
-
-    @staticmethod
-    def get_orders_by_status(user, user_type, status):
-        if user_type == "buyer":
-            return Order.objects.filter(buyer=user, status=status)
-        elif user_type == "freelancer":
-            return Order.objects.filter(service__freelancer=user, status=status)
-        return Order.objects.none()
-
-    @staticmethod
-    def get_orders_summary(user, user_type):
-        return {
-            'Completed': Order.get_orders_by_status(user, user_type, 'completed'),
-            'Ongoing': Order.get_orders_by_status(user, user_type, 'in_progress'),
-            'Pending': Order.get_orders_by_status(user, user_type, 'pending'),
-        }
-    
-    # Create a new order based on the current order.
-    def repeat_order(self):
-        return Order.objects.create(
-            Gig=self.Gig,
-            buyer=self.buyer,
-            status='pending',  # New orders start as pending
-        )
-    
-    # Fetch orders categorized for the given user.
-    def get_orders_for_you(user):
-        return {
-            'Completed': Order.objects.filter(buyer=user, status='completed'),
-            'Ongoing': Order.objects.filter(buyer=user, status='in_progress'),
-            'Pending': Order.objects.filter(buyer=user, status='pending'),
-        }
 
 # Review model
 class Review(models.Model):
