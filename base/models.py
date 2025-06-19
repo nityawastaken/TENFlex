@@ -72,3 +72,33 @@ class GigList(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.user})"
+
+#POST-BIDDING SYSTEM
+
+class ProjectPost(models.Model):
+    client = models.ForeignKey(User_profile, on_delete=models.CASCADE, related_name='project_posts')
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    start_date = models.DateField(null=True, blank=True)  # Optional field
+    deadline = models.DateField()
+    budget = models.DecimalField(max_digits=10, decimal_places=2)
+    skills_required = models.TextField(blank=True)   # Example: "HTML,CSS,React"
+    categories = models.TextField(blank=True)        # Example: "Frontend,Full Stack"
+    is_open = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    accepted_bid = models.OneToOneField('Bid', on_delete=models.SET_NULL, null=True, blank=True, related_name='accepted_for_project')
+
+    def __str__(self):
+        return f"{self.title} by {self.client.name}"
+
+
+class Bid(models.Model):
+    project = models.ForeignKey(ProjectPost, on_delete=models.CASCADE, related_name='bids')
+    freelancer = models.ForeignKey(User_profile, on_delete=models.CASCADE, related_name='bids')
+    bid_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    message = models.TextField(blank=True)
+    is_accepted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Bid by {self.freelancer.name} on {self.project.title}"
