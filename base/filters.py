@@ -1,6 +1,6 @@
-# reviews/filters.py
+# reviews,Gig/filters.py
 import django_filters
-from .models import Review
+from .models import Review,Gig
 
 class ReviewFilter(django_filters.FilterSet):
     reviewer_id = django_filters.NumberFilter(field_name='reviewer__id')
@@ -10,3 +10,9 @@ class ReviewFilter(django_filters.FilterSet):
     class Meta:
         model = Review
         fields = ['reviewer_id', 'reviewee_id', 'gig_id']
+
+class GigFilter(django_filters.FilterSet):
+    class Meta:
+        model = Gig
+        fields = ['duration', 'location', 'language']
+

@@ -85,7 +85,19 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
 class GigSerializer(serializers.ModelSerializer):
-    pass
+    user = serializers.ReadOnlyField(source='user.username')
+    avg_rating = serializers.SerializerMethodField()
+    class Meta:
+        model = Gig
+        fields = '__all__'
+        
+    def get_avg_rating(self, obj):
+        reviews = Review.objects.filter(gig=obj)
+        if reviews.exists():
+            avg = reviews.aggregate(models.Avg('rating'))['rating__avg']
+            return round(avg, 2)
+        return 0.0
+
 class GigListSerializer(serializers.ModelSerializer):
     gigs = GigSerializer(many=True, read_only=True)
 

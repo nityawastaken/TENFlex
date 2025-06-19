@@ -1,4 +1,5 @@
 from rest_framework.permissions import BasePermission
+from rest_framework import permissions
 
 class CanViewOrEditProfile(BasePermission):
     def has_object_permission(self, request, view, obj):
@@ -14,3 +15,17 @@ class CanViewOrEditProfile(BasePermission):
 
         # Disallow viewing clients' profiles by others
         return False
+    
+
+class IsFreelancerOnly(permissions.BasePermission):
+    """
+    Custom permission: Only freelancers can create or modify gigs.
+    """
+
+    def has_permission(self, request, view):
+        if request.method in permissions.SAFE_METHODS:
+            return True  # Everyone can read/list
+
+        # Check if the user has a profile and is a freelancer
+        return hasattr(request.user, 'profile') and request.user.profile.is_freelancer
+
