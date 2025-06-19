@@ -17,16 +17,26 @@ class User_profile(models.Model):
         return self.name
 
 # Gig model
+
+    
 class Gig(models.Model):
-    freelancer = models.ForeignKey(User_profile, on_delete=models.CASCADE, related_name='services')
-    title = models.CharField(max_length=200)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='gigs')
+    title = models.CharField(max_length=100)
     description = models.TextField()
+    category = models.CharField(max_length=100)
+    subcategory = models.CharField(max_length=100)
     price = models.DecimalField(max_digits=10, decimal_places=2)
+    duration = models.CharField(max_length=100)  # Filter
+    location = models.CharField(max_length=100)  # Filter
+    language = models.CharField(max_length=100)  # Filter
+    delivery_time = models.PositiveIntegerField(help_text="Delivery time in days")
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    avg_rating = models.FloatField(default=0.0)
 
     def __str__(self):
-        return f"{self.freelancer.name} - {self.title}"
-
+        return f"{self.title} by {self.user.username}"
+    
 # Order model
 class Order(models.Model):
     STATUS_CHOICES = [

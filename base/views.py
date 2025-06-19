@@ -5,14 +5,15 @@ from rest_framework.decorators import api_view, permission_classes
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.forms import AuthenticationForm
 from .serializers import *
-from rest_framework import viewsets
+from rest_framework import viewsets,permissions
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from .models import *
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import TemplateView
-from .filters import ReviewFilter
+from .filters import ReviewFilter,GigFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from .permissions import CanViewOrEditProfile
+from .permissions import IsFreelancerOnly
 
 # View for sign up
 # class SignUpView(FormView):
@@ -62,6 +63,37 @@ class ReviewViewSet(viewsets.ModelViewSet):
             )
 
         return super().destroy(request, *args, **kwargs)
+
+class GigViewSet(viewsets.ModelViewSet):
+    queryset = Gig.objects.all().order_by('-created_at')
+    serializer_class = GigSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    search_fields = ['title', 'user__username']
+    filterset_class = GigFilter
+    ordering_fields = ['price', 'created_at']
+
+    
+    def perform_create(self, serializer):
+
+         user_profile = self.request.user.profile  # user -> User_profile
+
+         if not user_profile.is_freelancer:
+            # If not freelancer, block creation
+            raise serializers.ValidationError("Only freelancers can create gigs.")
+
+         serializer.save(user=self.request.user)
+
+    
+    def create(self, request, *args, **kwargs):
+        if not request.user.profile.is_freelancer:
+            return Response({'detail': 'Only freelancers can create gigs.'}, status=403)
+        return super().create(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        if not request.user.profile.is_freelancer:
+            return Response({'detail': 'Only freelancers can update gigs.'}, status=403)
+        return super().update(request, *args, **kwargs)
 
 
 # View for client orders
