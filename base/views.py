@@ -1,19 +1,17 @@
 from rest_framework.response import Response
-from rest_framework import viewsets, status, filters
+from rest_framework import viewsets, status, filters, permissions
 from rest_framework.permissions import IsAuthenticated,IsAuthenticatedOrReadOnly
 from rest_framework.decorators import api_view, permission_classes
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.forms import AuthenticationForm
 from .serializers import *
-from rest_framework import viewsets,permissions
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from .models import *
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import TemplateView
-from .filters import ReviewFilter,GigFilter
+from .filters import *
 from django_filters.rest_framework import DjangoFilterBackend
-from .permissions import CanViewOrEditProfile
-from .permissions import IsFreelancerOnly
+from .permissions import CanViewOrEditProfile, IsFreelancerOnly
+from django.shortcuts import get_object_or_404
 
 # View for sign up
 # class SignUpView(FormView):
@@ -64,6 +62,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
         return super().destroy(request, *args, **kwargs)
 
+# View for gigs
 class GigViewSet(viewsets.ModelViewSet):
     queryset = Gig.objects.all().order_by('-created_at')
     serializer_class = GigSerializer
@@ -72,8 +71,7 @@ class GigViewSet(viewsets.ModelViewSet):
     search_fields = ['title', 'user__username']
     filterset_class = GigFilter
     ordering_fields = ['price', 'created_at']
-
-    
+ 
     def perform_create(self, serializer):
 
          user_profile = self.request.user.profile  # user -> User_profile
@@ -83,8 +81,7 @@ class GigViewSet(viewsets.ModelViewSet):
             raise serializers.ValidationError("Only freelancers can create gigs.")
 
          serializer.save(user=self.request.user)
-
-    
+ 
     def create(self, request, *args, **kwargs):
         if not request.user.profile.is_freelancer:
             return Response({'detail': 'Only freelancers can create gigs.'}, status=403)
@@ -95,34 +92,116 @@ class GigViewSet(viewsets.ModelViewSet):
             return Response({'detail': 'Only freelancers can update gigs.'}, status=403)
         return super().update(request, *args, **kwargs)
 
-
-# View for client orders
+# View for buyer's specific orders
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def buyer_orders(request):
-    orders = Order.get_orders_summary(request.user, "client")
-    serializer = OrderSerializer(orders, many=True)
-    return Response(serializer.data)
+    try:
+        orders = Order.objects.filter(buyer=request.user.profile).order_by('-created_at')
+        sections = {
+            "pending": orders.filter(status="pending"),
+            "ongoing": orders.filter(status="ongoing"),
+            "complete": orders.filter(status="complete"),
+        }
+        result = {section: OrderSerializer(orders, many=True).data for section, orders in sections.items()}
+        return Response(result, status=200)
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)
 
-# View for freelancer orders
+# View for freelancer's specific orders
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def freelancer_orders(request):
-    orders = Order.get_orders_summary(request.user, "freelancer")
-    serializer = OrderSerializer(orders, many=True)
-    return Response(serializer.data)
+    try:
+        orders = Order.objects.filter(gig__freelancer=request.user.profile).order_by('-created_at')
+        sections = {
+            "pending": orders.filter(status="pending"),
+            "ongoing": orders.filter(status="ongoing"),
+            "complete": orders.filter(status="complete"),
+        }
+        result = {section: OrderSerializer(orders, many=True).data for section, orders in sections.items()}
+        return Response(result, status=200)
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)
 
-# View to repeat orders
+# View to get a single order
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_order(request, order_id):
+    try:
+        order = Order.objects.get(id=order_id)
+        # Ensure only the buyer or related freelancer can access the order
+        if request.user.profile not in [order.buyer, order.gig.freelancer]:
+            return Response({"error": "Unauthorized access"}, status=403)
+        serializer = OrderSerializer(order)
+        return Response(serializer.data)
+    except Order.DoesNotExist:
+        return Response({"error": "Order not found"}, status=404)
+
+# View to repeat an order
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def repeat_order(request, order_id):
-    try:
-        order = Order.objects.get(id=order_id, buyer=request.user)
-    except Order.DoesNotExist:
-        return Response({'error': 'Order not found or unauthorized'}, status=404)
+    order = get_object_or_404(Order, id=order_id)
 
-    new_order = order.repeat_order()
-    return Response(OrderSerializer(new_order).data, status=201)
+    # Check if the user is the buyer of the order
+    if order.buyer != request.user:
+        return Response({'error': 'Unauthorized to repeat this order'}, status=403)
+
+    new_order = Order.objects.create(
+        gig=order.gig,
+        buyer=order.buyer,
+        status='pending'  # New orders start as pending
+    )
+    serializer = OrderSerializer(new_order)
+    return Response(serializer.data, status=201)
+
+# View to update order status
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def update_order_status(request, order_id):
+    try:
+        order = Order.objects.get(id=order_id)
+        if request.user.profile != order.buyer and request.user.profile != order.gig.freelancer:
+            return Response({"error": "Unauthorized access"}, status=403)
+        
+        new_status = request.data.get("status")
+        if new_status not in ["pending", "ongoing", "complete"]:
+            return Response({"error": "Invalid status"}, status=400)
+        
+        order.status = new_status
+        order.save()
+        return Response({"message": "Order status updated successfully"}, status=200)
+    except Order.DoesNotExist:
+        return Response({"error": "Order not found"}, status=404)
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)
+
+# View to add a new order
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def add_order(request, gig_id):
+    try:
+        gig = get_object_or_404(Gig, id=gig_id)
+        buyer = request.user.profile
+
+        # Accept additional fields from the request body
+        status = request.data.get("status", "pending")  # Defaults to "pending"
+        
+        # Validate the status (if applicable)
+        if status not in ["pending", "ongoing", "complete"]:
+            return Response({"error": "Invalid status"}, status=400)
+
+        # Create the order
+        order = Order.objects.create(
+            gig=gig,
+            buyer=buyer,
+            status=status,
+        )
+        serializer = OrderSerializer(order)
+        return Response(serializer.data, status=201)
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)
 
 # class UserViewSet(viewsets.ModelViewSet):
 #     queryset = User_profile.objects.all()
