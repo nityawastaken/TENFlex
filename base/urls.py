@@ -11,8 +11,12 @@ urlpatterns = [
     # path('login/', views.login_view, name='login'),
     
     # Buyer and Freelancer Orders
-    path('buyer/orders/', buyer_orders, name='buyer-orders'),
-    path('freelancer/orders/', freelancer_orders, name='freelancer-orders'),
+    path('buyer/orders/', buyer_orders, name='buyer-orders'),  # Get buyer-specific orders
+    path('freelancer/orders/', freelancer_orders, name='freelancer-orders'),  # Get freelancer-specific orders
+    path('orders/<int:order_id>/', get_order, name='get-order'),  # Get a specific order
+    path('orders/<int:order_id>/repeat/', repeat_order, name='repeat-order'),  # Repeat a specific order
+    path('orders/<int:order_id>/update-status/', update_order_status, name='update-order-status'), # Update order status
+    path('orders/gigs/<int:gig_id>/book/', add_order, name='add-order'), # Add a new order
 
     path('user/create/', create_profile_view, name='create-profile'),
     path('users/<int:pk>/', profile_detail_view, name='profile-detail'),
