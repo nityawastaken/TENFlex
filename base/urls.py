@@ -6,7 +6,6 @@ router = DefaultRouter()
 router.register(r'reviews', ReviewViewSet)
 router.register(r'gigs', GigViewSet)
 # router.register(r'users', UserViewSet)
-router.register(r'gigs', GigViewSet)
 
 
 urlpatterns = [
