@@ -10,7 +10,7 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = ['id', 'reviewer_id', 'reviewer_name', 'gig_id', 'gig_title', 'rating', 'comment', 'created_at']
+        fields = ['id', 'reviewer_id', 'reviewer_name', 'gig_id', 'gig_title', 'rating', 'comment','picture', 'created_at']
         read_only_fields = ['id', 'created_at', 'reviewer_name', 'gig_title']
 
     def create(self, validated_data):
@@ -85,10 +85,75 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
 class GigSerializer(serializers.ModelSerializer):
-    pass
+    user = serializers.ReadOnlyField(source='user.username')
+    avg_rating = serializers.SerializerMethodField()
+    class Meta:
+        model = Gig
+        fields = '__all__'
+        
+    def get_avg_rating(self, obj):
+        reviews = Review.objects.filter(gig=obj)
+        if reviews.exists():
+            avg = reviews.aggregate(models.Avg('rating'))['rating__avg']
+            return round(avg, 2)
+        return 0.0
+
 class GigListSerializer(serializers.ModelSerializer):
     gigs = GigSerializer(many=True, read_only=True)
 
     class Meta:
         model = GigList
         fields = ['id', 'name', 'gigs', 'created_at']
+        
+#POST BIDDING SYSTEM
+
+class ProjectPostSerializer(serializers.ModelSerializer):
+    client_name = serializers.CharField(source='client.name', read_only=True)
+    accepted_bid_id = serializers.IntegerField(read_only=True)
+    class Meta:
+        model = ProjectPost
+        fields = [
+            'id', 'client', 'client_name', 'title', 'description',
+            'start_date', 'deadline', 'budget',
+            'skills_required', 'categories',
+            'is_open', 'accepted_bid_id', 'created_at'
+        ]
+        read_only_fields = ['id', 'is_open', 'accepted_bid_id', 'created_at', 'client_name']
+
+class BidSerializer(serializers.ModelSerializer):
+    freelancer_name = serializers.CharField(source='freelancer.name', read_only=True)
+    project_title = serializers.CharField(source='project.title', read_only=True)
+
+    class Meta:
+        model = Bid
+        fields = [
+            'id', 'project', 'project_title', 'freelancer',
+            'freelancer_name', 'bid_amount', 'message',
+            'is_accepted', 'created_at'
+        ]
+        read_only_fields = [
+            'id', 'is_accepted', 'created_at',
+            'freelancer_name', 'project_title'
+        ]
+
+# A mini serializer for displaying each bid inside a project
+class BidMiniSerializer(serializers.ModelSerializer):
+    freelancer_name = serializers.CharField(source='freelancer.name', read_only=True)
+    class Meta:
+        model = Bid
+        fields = ['id', 'freelancer_name', 'bid_amount', 'message', 'is_accepted', 'created_at']
+
+class ProjectPostWithBidsSerializer(serializers.ModelSerializer):
+    client_name = serializers.CharField(source='client.name', read_only=True)
+    bids = serializers.SerializerMethodField()
+    class Meta:
+        model = ProjectPost
+        fields = [
+            'id', 'client', 'client_name', 'title', 'description',
+            'start_date', 'deadline', 'budget',
+            'skills_required', 'categories', 'is_open', 'accepted_bid',
+            'created_at', 'bids'
+        ]
+    def get_bids(self, obj):
+        bids = getattr(obj, 'bids_filtered', obj.bids.all().order_by('-created_at'))
+        return BidMiniSerializer(bids, many=True).data
