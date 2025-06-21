@@ -1,10 +1,11 @@
 {
-  "/api/projects/route": "app/api/projects/route.js",
   "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/api/auth/login/route": "app/api/auth/login/route.js",
   "/api/projects/user/route": "app/api/projects/user/route.js",
-  "/api/projects/[id]/bid/route": "app/api/projects/[id]/bid/route.js",
+  "/api/projects/[id]/acceptBid/route": "app/api/projects/[id]/acceptBid/route.js",
   "/profile/page": "app/profile/page.js",
+  "/page": "app/page.js",
   "/signin/page": "app/signin/page.js",
-  "/projects/page": "app/projects/page.js",
-  "/page": "app/page.js"
+  "/signup/page": "app/signup/page.js",
+  "/projects/page": "app/projects/page.js"
 }

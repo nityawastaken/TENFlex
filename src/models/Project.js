@@ -2,9 +2,11 @@
 import mongoose from "mongoose";
 
 const bidSchema = new mongoose.Schema({
-  name: String,
+  freelancer: String,
   amount: Number,
+  message: String,
   time: String,
+  isAccepted: { type: Boolean, default: false }
 });
 
 const projectSchema = new mongoose.Schema({
@@ -16,9 +18,15 @@ const projectSchema = new mongoose.Schema({
   tags: [String],
   skills: [String],
   postedBy: String,
-  email: String, // ✅ add this
   datePosted: String,
+  email: String,
   bids: [bidSchema],
+  status: {
+    type: String,
+    enum: ["open", "in-progress", "submitted", "completed"],
+    default: "open",
+  },
+  acceptedFreelancerEmail: String, // for reference
 });
 
 

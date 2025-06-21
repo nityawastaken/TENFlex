@@ -226,7 +226,7 @@ export default function SignUpForm() {
           className="w-full p-3 mb-6 rounded-lg bg-gray-800 text-white focus:outline-none"
         >
           <option value="freelancer">Freelancer</option>
-          <option value="client">Client</option>
+          <option value="customer">Client</option>
         </select>
 
         <button
