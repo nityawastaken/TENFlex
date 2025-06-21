@@ -18,7 +18,7 @@ class User_profile(models.Model):
 
 # Gig model
 class Gig(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='gigs')
+    freelancer = models.ForeignKey(User_profile, on_delete=models.CASCADE, related_name='gigs')
     title = models.CharField(max_length=100)
     description = models.TextField()
     category = models.CharField(max_length=100)
@@ -33,7 +33,7 @@ class Gig(models.Model):
     avg_rating = models.FloatField(default=0.0)
 
     def __str__(self):
-        return f"{self.title} by {self.user.username}"
+        return f"{self.title} by {self.freelancer.name}"
 
 # Order model
 class Order(models.Model):

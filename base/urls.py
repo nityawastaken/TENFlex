@@ -20,19 +20,21 @@ urlpatterns = [
     path('orders/<int:order_id>/update-status/', update_order_status, name='update-order-status'), # Update order status
     path('orders/gigs/<int:gig_id>/book/', add_order, name='add-order'), # Add a new order
 
+    # User profile operations
     path('user/create/', create_profile_view, name='create-profile'),
     path('users/<int:pk>/', profile_detail_view, name='profile-detail'),
+
     # Gig list operations
     path('giglists/',list_giglists, name='giglist-list'),
     path('giglists/create/',create_giglist, name='giglist-create'),
     path('giglists/<int:list_id>/',detail_giglist, name='giglist-detail'),
     path('giglists/<int:list_id>/update/',rename_giglist, name='giglist-update'),
     path('giglists/<int:list_id>/delete/',delete_giglist, name='giglist-delete'),
-
     # Manage gigs inside a giglist
     path('giglists/<int:list_id>/gigs/add/',add_gig_to_list, name='giglist-gig-add'),
     path('giglists/<int:list_id>/gigs/remove/',remove_gig_from_list, name='giglist-gig-remove'),
-    path('', include(router.urls)),
+
+    path('', include(router.urls)),         #reviews urls and gigs urls
     
     #Post Bidding system
     path('projects/create/', create_project_post, name='create-project'),

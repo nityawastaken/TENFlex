@@ -33,6 +33,34 @@ from django.shortcuts import get_object_or_404
 #         return reverse_lazy('home')  # Redirect to home or any other page after login
     
 #view for Reviews
+# class ReviewViewSet(viewsets.ModelViewSet):
+#     queryset = Review.objects.all()
+#     serializer_class = ReviewSerializer
+#     permission_classes = [IsAuthenticatedOrReadOnly]
+#     filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
+#     filterset_class = ReviewFilter
+#     ordering_fields = ['created_at', 'rating']
+#     ordering = ['-created_at']
+#     search_fields = ['comment', 'rating']
+
+#     def destroy(self, request, *args, **kwargs):
+#         reviewer_id = request.query_params.get('reviewer_id')
+#         reviewee_id = request.query_params.get('reviewee_id')
+
+#         if reviewer_id:
+#             deleted_count, _ = Review.objects.filter(reviewer__id=reviewer_id).delete()
+#             return Response(
+#                 {"message": f"{deleted_count} reviews deleted for reviewer_id {reviewer_id}"},
+#                 status=status.HTTP_204_NO_CONTENT
+#             )
+#         elif reviewee_id:
+#             deleted_count, _ = Review.objects.filter(reviewee__id=reviewee_id).delete()
+#             return Response(
+#                 {"message": f"{deleted_count} reviews deleted for reviewee_id {reviewee_id}"},
+#                 status=status.HTTP_204_NO_CONTENT
+#             )
+
+#         return super().destroy(request, *args, **kwargs)
 class ReviewViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
@@ -47,20 +75,39 @@ class ReviewViewSet(viewsets.ModelViewSet):
         reviewer_id = request.query_params.get('reviewer_id')
         reviewee_id = request.query_params.get('reviewee_id')
 
+        # Delete via query parameters
         if reviewer_id:
+            if int(reviewer_id) != request.user.id:
+                return Response({"detail": "You do not have permission to delete these reviews."},
+                                status=status.HTTP_403_FORBIDDEN)
             deleted_count, _ = Review.objects.filter(reviewer__id=reviewer_id).delete()
-            return Response(
-                {"message": f"{deleted_count} reviews deleted for reviewer_id {reviewer_id}"},
-                status=status.HTTP_204_NO_CONTENT
-            )
-        elif reviewee_id:
-            deleted_count, _ = Review.objects.filter(reviewee__id=reviewee_id).delete()
-            return Response(
-                {"message": f"{deleted_count} reviews deleted for reviewee_id {reviewee_id}"},
-                status=status.HTTP_204_NO_CONTENT
-            )
+            return Response({"message": f"{deleted_count} reviews deleted for reviewer_id {reviewer_id}"},
+                            status=status.HTTP_204_NO_CONTENT)
 
+        elif reviewee_id:
+            return Response({"detail": "Only reviewers can delete their own reviews, not reviewees."},
+                            status=status.HTTP_403_FORBIDDEN)
+
+        # Delete a single review
+        instance = self.get_object()
+        if instance.reviewer.id != request.user.id:
+            return Response({"detail": "You do not have permission to delete this review."},
+                            status=status.HTTP_403_FORBIDDEN)
         return super().destroy(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.reviewer.id != request.user.id:
+            return Response({"detail": "You do not have permission to update this review."},
+                            status=status.HTTP_403_FORBIDDEN)
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.reviewer.id != request.user.id:
+            return Response({"detail": "You do not have permission to update this review."},
+                            status=status.HTTP_403_FORBIDDEN)
+        return super().partial_update(request, *args,**kwargs)
 
 # View for gigs
 class GigViewSet(viewsets.ModelViewSet):
@@ -68,7 +115,7 @@ class GigViewSet(viewsets.ModelViewSet):
     serializer_class = GigSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
-    search_fields = ['title', 'user__username']
+    search_fields = ['title']
     filterset_class = GigFilter
     ordering_fields = ['price', 'created_at']
  
@@ -80,17 +127,18 @@ class GigViewSet(viewsets.ModelViewSet):
             # If not freelancer, block creation
             raise serializers.ValidationError("Only freelancers can create gigs.")
 
-         serializer.save(user=self.request.user)
- 
-    def create(self, request, *args, **kwargs):
-        if not request.user.profile.is_freelancer:
-            return Response({'detail': 'Only freelancers can create gigs.'}, status=403)
-        return super().create(request, *args, **kwargs)
+         serializer.save(user=self.request.user.profile)
 
     def update(self, request, *args, **kwargs):
-        if not request.user.profile.is_freelancer:
-            return Response({'detail': 'Only freelancers can update gigs.'}, status=403)
+        gig = self.get_object()
+        if gig.user != request.user:
+            return Response({'detail': 'You do not have permission to update this gig.'}, status=403)
         return super().update(request, *args, **kwargs)
+    def destroy(self, request, *args, **kwargs):
+        gig = self.get_object()
+        if gig.user != request.user:
+            return Response({'detail': 'You do not have permission to delete this gig.'}, status=403)
+        return super().destroy(request, *args, **kwargs)
 
 # View for buyer's specific orders
 @api_view(['GET'])
@@ -145,7 +193,7 @@ def repeat_order(request, order_id):
     order = get_object_or_404(Order, id=order_id)
 
     # Check if the user is the buyer of the order
-    if order.buyer != request.user:
+    if order.buyer != request.user.profile:
         return Response({'error': 'Unauthorized to repeat this order'}, status=403)
 
     new_order = Order.objects.create(
@@ -162,9 +210,9 @@ def repeat_order(request, order_id):
 def update_order_status(request, order_id):
     try:
         order = Order.objects.get(id=order_id)
-        if request.user.profile != order.buyer and request.user.profile != order.gig.freelancer:
-            return Response({"error": "Unauthorized access"}, status=403)
-        
+        if request.user.profile != order.gig.freelancer:
+            return Response({"error": "Only the freelancer can update the order status."}, status=403)
+                
         new_status = request.data.get("status")
         if new_status not in ["pending", "ongoing", "complete"]:
             return Response({"error": "Invalid status"}, status=400)
@@ -254,7 +302,7 @@ def profile_detail_view(request, pk):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def list_giglists(request):
-    giglists = GigList.objects.filter(user=request.user)
+    giglists = GigList.objects.filter(user=request.user.profile).order_by('-created_at')
     serializer = GigListSerializer(giglists, many=True)
     return Response(serializer.data)
 
@@ -264,14 +312,14 @@ def create_giglist(request):
     name = request.data.get('name')
     if not name:
         return Response({'error': 'Name is required'}, status=400)
-    giglist = GigList.objects.create(user=request.user, name=name)
+    giglist = GigList.objects.create(user=request.user.profile, name=name)
     return Response(GigListSerializer(giglist).data, status=201)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def add_gig_to_list(request, list_id):
     try:
-        giglist = GigList.objects.get(id=list_id, user=request.user)
+        giglist = GigList.objects.get(id=list_id, user=request.user.profile)
     except GigList.DoesNotExist:
         return Response({'error': 'Gig list not found'}, status=404)
 
@@ -292,7 +340,7 @@ def add_gig_to_list(request, list_id):
 @permission_classes([IsAuthenticated])
 def remove_gig_from_list(request, list_id):
     try:
-        giglist = GigList.objects.get(id=list_id, user=request.user)
+        giglist = GigList.objects.get(id=list_id, user=request.user.profile)
     except GigList.DoesNotExist:
         return Response({'error': 'Gig list not found'}, status=404)
 
@@ -309,7 +357,7 @@ def remove_gig_from_list(request, list_id):
 @permission_classes([IsAuthenticated])
 def delete_giglist(request, list_id):
     try:
-        giglist = GigList.objects.get(id=list_id, user=request.user)
+        giglist = GigList.objects.get(id=list_id, user=request.user.profile)
     except GigList.DoesNotExist:
         return Response({'error': 'Gig list not found'}, status=404)
 
@@ -320,7 +368,7 @@ def delete_giglist(request, list_id):
 @permission_classes([IsAuthenticated])
 def detail_giglist(request, list_id):
     try:
-        giglist = GigList.objects.get(id=list_id, user=request.user)
+        giglist = GigList.objects.get(id=list_id, user=request.user.profile)
     except GigList.DoesNotExist:
         return Response({'error': 'Gig list not found'}, status=404)
 
@@ -331,7 +379,7 @@ def detail_giglist(request, list_id):
 @permission_classes([IsAuthenticated])
 def rename_giglist(request, list_id):
     try:
-        giglist = GigList.objects.get(id=list_id, user=request.user)
+        giglist = GigList.objects.get(id=list_id, user=request.user.profile)
     except GigList.DoesNotExist:
         return Response({'error': 'Gig list not found'}, status=404)
 
