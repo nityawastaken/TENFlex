@@ -6,7 +6,7 @@ class CanViewOrEditProfile(BasePermission):
         user = request.user
 
         # Always allow viewing/editing own profile
-        if obj.user == user:
+        if obj == user:
             return True
 
         # Only allow clients or freelancers to view other freelancers
@@ -27,5 +27,5 @@ class IsFreelancerOnly(permissions.BasePermission):
             return True  # Everyone can read/list
 
         # Check if the user has a profile and is a freelancer
-        return hasattr(request.user, 'profile') and request.user.profile.is_freelancer
+        return hasattr(request.user, 'profile') and request.user.is_freelancer
 

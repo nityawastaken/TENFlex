@@ -11,8 +11,8 @@ class ReviewFilter(django_filters.FilterSet):
         model = Review
         fields = ['reviewer_id', 'reviewee_id', 'gig_id']
 
-class GigFilter(django_filters.FilterSet):
-    class Meta:
-        model = Gig
-        fields = ['duration', 'location', 'language']
+# class GigFilter(django_filters.FilterSet):
+#     class Meta:
+#         model = Gig
+#         fields = [ 'location', 'language']
 

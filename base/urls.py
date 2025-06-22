@@ -21,8 +21,10 @@ urlpatterns = [
     path('orders/gigs/<int:gig_id>/book/', add_order, name='add-order'), # Add a new order
 
     # User profile operations
-    path('user/create/', create_profile_view, name='create-profile'),
+    path('users/create/', signup_view, name='create-profile'),
     path('users/<int:pk>/', profile_detail_view, name='profile-detail'),
+    # path('users/complete-profile/', complete_profile, name='complete-profile'),
+    path('users/get-completion-percentage/',get_profile_completion, name='get-profile-completion'),
 
     # Gig list operations
     path('giglists/',list_giglists, name='giglist-list'),

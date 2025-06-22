@@ -116,18 +116,18 @@ class GigViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     search_fields = ['title']
-    filterset_class = GigFilter
+    # filterset_class = GigFilter
     ordering_fields = ['price', 'created_at']
  
     def perform_create(self, serializer):
 
-         user_profile = self.request.user.profile  # user -> User_profile
+         user_profile = self.request.user  # user -> User_profile
 
          if not user_profile.is_freelancer:
             # If not freelancer, block creation
             raise serializers.ValidationError("Only freelancers can create gigs.")
 
-         serializer.save(user=self.request.user.profile)
+         serializer.save(user=self.request.user)
 
     def update(self, request, *args, **kwargs):
         gig = self.get_object()
@@ -145,7 +145,7 @@ class GigViewSet(viewsets.ModelViewSet):
 @permission_classes([IsAuthenticated])
 def buyer_orders(request):
     try:
-        orders = Order.objects.filter(buyer=request.user.profile).order_by('-created_at')
+        orders = Order.objects.filter(buyer=request.user).order_by('-created_at')
         sections = {
             "pending": orders.filter(status="pending"),
             "ongoing": orders.filter(status="ongoing"),
@@ -161,7 +161,7 @@ def buyer_orders(request):
 @permission_classes([IsAuthenticated])
 def freelancer_orders(request):
     try:
-        orders = Order.objects.filter(gig__freelancer=request.user.profile).order_by('-created_at')
+        orders = Order.objects.filter(gig__freelancer=request.user).order_by('-created_at')
         sections = {
             "pending": orders.filter(status="pending"),
             "ongoing": orders.filter(status="ongoing"),
@@ -179,7 +179,7 @@ def get_order(request, order_id):
     try:
         order = Order.objects.get(id=order_id)
         # Ensure only the buyer or related freelancer can access the order
-        if request.user.profile not in [order.buyer, order.gig.freelancer]:
+        if request.user not in [order.buyer, order.gig.freelancer]:
             return Response({"error": "Unauthorized access"}, status=403)
         serializer = OrderSerializer(order)
         return Response(serializer.data)
@@ -193,7 +193,7 @@ def repeat_order(request, order_id):
     order = get_object_or_404(Order, id=order_id)
 
     # Check if the user is the buyer of the order
-    if order.buyer != request.user.profile:
+    if order.buyer != request.user:
         return Response({'error': 'Unauthorized to repeat this order'}, status=403)
 
     new_order = Order.objects.create(
@@ -210,7 +210,7 @@ def repeat_order(request, order_id):
 def update_order_status(request, order_id):
     try:
         order = Order.objects.get(id=order_id)
-        if request.user.profile != order.gig.freelancer:
+        if request.user != order.gig.freelancer:
             return Response({"error": "Only the freelancer can update the order status."}, status=403)
                 
         new_status = request.data.get("status")
@@ -231,7 +231,7 @@ def update_order_status(request, order_id):
 def add_order(request, gig_id):
     try:
         gig = get_object_or_404(Gig, id=gig_id)
-        buyer = request.user.profile
+        buyer = request.user
 
         # Accept additional fields from the request body
         status = request.data.get("status", "pending")  # Defaults to "pending"
@@ -255,40 +255,92 @@ def add_order(request, gig_id):
 #     queryset = User_profile.objects.all()
 #     serializer_class = UserSerializer
 #     permission_classes = [IsAuthenticatedOrReadOnly] 
+
+# @api_view(['POST'])
+# @permission_classes([IsAuthenticated])
+# def create_profile_view(request):
+#     user = request.user
+
+#     if hasattr(user, 'user_profile'):
+#         return Response({'detail': 'Profile already exists.'}, status=400)
+
+#     data = request.data.copy()
+#     data['user'] = user.id
+#     serializer = CustomUserSerializer(data=data)
+#     if serializer.is_valid():
+#         serializer.save(user=user)
+#         return Response(serializer.data, status=201)
+#     return Response(serializer.errors, status=400)
+
+# @api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
+# @permission_classes([IsAuthenticated])
+# def profile_detail_view(request, pk):
+#     from django.shortcuts import get_object_or_404
+#     profile = get_object_or_404(CustomUser, pk=pk)
+
+#     permission = CanViewOrEditProfile()
+#     if request.method == 'GET':
+#         if not permission.has_object_permission(request, None, profile):
+#             return Response({'detail': 'You do not have permission to view this profile.'}, status=403)
+#         serializer = CustomUserSerializer(profile)
+#         return Response(serializer.data)
+
+#     if profile.user != request.user:
+#         return Response({'detail': 'You do not have permission to modify this profile.'}, status=403)
+
+#     if request.method in ['PUT', 'PATCH']:
+#         serializer = CustomUserSerializer(profile, data=request.data, partial=True)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data)
+#         return Response(serializer.errors, status=400)
+
+#     elif request.method == 'DELETE':
+#         profile.delete()
+#         return Response({'detail': 'Profile deleted successfully.'}, status=204)
+
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def create_profile_view(request):
-    user = request.user
+@permission_classes([])  # Public endpoint
+def signup_view(request):
+    data = request.data
+    required_fields = ['username', 'email', 'password']
 
-    if hasattr(user, 'user_profile'):
-        return Response({'detail': 'Profile already exists.'}, status=400)
+    if not all(field in data for field in required_fields):
+        return Response({'error': 'username, email, and password are required.'}, status=400)
 
-    data = request.data.copy()
-    data['user'] = user.id
-    serializer = UserSerializer(data=data)
-    if serializer.is_valid():
-        serializer.save(user=user)
-        return Response(serializer.data, status=201)
-    return Response(serializer.errors, status=400)
+    if CustomUser.objects.filter(username=data['username']).exists():
+        return Response({'error': 'Username already taken.'}, status=400)
+
+    user = CustomUser.objects.create_user(
+        username=data['username'],
+        email=data['email'],
+        password=data['password'],
+        is_freelancer=data.get('is_freelancer', False),
+        bio=data.get('bio', ''),
+        location=data.get('location', ''),
+    )
+    serializer = CustomUserSerializer(user)
+    return Response(serializer.data, status=201)
 
 @api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def profile_detail_view(request, pk):
-    from django.shortcuts import get_object_or_404
-    profile = get_object_or_404(User_profile, pk=pk)
+    profile = get_object_or_404(CustomUser, pk=pk)
 
-    permission = CanViewOrEditProfile()
     if request.method == 'GET':
-        if not permission.has_object_permission(request, None, profile):
-            return Response({'detail': 'You do not have permission to view this profile.'}, status=403)
-        serializer = UserSerializer(profile)
+        # Everyone can see freelancers. Freelancers can't see clients.
+        # if not profile.is_freelancer:
+        #     if request.user.is_freelancer:
+        #         return Response({'detail': 'You do not have permission to view this profile.'}, status=403)
+        serializer = CustomUserSerializer(profile)
         return Response(serializer.data)
 
-    if profile.user != request.user:
+    # Only the owner of the profile can edit or delete it
+    if profile != request.user:
         return Response({'detail': 'You do not have permission to modify this profile.'}, status=403)
 
     if request.method in ['PUT', 'PATCH']:
-        serializer = UserSerializer(profile, data=request.data, partial=True)
+        serializer = CustomUserSerializer(profile, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -296,13 +348,30 @@ def profile_detail_view(request, pk):
 
     elif request.method == 'DELETE':
         profile.delete()
-        return Response({'detail': 'Profile deleted successfully.'}, status=204)
+        return Response({'detail': 'Your account has been deleted successfully.'}, status=204)
 
+# @api_view(['PATCH'])
+# @permission_classes([IsAuthenticated])
+# def complete_profile(request):
+#     user = request.user
+#     serializer = CustomUserSerializer(user, data=request.data, partial=True)
+#     if serializer.is_valid():
+#         serializer.save()
+#         return Response({'message': 'Profile updated'})
+#     return Response(serializer.errors, status=400)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_profile_completion(request):
+    user = request.user
+    fields = ['bio', 'location', 'profile_picture']
+    filled = sum(bool(getattr(user, f)) for f in fields)
+    return Response(int(filled / len(fields) * 100))
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def list_giglists(request):
-    giglists = GigList.objects.filter(user=request.user.profile).order_by('-created_at')
+    giglists = GigList.objects.filter(user=request.user).order_by('-created_at')
     serializer = GigListSerializer(giglists, many=True)
     return Response(serializer.data)
 
@@ -312,14 +381,14 @@ def create_giglist(request):
     name = request.data.get('name')
     if not name:
         return Response({'error': 'Name is required'}, status=400)
-    giglist = GigList.objects.create(user=request.user.profile, name=name)
+    giglist = GigList.objects.create(user=request.user, name=name)
     return Response(GigListSerializer(giglist).data, status=201)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def add_gig_to_list(request, list_id):
     try:
-        giglist = GigList.objects.get(id=list_id, user=request.user.profile)
+        giglist = GigList.objects.get(id=list_id, user=request.user)
     except GigList.DoesNotExist:
         return Response({'error': 'Gig list not found'}, status=404)
 
@@ -340,7 +409,7 @@ def add_gig_to_list(request, list_id):
 @permission_classes([IsAuthenticated])
 def remove_gig_from_list(request, list_id):
     try:
-        giglist = GigList.objects.get(id=list_id, user=request.user.profile)
+        giglist = GigList.objects.get(id=list_id, user=request.user)
     except GigList.DoesNotExist:
         return Response({'error': 'Gig list not found'}, status=404)
 
@@ -357,7 +426,7 @@ def remove_gig_from_list(request, list_id):
 @permission_classes([IsAuthenticated])
 def delete_giglist(request, list_id):
     try:
-        giglist = GigList.objects.get(id=list_id, user=request.user.profile)
+        giglist = GigList.objects.get(id=list_id, user=request.user)
     except GigList.DoesNotExist:
         return Response({'error': 'Gig list not found'}, status=404)
 
@@ -368,7 +437,7 @@ def delete_giglist(request, list_id):
 @permission_classes([IsAuthenticated])
 def detail_giglist(request, list_id):
     try:
-        giglist = GigList.objects.get(id=list_id, user=request.user.profile)
+        giglist = GigList.objects.get(id=list_id, user=request.user)
     except GigList.DoesNotExist:
         return Response({'error': 'Gig list not found'}, status=404)
 
@@ -379,7 +448,7 @@ def detail_giglist(request, list_id):
 @permission_classes([IsAuthenticated])
 def rename_giglist(request, list_id):
     try:
-        giglist = GigList.objects.get(id=list_id, user=request.user.profile)
+        giglist = GigList.objects.get(id=list_id, user=request.user)
     except GigList.DoesNotExist:
         return Response({'error': 'Gig list not found'}, status=404)
 
@@ -398,8 +467,8 @@ def rename_giglist(request, list_id):
 def create_project_post(request):
     user = request.user
     try:
-        profile = user.profile
-    except User_profile.DoesNotExist:
+        profile = user
+    except CustomUser.DoesNotExist:
         return Response({'error': 'User profile not found.'}, status=404)
     if profile.is_freelancer:
         return Response({'error': 'Only clients can create project posts.'}, status=403)
@@ -416,8 +485,8 @@ def create_project_post(request):
 def list_project_posts(request):
     user = request.user
     try:
-        profile = user.profile
-    except User_profile.DoesNotExist:
+        profile = user
+    except CustomUser.DoesNotExist:
         return Response({'error': 'User profile not found.'}, status=404)
     if profile.is_freelancer:
         projects = ProjectPost.objects.filter(is_open=True)
@@ -455,8 +524,8 @@ def list_project_posts(request):
 def place_bid(request, project_id):
     user = request.user
     try: # Check if user has a profile
-        profile = user.profile
-    except User_profile.DoesNotExist:
+        profile = user
+    except CustomUser.DoesNotExist:
         return Response({'error': 'User profile not found.'}, status=404)
     if not profile.is_freelancer: # Only freelancers can place bids
         return Response({'error': 'Only freelancers can place bids.'}, status=403)
@@ -481,8 +550,8 @@ def place_bid(request, project_id):
 def accept_bid(request, bid_id):
     user = request.user
     try:
-        profile = user.profile
-    except User_profile.DoesNotExist:
+        profile = user
+    except CustomUser.DoesNotExist:
         return Response({'error': 'User profile not found.'}, status=404)
     try:
         bid = Bid.objects.select_related('project', 'freelancer').get(id=bid_id)
@@ -513,8 +582,8 @@ def accept_bid(request, bid_id):
 def update_project_post(request, project_id):
     user = request.user
     try:
-        profile = user.profile
-    except User_profile.DoesNotExist:
+        profile = user
+    except CustomUser.DoesNotExist:
         return Response({'error': 'User profile not found.'}, status=404)
     try:
         project = ProjectPost.objects.get(id=project_id)
@@ -535,8 +604,8 @@ def update_project_post(request, project_id):
 def delete_project_post(request, project_id):
     user = request.user
     try:
-        profile = user.profile
-    except User_profile.DoesNotExist:
+        profile = user
+    except CustomUser.DoesNotExist:
         return Response({'error': 'User profile not found.'}, status=404)
     try:
         project = ProjectPost.objects.get(id=project_id)
@@ -554,8 +623,8 @@ def delete_project_post(request, project_id):
 def reopen_project_post(request, project_id):
     user = request.user
     try:
-        profile = user.profile
-    except User_profile.DoesNotExist:
+        profile = user
+    except CustomUser.DoesNotExist:
         return Response({'error': 'User profile not found.'}, status=404)
     try:
         project = ProjectPost.objects.select_related('accepted_bid').get(id=project_id)

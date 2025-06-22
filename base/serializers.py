@@ -21,8 +21,8 @@ class ReviewSerializer(serializers.ModelSerializer):
         gig_id = validated_data.pop('gig_id')
      
         try:
-            reviewer = User_profile.objects.get(id=reviewer_id)  
-        except User_profile.DoesNotExist:
+            reviewer = CustomUser.objects.get(id=reviewer_id)  
+        except CustomUser.DoesNotExist:
             raise serializers.ValidationError({'reviewer_id': 'User not found'})
 
         try:
@@ -48,24 +48,24 @@ class ReviewSerializer(serializers.ModelSerializer):
 
 
 # SignUp Serializer
-class SignUpSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, style={'input_type': 'password'})
+# class SignUpSerializer(serializers.ModelSerializer):
+#     password = serializers.CharField(write_only=True, style={'input_type': 'password'})
 
-    class Meta:
-        model = User_profile
-        fields = ['email', 'is_freelancer', 'profile_picture', 'bio', 'location', 'password']
+#     class Meta:
+#         model = User_profile
+#         fields = ['email', 'is_freelancer', 'profile_picture', 'bio', 'location', 'password']
 
-    def create(self, validated_data):
-        user = User_profile.objects.create(
-            email=validated_data['email'],
-            is_freelancer=validated_data.get('is_freelancer', False),
-            profile_picture=validated_data.get('profile_picture'),
-            bio=validated_data.get('bio', ''),
-            location=validated_data.get('location', ''),
-        )
-        user.set_password(validated_data['password'])  # Hash the password
-        user.save()
-        return user
+#     def create(self, validated_data):
+#         user = User_profile.objects.create(
+#             email=validated_data['email'],
+#             is_freelancer=validated_data.get('is_freelancer', False),
+#             profile_picture=validated_data.get('profile_picture'),
+#             bio=validated_data.get('bio', ''),
+#             location=validated_data.get('location', ''),
+#         )
+#         user.set_password(validated_data['password'])  # Hash the password
+#         user.save()
+#         return user
 
 # Order Serializer
 # class OrderSerializer(serializers.ModelSerializer):
@@ -112,31 +112,46 @@ class OrderSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"buyer": "The buyer cannot be a freelancer."})
         return attrs
     
+
 # class UserSerializer(serializers.ModelSerializer):
+#     avg_rating = serializers.SerializerMethodField()
+
 #     class Meta:
-#         model = User_profile
-#         fields = ['id', 'email', 'name', 'profile_picture', 'bio','location']
+#         model = CustomUser
+#         fields = ['id', 'email', 'name', 'profile_picture', 'bio', 'location', 'avg_rating']
 #         read_only_fields = ['id']
-class UserSerializer(serializers.ModelSerializer):
+
+#     def get_avg_rating(self, obj):
+#         # Only for freelancers
+#         if not obj.is_freelancer:
+#             return None
+
+#         # Get all reviews for gigs where this user is the freelancer
+#         gigs = Gig.objects.filter(freelancer=obj)
+#         avg = Review.objects.filter(gig__in=gigs).aggregate(Avg('rating'))['rating__avg']
+
+#         if avg is not None:
+#             return round(avg, 2)
+#         return 0.0
+
+class CustomUserSerializer(serializers.ModelSerializer):
     avg_rating = serializers.SerializerMethodField()
 
     class Meta:
-        model = User_profile
-        fields = ['id', 'email', 'name', 'profile_picture', 'bio', 'location', 'avg_rating']
-        read_only_fields = ['id']
+        model = CustomUser
+        fields = [
+            'id', 'username', 'email', 'first_name', 'last_name',
+            'is_freelancer', 'bio', 'location', 'profile_picture',
+            'avg_rating'
+        ]
+        read_only_fields = ['id', 'username', 'email', 'avg_rating']
 
-    def get_avg_rating(self, obj):
-        # Only for freelancers
-        if not obj.is_freelancer:
+    def get_avg_rating(self, user):
+        if not user.is_freelancer:
             return None
-
-        # Get all reviews for gigs where this user is the freelancer
-        gigs = Gig.objects.filter(freelancer=obj)
+        gigs = Gig.objects.filter(freelancer=user)
         avg = Review.objects.filter(gig__in=gigs).aggregate(Avg('rating'))['rating__avg']
-
-        if avg is not None:
-            return round(avg, 2)
-        return 0.0
+        return round(avg, 2) if avg else 0.0
     
 class GigSerializer(serializers.ModelSerializer):
     user = serializers.ReadOnlyField(source='user.name')
