@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User, AbstractUser
-
+from multiselectfield import MultiSelectField
+import pycountry
 # User profile model
 # class User_profile(models.Model):
 #     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
@@ -27,14 +28,22 @@ class CustomUser(AbstractUser):
         ('academic', 'Academic'),
         ('other', 'Other'),
     ]
-
+    LANGUAGE_CHOICES = sorted([
+    (lang.alpha_2, lang.name) for lang in pycountry.languages
+    if hasattr(lang, 'alpha_2')  
+    ])  
+    #common
     is_freelancer = models.BooleanField(default=False)
     profile_picture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
     bio = models.TextField(max_length=500, blank=True)
     location = models.CharField(max_length=100, blank=True, null=True)
+    lang_spoken = MultiSelectField(choices=LANGUAGE_CHOICES, blank=True)
+
+    #client only
     role = models.CharField(max_length=20, choices=Roles, default='')
     use_purpose = models.CharField(max_length=100,choices= Purposes,default='')
-    lang_spoken = models.TextField(max_length=100, blank=True, help_text="Comma-separated list of languages spoken")
+
+    #freelancer only
     experience = models.CharField(choices=[('beginner', 'Beginner'), ('intermediate', 'Intermediate'), ('expert', 'Expert')], default='beginner')
     skills = models.TextField(blank=True, help_text="Comma-separated list of skills")
     category_tags = models.TextField(blank=True, help_text="Comma-separated list of category tags")

@@ -17,7 +17,7 @@ class ReviewSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         # reviewer_id = validated_data.pop('reviewer_id')
         request = self.context['request']
-        reviewer_id = request.user.profile.id
+        reviewer_id = request.user.id
         gig_id = validated_data.pop('gig_id')
      
         try:
@@ -141,10 +141,26 @@ class CustomUserSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = [
             'id', 'username', 'email', 'first_name', 'last_name',
-            'is_freelancer', 'bio', 'location', 'profile_picture',
+            'is_freelancer', 'bio', 'location', 'profile_picture','lang_spoken','role','use_purpose',
+             'experience', 'skills', 'category_tags',
             'avg_rating'
         ]
         read_only_fields = ['id', 'username', 'email', 'avg_rating']
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+
+        if instance.is_freelancer:
+            # Remove client-only fields
+            data.pop('role', None)
+            data.pop('use_purpose', None)
+        else:
+            # Remove freelancer-only fields
+            data.pop('skills', None)
+            data.pop('category_tags', None)
+            data.pop('experience', None)
+
+        return data
 
     def get_avg_rating(self, user):
         if not user.is_freelancer:
@@ -154,11 +170,13 @@ class CustomUserSerializer(serializers.ModelSerializer):
         return round(avg, 2) if avg else 0.0
     
 class GigSerializer(serializers.ModelSerializer):
-    user = serializers.ReadOnlyField(source='user.name')
+    freelancer = serializers.ReadOnlyField(source='freelancer.username')
     avg_rating = serializers.SerializerMethodField()
+    review_count = serializers.SerializerMethodField()
     class Meta:
         model = Gig
         fields = '__all__'
+        read_only_fields = ['id', 'created_at', 'freelancer', 'avg_rating', 'review_count']
         
     def get_avg_rating(self, obj):
         reviews = Review.objects.filter(gig=obj)
@@ -167,6 +185,11 @@ class GigSerializer(serializers.ModelSerializer):
             return round(avg, 2)
         return 0.0
 
+    def get_review_count(self, obj):
+        return Review.objects.filter(gig=obj).count()
+    def get_review_count(self, obj):
+            return Review.objects.filter(gig=obj).count()
+    
 class GigListSerializer(serializers.ModelSerializer):
     # gigs = serializers.SerializerMethodField()
     gigs = GigSerializer(many=True, read_only=True)

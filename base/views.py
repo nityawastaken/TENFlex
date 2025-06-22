@@ -121,22 +121,22 @@ class GigViewSet(viewsets.ModelViewSet):
  
     def perform_create(self, serializer):
 
-         user_profile = self.request.user  # user -> User_profile
+         user_profile = self.request.user  
 
          if not user_profile.is_freelancer:
             # If not freelancer, block creation
             raise serializers.ValidationError("Only freelancers can create gigs.")
 
-         serializer.save(user=self.request.user)
+         serializer.save(freelancer=self.request.user)
 
     def update(self, request, *args, **kwargs):
         gig = self.get_object()
-        if gig.user != request.user:
+        if gig.freelancer != request.user:
             return Response({'detail': 'You do not have permission to update this gig.'}, status=403)
         return super().update(request, *args, **kwargs)
     def destroy(self, request, *args, **kwargs):
         gig = self.get_object()
-        if gig.user != request.user:
+        if gig.freelancer != request.user:
             return Response({'detail': 'You do not have permission to delete this gig.'}, status=403)
         return super().destroy(request, *args, **kwargs)
 
@@ -303,10 +303,10 @@ def add_order(request, gig_id):
 @permission_classes([])  # Public endpoint
 def signup_view(request):
     data = request.data
-    required_fields = ['username', 'email', 'password']
+    required_fields = ['username', 'email', 'password', 'is_freelancer']
 
     if not all(field in data for field in required_fields):
-        return Response({'error': 'username, email, and password are required.'}, status=400)
+        return Response({'error': 'username, email, password, and is_freelancer are required.'}, status=400)
 
     if CustomUser.objects.filter(username=data['username']).exists():
         return Response({'error': 'Username already taken.'}, status=400)
@@ -364,7 +364,11 @@ def profile_detail_view(request, pk):
 @permission_classes([IsAuthenticated])
 def get_profile_completion(request):
     user = request.user
-    fields = ['bio', 'location', 'profile_picture']
+    common = ['bio', 'location', 'profile_picture']
+    freelancer_fields = ['skills', 'category_tags', 'experience']
+    client_fields = ['role', 'use_purpose']
+
+    fields = common + (freelancer_fields if user.is_freelancer else client_fields)
     filled = sum(bool(getattr(user, f)) for f in fields)
     return Response(int(filled / len(fields) * 100))
 
