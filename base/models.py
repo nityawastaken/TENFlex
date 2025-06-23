@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User, AbstractUser
+from django.contrib.auth.models import AbstractUser
 from multiselectfield import MultiSelectField
 import pycountry
 # User profile model
@@ -30,24 +30,21 @@ class CustomUser(AbstractUser):
     ]
     LANGUAGE_CHOICES = sorted([
     (lang.alpha_2, lang.name) for lang in pycountry.languages
-    if hasattr(lang, 'alpha_2')  
-    ])  
+    if hasattr(lang, 'alpha_2')
+    ])
     #common
     is_freelancer = models.BooleanField(default=False)
     profile_picture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
     bio = models.TextField(max_length=500, blank=True)
     location = models.CharField(max_length=100, blank=True, null=True)
-    lang_spoken = MultiSelectField(choices=LANGUAGE_CHOICES, blank=True)
-
+    lang_spoken = MultiSelectField(choices=LANGUAGE_CHOICES, max_length=100, blank=True)
     #client only
     role = models.CharField(max_length=20, choices=Roles, default='')
     use_purpose = models.CharField(max_length=100,choices= Purposes,default='')
-
     #freelancer only
     experience = models.CharField(choices=[('beginner', 'Beginner'), ('intermediate', 'Intermediate'), ('expert', 'Expert')], default='beginner')
     skills = models.TextField(blank=True, help_text="Comma-separated list of skills")
     category_tags = models.TextField(blank=True, help_text="Comma-separated list of category tags")
-
     def __str__(self):
         return self.username
 
@@ -85,7 +82,6 @@ class Order(models.Model):
     freelancer = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='freelancer_orders', null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
-
     def __str__(self):
         return f"Order #{self.id} - {self.status}"
 
@@ -128,7 +124,7 @@ class ProjectPost(models.Model):
     accepted_bid = models.OneToOneField('Bid', on_delete=models.SET_NULL, null=True, blank=True, related_name='accepted_for_project')
 
     def __str__(self):
-        return f"{self.title} by {self.client.name}"
+        return f"{self.title} by {self.client.username}"
 
 
 class Bid(models.Model):
@@ -140,4 +136,4 @@ class Bid(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Bid by {self.freelancer.name} on {self.project.title}"
+        return f"Bid by {self.freelancer.username} on {self.project.title}"
