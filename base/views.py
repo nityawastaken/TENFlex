@@ -7,6 +7,7 @@ from .models import *
 from .filters import *
 from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404
+from django.db.models import Q
 
 # View for sign up
 # class SignUpView(FormView):
@@ -105,12 +106,10 @@ class GigViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     search_fields = ['title']
-    # filterset_class = GigFilter
     ordering_fields = ['price', 'created_at']
     def perform_create(self, serializer):
         user_profile = self.request.user
         if not user_profile.is_freelancer:
-            # If not freelancer, block creation
             raise serializers.ValidationError("Only freelancers can create gigs.")
         serializer.save(freelancer=self.request.user)
     def update(self, request, *args, **kwargs):
@@ -123,6 +122,21 @@ class GigViewSet(viewsets.ModelViewSet):
         if gig.freelancer != request.user:
             return Response({'detail': 'You do not have permission to delete this gig.'}, status=403)
         return super().destroy(request, *args, **kwargs)
+    def get_queryset(self):
+        queryset = Gig.objects.all().order_by('-created_at')
+        skills = self.request.query_params.get('skills')
+        categories = self.request.query_params.get('categories')
+        filters = Q()
+        if skills:
+            skill_ids = [int(id) for id in skills.split(',')]
+            filters |= Q(skills__in=skill_ids)
+        if categories:
+            category_ids = [int(id) for id in categories.split(',')]
+            filters |= Q(categories__in=category_ids)
+        if filters:
+            queryset = queryset.filter(filters).distinct()
+        return queryset
+
 
 # View for buyer's specific orders
 @api_view(['GET'])
@@ -469,6 +483,8 @@ def create_project_post(request):
         return Response(serializer.data, status=201)
     return Response(serializer.errors, status=400)
 
+from django.db.models import Q
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def list_project_posts(request):
@@ -480,6 +496,19 @@ def list_project_posts(request):
     min_bid = request.GET.get('min_bid')
     max_bid = request.GET.get('max_bid')
     sort_by = request.GET.get('sort_by', 'date_desc')
+    # 🔄 Convert skill/category filters
+    skill_ids = request.GET.get('skills')
+    category_ids = request.GET.get('categories')
+    q_filter = Q()
+    if skill_ids:
+        skill_ids = [int(id) for id in skill_ids.split(',')]
+        q_filter |= Q(skills_required__in=skill_ids)
+    if category_ids:
+        category_ids = [int(id) for id in category_ids.split(',')]
+        q_filter |= Q(categories__in=category_ids)
+    if q_filter:
+        projects = projects.filter(q_filter).distinct()
+    # 🔁 Filter & sort bids inside each project
     result = []
     for project in projects:
         bids = project.bids.all()
