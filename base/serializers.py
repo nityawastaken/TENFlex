@@ -2,7 +2,18 @@ from rest_framework import serializers
 from django.db.models import Avg
 from .models import *
 
-#Review Serializer 
+class SkillSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Skill
+        fields = ['id', 'name']
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ['id', 'name']
+
+#Review Serializer
 class ReviewSerializer(serializers.ModelSerializer):
     reviewer_id = serializers.ReadOnlyField(source='reviewer.id') 
     gig_id = serializers.IntegerField()
@@ -91,13 +102,8 @@ class OrderSerializer(serializers.ModelSerializer):
     project_title = serializers.SerializerMethodField()
     class Meta:
         model = Order
-        fields = [
-            'id', 'type', 'item_id',
-            'buyer_id', 'buyer_name',
-            'freelancer_id', 'freelancer_name',
-            'gig_title', 'project_title',
-            'status', 'created_at'
-        ]
+        fields = ['id', 'type', 'item_id', 'buyer_id', 'buyer_name', 'freelancer_id', 'freelancer_name',
+            'gig_title', 'project_title', 'status', 'created_at']
     def get_gig_title(self, obj):
         if obj.type == 'gig':
             gig = Gig.objects.filter(id=obj.item_id).first()
@@ -133,20 +139,22 @@ class OrderSerializer(serializers.ModelSerializer):
 
 class CustomUserSerializer(serializers.ModelSerializer):
     avg_rating = serializers.SerializerMethodField()
-
+    skills = SkillSerializer(many=True, read_only=True)
+    category_tags = CategorySerializer(many=True, read_only=True)
+    skill_ids = serializers.PrimaryKeyRelatedField(
+        queryset=Skill.objects.all(), many=True, write_only=True, required=False
+    )
+    category_ids = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(), many=True, write_only=True, required=False
+    )
     class Meta:
         model = CustomUser
-        fields = [
-            'id', 'username', 'email', 'first_name', 'last_name',
-            'is_freelancer', 'bio', 'location', 'profile_picture','lang_spoken','role','use_purpose',
-             'experience', 'skills', 'category_tags',
-            'avg_rating'
-        ]
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_freelancer', 'bio', 'location',
+                    'profile_picture','lang_spoken','role','use_purpose', 'experience', 'skills',
+                    'category_tags', 'skill_ids', 'category_ids', 'avg_rating']
         read_only_fields = ['id', 'username', 'email', 'avg_rating']
-
     def to_representation(self, instance):
         data = super().to_representation(instance)
-
         if instance.is_freelancer:
             # Remove client-only fields
             data.pop('role', None)
@@ -165,27 +173,61 @@ class CustomUserSerializer(serializers.ModelSerializer):
         gigs = Gig.objects.filter(freelancer=user)
         avg = Review.objects.filter(gig__in=gigs).aggregate(Avg('rating'))['rating__avg']
         return round(avg, 2) if avg else 0.0
+    def update(self, instance, validated_data):
+        if 'skill_ids' in validated_data:
+            instance.skills.set(validated_data.pop('skill_ids'))
+        if 'category_ids' in validated_data:
+            instance.category_tags.set(validated_data.pop('category_ids'))
+        return super().update(instance, validated_data)
+
     
 class GigSerializer(serializers.ModelSerializer):
     freelancer = serializers.ReadOnlyField(source='freelancer.username')
     avg_rating = serializers.SerializerMethodField()
     review_count = serializers.SerializerMethodField()
+    # Read-only for GET
+    categories = CategorySerializer(many=True, read_only=True)
+    skills = SkillSerializer(many=True, read_only=True)
+    # Write-only for POST/PUT
+    category_ids = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(), many=True, write_only=True, required=False)
+    skill_ids = serializers.PrimaryKeyRelatedField(
+        queryset=Skill.objects.all(), many=True, write_only=True, required=False)
     class Meta:
         model = Gig
-        fields = '__all__'
-        read_only_fields = ['id', 'created_at', 'freelancer', 'avg_rating', 'review_count']
-        
+        fields = [
+            'id', 'freelancer', 'title', 'description',
+            'price', 'delivery_time', 'created_at', 'picture',
+            'avg_rating', 'review_count',
+            'categories', 'category_ids',
+            'skills', 'skill_ids'
+        ]
+        read_only_fields = [
+            'id', 'created_at', 'freelancer',
+            'avg_rating', 'review_count'
+        ]
     def get_avg_rating(self, obj):
         reviews = Review.objects.filter(gig=obj)
         if reviews.exists():
             avg = reviews.aggregate(models.Avg('rating'))['rating__avg']
             return round(avg, 2)
         return 0.0
-
     def get_review_count(self, obj):
         return Review.objects.filter(gig=obj).count()
-    def get_review_count(self, obj):
-            return Review.objects.filter(gig=obj).count()
+    def create(self, validated_data):
+        category_ids = validated_data.pop('category_ids', [])
+        skill_ids = validated_data.pop('skill_ids', [])
+        gig = Gig.objects.create(**validated_data)
+        gig.categories.set(category_ids)
+        gig.skills.set(skill_ids)
+        return gig
+    def update(self, instance, validated_data):
+        if 'category_ids' in validated_data:
+            instance.categories.set(validated_data.pop('category_ids'))
+        if 'skill_ids' in validated_data:
+            instance.skills.set(validated_data.pop('skill_ids'))
+        return super().update(instance, validated_data)
+
     
 class GigListSerializer(serializers.ModelSerializer):
     # gigs = serializers.SerializerMethodField()
@@ -205,19 +247,44 @@ class GigListSerializer(serializers.ModelSerializer):
         ]
         
 #POST BIDDING SYSTEM
-
 class ProjectPostSerializer(serializers.ModelSerializer):
-    client_name = serializers.CharField(source='client.name', read_only=True)
+    client_name = serializers.CharField(source='client.username', read_only=True)
     accepted_bid_id = serializers.IntegerField(read_only=True)
+    # For GET: show list of skill/category objects
+    skills_required = SkillSerializer(many=True, read_only=True)
+    categories = CategorySerializer(many=True, read_only=True)
+    # For POST/PUT: accept just the IDs
+    skill_ids = serializers.PrimaryKeyRelatedField(
+        queryset=Skill.objects.all(), many=True, write_only=True, required=False
+    )
+    category_ids = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(), many=True, write_only=True, required=False
+    )
     class Meta:
         model = ProjectPost
         fields = [
-            'id', 'client', 'client_name', 'title', 'description',
-            'start_date', 'deadline', 'budget',
-            'skills_required', 'categories',
+            'id', 'client', 'client_name',
+            'title', 'description', 'start_date', 'deadline', 'budget',
+            'skills_required', 'categories',  # For GET
+            'skill_ids', 'category_ids',      # For POST/PUT
             'is_open', 'accepted_bid_id', 'created_at'
         ]
-        read_only_fields = ['id', 'is_open', 'accepted_bid_id', 'created_at', 'client_name']
+        read_only_fields = [
+            'id', 'client_name', 'accepted_bid_id', 'created_at', 'is_open'
+        ]
+    def create(self, validated_data):
+        skill_ids = validated_data.pop('skill_ids', [])
+        category_ids = validated_data.pop('category_ids', [])
+        project = ProjectPost.objects.create(**validated_data)
+        project.skills_required.set(skill_ids)
+        project.categories.set(category_ids)
+        return project
+    def update(self, instance, validated_data):
+        if 'skill_ids' in validated_data:
+            instance.skills_required.set(validated_data.pop('skill_ids'))
+        if 'category_ids' in validated_data:
+            instance.categories.set(validated_data.pop('category_ids'))
+        return super().update(instance, validated_data)
 
 class BidSerializer(serializers.ModelSerializer):
     freelancer_name = serializers.CharField(source='freelancer.name', read_only=True)

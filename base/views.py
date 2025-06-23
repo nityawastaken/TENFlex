@@ -107,14 +107,12 @@ class GigViewSet(viewsets.ModelViewSet):
     search_fields = ['title']
     # filterset_class = GigFilter
     ordering_fields = ['price', 'created_at']
-
     def perform_create(self, serializer):
         user_profile = self.request.user
         if not user_profile.is_freelancer:
             # If not freelancer, block creation
             raise serializers.ValidationError("Only freelancers can create gigs.")
         serializer.save(freelancer=self.request.user)
-
     def update(self, request, *args, **kwargs):
         gig = self.get_object()
         if gig.freelancer != request.user:
@@ -602,3 +600,15 @@ def reopen_project_post(request, project_id):
     project.is_open = True
     project.save()
     return Response({'message': 'Project reopened, bid rejected, and order removed.'}, status=200)
+
+class SkillViewSet(viewsets.ModelViewSet):
+    queryset = Skill.objects.all().order_by('name')
+    serializer_class = SkillSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    lookup_field = 'id'
+
+class CategoryViewSet(viewsets.ModelViewSet):
+    queryset = Category.objects.all().order_by('name')
+    serializer_class = CategorySerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    lookup_field = 'id'
