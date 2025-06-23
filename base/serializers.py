@@ -82,35 +82,32 @@ class ReviewSerializer(serializers.ModelSerializer):
 #         service = Gig.objects.get(id=service_id)  # Get the actual Service instance
 #         return Order.objects.create(service=service, **validated_data)
 class OrderSerializer(serializers.ModelSerializer):
-    order_id = serializers.IntegerField(source='id', read_only=True)  # Alias for 'id'
+    type = serializers.CharField()  # project or gig
     buyer_id = serializers.IntegerField(source='buyer.id', read_only=True)
-    buyer_name = serializers.CharField(source='buyer.user.username', read_only=True)  # Assuming User_profile links to User
-    freelancer_id = serializers.IntegerField(source='gig.freelancer.id', read_only=True)
-    freelancer_name = serializers.CharField(source='gig.freelancer.user.username', read_only=True)
-    gig_id = serializers.IntegerField(write_only=True)  # Input only field for gig
-
+    buyer_name = serializers.CharField(source='buyer.username', read_only=True)
+    freelancer_id = serializers.IntegerField(source='freelancer.id', read_only=True)
+    freelancer_name = serializers.CharField(source='freelancer.username', read_only=True)
+    gig_title = serializers.SerializerMethodField()
+    project_title = serializers.SerializerMethodField()
     class Meta:
         model = Order
         fields = [
-            'order_id', 'gig_id', 'buyer_id', 'buyer_name', 
-            'freelancer_id', 'freelancer_name', 'status', 
-             'created_at'
+            'id', 'type', 'item_id',
+            'buyer_id', 'buyer_name',
+            'freelancer_id', 'freelancer_name',
+            'gig_title', 'project_title',
+            'status', 'created_at'
         ]
-        read_only_fields = [
-            'order_id', 'buyer_id', 'buyer_name', 
-            'freelancer_id', 'freelancer_name', 'created_at'
-        ]
-
-    def create(self, validated_data):
-        gig_id = validated_data.pop('gig_id')
-        gig = Gig.objects.get(id=gig_id)  # Retrieve the related gig
-        return Order.objects.create(gig=gig, **validated_data)
-
-    def validate(self, attrs):
-        buyer = self.context['request'].user.profile  # Assuming User_profile is linked to request.user
-        if buyer.is_freelancer:
-            raise serializers.ValidationError({"buyer": "The buyer cannot be a freelancer."})
-        return attrs
+    def get_gig_title(self, obj):
+        if obj.type == 'gig':
+            gig = Gig.objects.filter(id=obj.item_id).first()
+            return gig.title if gig else None
+        return None
+    def get_project_title(self, obj):
+        if obj.type == 'project':
+            project = ProjectPost.objects.filter(id=obj.item_id).first()
+            return project.title if project else None
+        return None
     
 
 # class UserSerializer(serializers.ModelSerializer):
