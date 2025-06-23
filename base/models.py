@@ -16,6 +16,15 @@ import pycountry
 
 #     def __str__(self):
 #         return self.name
+class Skill(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    def __str__(self):
+        return self.name
+
+class Category(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    def __str__(self):
+        return self.name
 
 class CustomUser(AbstractUser):
     Roles = [
@@ -43,8 +52,8 @@ class CustomUser(AbstractUser):
     use_purpose = models.CharField(max_length=100,choices= Purposes,default='')
     #freelancer only
     experience = models.CharField(choices=[('beginner', 'Beginner'), ('intermediate', 'Intermediate'), ('expert', 'Expert')], default='beginner')
-    skills = models.TextField(blank=True, help_text="Comma-separated list of skills")
-    category_tags = models.TextField(blank=True, help_text="Comma-separated list of category tags")
+    skills = models.ManyToManyField(Skill, blank=True, related_name='freelancers')
+    category_tags = models.ManyToManyField(Category, blank=True, related_name='freelancers')
     def __str__(self):
         return self.username
 
@@ -53,7 +62,8 @@ class Gig(models.Model):
     freelancer = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='gigs')
     title = models.CharField(max_length=100)
     description = models.TextField()
-    category = models.CharField(max_length=100)
+    categories = models.ManyToManyField(Category, blank=True, related_name='gigs')
+    skills = models.ManyToManyField(Skill, blank=True, related_name='gigs')
     # subcategory = models.CharField(max_length=100)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     # duration = models.CharField(max_length=100)  # Filter
@@ -117,8 +127,8 @@ class ProjectPost(models.Model):
     start_date = models.DateField(null=True, blank=True)  # Optional field
     deadline = models.DateField()
     budget = models.DecimalField(max_digits=10, decimal_places=2)
-    skills_required = models.TextField(blank=True)   # Example: "HTML,CSS,React"
-    categories = models.TextField(blank=True)        # Example: "Frontend,Full Stack"
+    skills_required = models.ManyToManyField(Skill, blank=True, related_name='project_posts')
+    categories = models.ManyToManyField(Category, blank=True, related_name='project_posts')
     is_open = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     accepted_bid = models.OneToOneField('Bid', on_delete=models.SET_NULL, null=True, blank=True, related_name='accepted_for_project')
