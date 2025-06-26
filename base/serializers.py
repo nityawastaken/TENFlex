@@ -251,8 +251,7 @@ class GigSerializer(serializers.ModelSerializer):
     # Write-only for POST/PUT
     category_ids = serializers.PrimaryKeyRelatedField(
         queryset=Category.objects.all(), many=True, write_only=True, required=False)
-    skill_ids = serializers.PrimaryKeyRelatedField(
-        queryset=Skill.objects.all(), many=True, write_only=True, required=False)
+    skill_names = serializers.ListField(child=serializers.CharField(), write_only=True, required=False)
     class Meta:
         model = Gig
         fields = [
@@ -260,7 +259,7 @@ class GigSerializer(serializers.ModelSerializer):
             'price', 'delivery_time', 'created_at', 'picture',
             'avg_rating', 'review_count',
             'categories', 'category_ids',
-            'skills', 'skill_ids'
+            'skills', 'skill_names'
         ]
         read_only_fields = [
             'id', 'created_at', 'freelancer',
@@ -274,24 +273,39 @@ class GigSerializer(serializers.ModelSerializer):
         return 0.0
     def get_review_count(self, obj):
         return Review.objects.filter(gig=obj).count()
+    def get_order_in_line_count(self, obj):
+        return Order.objects.filter(type='gig', item_id=obj.id, status__in=['pending', 'ongoing']).count()
+    def get_order_completed_count(self, obj):
+        return Order.objects.filter(type='gig', item_id=obj.id, status='completed').count()
     def create(self, validated_data):
         category_ids = validated_data.pop('category_ids', [])
-        skill_ids = validated_data.pop('skill_ids', [])
+        skill_names = validated_data.pop('skill_names', [])
+
         gig = Gig.objects.create(**validated_data)
+
         gig.categories.set(category_ids)
-        gig.skills.set(skill_ids)
+
+        # Handle skill name-based assignment
+        skill_objs = []
+        for name in skill_names:
+            skill_obj, _ = Skill.objects.get_or_create(name__iexact=name.strip(), defaults={'name': name.strip()})
+            skill_objs.append(skill_obj)
+        gig.skills.set(skill_objs)
+
         return gig
+
     def update(self, instance, validated_data):
         if 'category_ids' in validated_data:
             instance.categories.set(validated_data.pop('category_ids'))
-        if 'skill_ids' in validated_data:
-            instance.skills.set(validated_data.pop('skill_ids'))
-        return super().update(instance, validated_data)
-    def get_order_in_line_count(self, obj):
-        return Order.objects.filter(type='gig', item_id=obj.id, status__in=['pending', 'ongoing']).count()
 
-    def get_order_completed_count(self, obj):
-        return Order.objects.filter(type='gig', item_id=obj.id, status='completed').count()
+        if 'skill_names' in validated_data:
+            skill_objs = []
+            for name in validated_data.pop('skill_names'):
+                skill_obj, _ = Skill.objects.get_or_create(name__iexact=name.strip(), defaults={'name': name.strip()})
+                skill_objs.append(skill_obj)
+            instance.skills.set(skill_objs)
+
+        return super().update(instance, validated_data)
 
     
 class GigListSerializer(serializers.ModelSerializer):
