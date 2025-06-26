@@ -22,6 +22,7 @@ urlpatterns = [
     path('orders/<int:order_id>/update-status/', update_order_status, name='update-order-status'), # Update order status
     path('orders/gigs/<int:gig_id>/book/', add_order, name='add-order'), # Add a new order
 
+
     # User profile operations
     path('users/create/', signup_view, name='create-profile'),
     path('users/<int:pk>/', profile_detail_view, name='profile-detail'),
@@ -39,7 +40,8 @@ urlpatterns = [
     path('giglists/<int:list_id>/gigs/remove/',remove_gig_from_list, name='giglist-gig-remove'),
 
     path('', include(router.urls)),         #reviews urls and gigs urls
-    
+    path('user/<int:pk>/gigs/', gigs_by_freelancer, name='freelancer-gigs'),
+
     #Post Bidding system
     path('projects/create/', create_project_post, name='create-project'),
     path('projects/', list_project_posts, name='list-projects'),

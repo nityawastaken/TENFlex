@@ -104,9 +104,10 @@ class GigViewSet(viewsets.ModelViewSet):
     queryset = Gig.objects.all().order_by('-created_at')
     serializer_class = GigSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
     search_fields = ['title']
-    ordering_fields = ['price', 'created_at']
+    filterset_class = GigFilter
+    ordering_fields = ['price', 'created_at', 'delivery_time', 'avg_rating']
     def perform_create(self, serializer):
         user_profile = self.request.user
         if not user_profile.is_freelancer:
@@ -137,6 +138,17 @@ class GigViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(filters).distinct()
         return queryset
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticatedOrReadOnly])
+def gigs_by_freelancer(request, pk):
+    freelancer = get_object_or_404(CustomUser, pk=pk)
+
+    if not freelancer.is_freelancer:
+        return Response({"error": "This user is not a freelancer."}, status=400)
+
+    gigs = Gig.objects.filter(freelancer=freelancer).order_by('-created_at')
+    serializer = GigSerializer(gigs, many=True)
+    return Response(serializer.data)
 
 # View for buyer's specific orders
 @api_view(['GET'])
@@ -147,7 +159,7 @@ def buyer_orders(request):
         sections = {
             "pending": orders.filter(status="pending"),
             "ongoing": orders.filter(status="ongoing"),
-            "complete": orders.filter(status="complete"),
+            "completed": orders.filter(status="completed"),
         }
         result = {section: OrderSerializer(orders, many=True).data for section, orders in sections.items()}
         return Response(result, status=200)
@@ -166,7 +178,7 @@ def freelancer_orders(request):
         sections = {
             "pending": orders.filter(status="pending"),
             "ongoing": orders.filter(status="ongoing"),
-            "complete": orders.filter(status="complete"),
+            "completed": orders.filter(status="completed"),
         }
         result = {section: OrderSerializer(orders, many=True).data for section, orders in sections.items()}
         return Response(result, status=200)
@@ -267,7 +279,7 @@ def add_order(request, gig_id):
         return Response(serializer.data, status=201)
     except Exception as e:
         return Response({"error": str(e)}, status=500)
-
+    
 # class UserViewSet(viewsets.ModelViewSet):
 #     queryset = User_profile.objects.all()
 #     serializer_class = UserSerializer

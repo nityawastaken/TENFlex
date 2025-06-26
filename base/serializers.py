@@ -139,20 +139,23 @@ class OrderSerializer(serializers.ModelSerializer):
 
 class CustomUserSerializer(serializers.ModelSerializer):
     avg_rating = serializers.SerializerMethodField()
+    inline_orders = serializers.SerializerMethodField()
+    completed_orders = serializers.SerializerMethodField()
     skills = SkillSerializer(many=True, read_only=True)
+    skill_names = serializers.ListField(child=serializers.CharField(), write_only=True, required=False)
+    # skill_ids = serializers.PrimaryKeyRelatedField(
+    #     queryset=Skill.objects.all(), many=True, write_only=True, required=False
+    # )
     category_tags = CategorySerializer(many=True, read_only=True)
-    skill_ids = serializers.PrimaryKeyRelatedField(
-        queryset=Skill.objects.all(), many=True, write_only=True, required=False
-    )
     category_ids = serializers.PrimaryKeyRelatedField(
         queryset=Category.objects.all(), many=True, write_only=True, required=False
     )
     class Meta:
         model = CustomUser
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_freelancer', 'bio', 'location',
+        fields = ['id', 'username', 'email','contact_number', 'first_name', 'last_name', 'is_freelancer', 'bio', 'location',
                     'profile_picture','lang_spoken','role','use_purpose', 'experience', 'skills',
-                    'category_tags', 'skill_ids', 'category_ids', 'avg_rating']
-        read_only_fields = ['id', 'username', 'email', 'avg_rating']
+                    'category_tags', 'skill_names', 'category_ids', 'avg_rating']
+        read_only_fields = ['id', 'username', 'email', 'avg_rating','inline_orders', 'completed_orders']
     def to_representation(self, instance):
         data = super().to_representation(instance)
         if instance.is_freelancer:
@@ -173,18 +176,75 @@ class CustomUserSerializer(serializers.ModelSerializer):
         gigs = Gig.objects.filter(freelancer=user)
         avg = Review.objects.filter(gig__in=gigs).aggregate(Avg('rating'))['rating__avg']
         return round(avg, 2) if avg else 0.0
+    
+    # def update(self, instance, validated_data):
+    #     if 'skill_ids' in validated_data:
+    #         instance.skills.set(validated_data.pop('skill_ids'))
+    #     if 'category_ids' in validated_data:
+    #         instance.category_tags.set(validated_data.pop('category_ids'))
+    #     return super().update(instance, validated_data)
+
     def update(self, instance, validated_data):
-        if 'skill_ids' in validated_data:
-            instance.skills.set(validated_data.pop('skill_ids'))
+        # Handle skill names
+        skill_names = validated_data.pop('skill_names', [])
+        if skill_names:
+            skill_objs = []
+            for name in skill_names:
+                name = name.strip().title()
+                skill, _ = Skill.objects.get_or_create(name=name)
+                skill_objs.append(skill)
+            instance.skills.set(skill_objs)
+
+        # Handle categories
         if 'category_ids' in validated_data:
             instance.category_tags.set(validated_data.pop('category_ids'))
+
         return super().update(instance, validated_data)
+
+    def create(self, validated_data):
+        skill_names = validated_data.pop('skill_names', [])
+        category_ids = validated_data.pop('category_ids', [])
+
+        user = CustomUser.objects.create(**validated_data)
+
+        if skill_names:
+            skill_objs = []
+            for name in skill_names:
+                name = name.strip().title()
+                skill, _ = Skill.objects.get_or_create(name=name)
+                skill_objs.append(skill)
+            user.skills.set(skill_objs)
+
+        if category_ids:
+            user.category_tags.set(category_ids)
+
+        return user
+    
+    def get_in_line_orders(self, obj):
+        if not obj.is_freelancer:
+            return 0
+        return Order.objects.filter(
+            freelancer=obj,
+            type='gig',
+            status__in=['pending', 'ongoing']
+        ).count()
+
+    def get_completed_orders(self, obj):
+        if not obj.is_freelancer:
+            return 0
+        return Order.objects.filter(
+            freelancer=obj,
+            type='gig',
+            status='completed'
+        ).count()
 
     
 class GigSerializer(serializers.ModelSerializer):
     freelancer = serializers.ReadOnlyField(source='freelancer.username')
     avg_rating = serializers.SerializerMethodField()
     review_count = serializers.SerializerMethodField()
+    order_inline_count = serializers.SerializerMethodField()
+    order_completed_count = serializers.SerializerMethodField()
     # Read-only for GET
     categories = CategorySerializer(many=True, read_only=True)
     skills = SkillSerializer(many=True, read_only=True)
@@ -204,7 +264,7 @@ class GigSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             'id', 'created_at', 'freelancer',
-            'avg_rating', 'review_count'
+            'avg_rating', 'review_count','order_inline_count', 'order_completed_count'
         ]
     def get_avg_rating(self, obj):
         reviews = Review.objects.filter(gig=obj)
@@ -227,6 +287,11 @@ class GigSerializer(serializers.ModelSerializer):
         if 'skill_ids' in validated_data:
             instance.skills.set(validated_data.pop('skill_ids'))
         return super().update(instance, validated_data)
+    def get_order_in_line_count(self, obj):
+        return Order.objects.filter(type='gig', item_id=obj.id, status__in=['pending', 'ongoing']).count()
+
+    def get_order_completed_count(self, obj):
+        return Order.objects.filter(type='gig', item_id=obj.id, status='completed').count()
 
     
 class GigListSerializer(serializers.ModelSerializer):

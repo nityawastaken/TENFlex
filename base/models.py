@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from multiselectfield import MultiSelectField
 import pycountry
+from phonenumber_field.modelfields import PhoneNumberField
 # User profile model
 # class User_profile(models.Model):
 #     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
@@ -47,6 +48,7 @@ class CustomUser(AbstractUser):
     bio = models.TextField(max_length=500, blank=True)
     location = models.CharField(max_length=100, blank=True, null=True)
     lang_spoken = MultiSelectField(choices=LANGUAGE_CHOICES, max_length=100, blank=True)
+    contact_number = PhoneNumberField(blank=True, null=True)
     #client only
     role = models.CharField(max_length=20, choices=Roles, default='')
     use_purpose = models.CharField(max_length=100,choices= Purposes,default='')
@@ -82,7 +84,7 @@ class Gig(models.Model):
 class Order(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending'),
-        ('in_progress', 'In Progress'),
+        ('ongoing', 'Ongoing'),
         ('completed', 'Completed'),
     ]
     type = models.CharField(max_length=20, choices=[('gig', 'Gig'), ('project', 'Project')], default='gig')
@@ -101,12 +103,12 @@ class Review(models.Model):
     reviewer = models.ForeignKey(CustomUser, related_name='given_reviews', on_delete=models.CASCADE)
     gig = models.ForeignKey(Gig, on_delete=models.CASCADE)
     rating = models.DecimalField(max_digits=2, decimal_places=1)
-    comment = models.TextField()
+    comment = models.TextField(null=True, blank=True)
     picture = models.ImageField(upload_to='review_pictures/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Review by {self.reviewer.name} for {self.reviewee.name}"
+        return f"Review by {self.reviewer.username} for {self.reviewee.username}"
 
 
 class GigList(models.Model):

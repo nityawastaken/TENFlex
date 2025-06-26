@@ -11,8 +11,17 @@ class ReviewFilter(django_filters.FilterSet):
         model = Review
         fields = ['reviewer_id', 'reviewee_id', 'gig_id']
 
-# class GigFilter(django_filters.FilterSet):
-#     class Meta:
-#         model = Gig
-#         fields = [ 'location', 'language']
+
+class GigFilter(django_filters.FilterSet):
+    price_min = django_filters.NumberFilter(field_name='price', lookup_expr='gte')
+    price_max = django_filters.NumberFilter(field_name='price', lookup_expr='lte')
+    
+    delivery_time_min = django_filters.NumberFilter(field_name='delivery_time', lookup_expr='gte')
+    delivery_time_max = django_filters.NumberFilter(field_name='delivery_time', lookup_expr='lte')
+
+    location = django_filters.CharFilter(field_name='freelancer__location', lookup_expr='icontains')
+
+    class Meta:
+        model = Gig
+        fields = ['price_min', 'price_max', 'delivery_time_min', 'delivery_time_max', 'location']
 
