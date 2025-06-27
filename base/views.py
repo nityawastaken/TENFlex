@@ -407,6 +407,8 @@ def list_giglists(request):
 @permission_classes([IsAuthenticated])
 def create_giglist(request):
     name = request.data.get('name')
+    if request.user.is_freelancer:
+        return Response({'error': 'Freelancers cannot create gig lists.'}, status=403)
     if not name:
         return Response({'error': 'Name is required'}, status=400)
     giglist = GigList.objects.create(user=request.user, name=name)
