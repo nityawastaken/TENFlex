@@ -154,7 +154,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = ['id', 'username', 'email','contact_number', 'first_name', 'last_name', 'is_freelancer', 'bio', 'location',
                     'profile_picture','lang_spoken','role','use_purpose', 'experience', 'skills',
-                    'category_tags', 'skill_names', 'category_ids', 'avg_rating']
+                    'category_tags', 'skill_names', 'category_ids', 'avg_rating','inline_orders', 'completed_orders']
         read_only_fields = ['id', 'username', 'email', 'avg_rating','inline_orders', 'completed_orders']
     def to_representation(self, instance):
         data = super().to_representation(instance)

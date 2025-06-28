@@ -1,6 +1,6 @@
 from rest_framework.response import Response
 from rest_framework import viewsets, status, filters, permissions
-from rest_framework.permissions import IsAuthenticated,IsAuthenticatedOrReadOnly
+from rest_framework.permissions import IsAuthenticated,IsAuthenticatedOrReadOnly,AllowAny
 from rest_framework.decorators import api_view, permission_classes
 from .serializers import *
 from .models import *
@@ -329,7 +329,7 @@ def add_order(request, gig_id):
 #         return Response({'detail': 'Profile deleted successfully.'}, status=204)
 
 @api_view(['POST'])
-@permission_classes([])  # Public endpoint
+@permission_classes([AllowAny])
 def signup_view(request):
     data = request.data
     required_fields = ['username', 'email', 'password', 'is_freelancer']
