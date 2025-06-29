@@ -100,10 +100,29 @@ class OrderSerializer(serializers.ModelSerializer):
     freelancer_name = serializers.CharField(source='freelancer.username', read_only=True)
     gig_title = serializers.SerializerMethodField()
     project_title = serializers.SerializerMethodField()
+    description = serializers.SerializerMethodField()
+    bids = serializers.SerializerMethodField()
+    
     class Meta:
         model = Order
         fields = ['id', 'type', 'item_id', 'buyer_id', 'buyer_name', 'freelancer_id', 'freelancer_name',
-            'gig_title', 'project_title', 'status', 'created_at']
+            'gig_title', 'project_title', 'status', 'description', 'bids', 'created_at']
+    def get_description(self, obj):
+        if obj.type == 'gig':
+            gig = Gig.objects.filter(id=obj.item_id).first()
+            return gig.description if gig else ""
+        elif obj.type == 'project':
+            project = ProjectPost.objects.filter(id=obj.item_id).first()
+            return project.description if project else ""
+        return ""
+    def get_bids(self, obj):
+        if obj.type == 'project':
+            project = ProjectPost.objects.filter(id=obj.item_id).first()
+            if not project:
+                return []
+            bids = project.bids.all().order_by('-created_at')
+            return BidMiniSerializer(bids, many=True).data
+        return []  # gigs have no bids
     def get_gig_title(self, obj):
         if obj.type == 'gig':
             gig = Gig.objects.filter(id=obj.item_id).first()
