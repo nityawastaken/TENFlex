@@ -220,7 +220,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
 
         return user
     
-    def get_in_line_orders(self, obj):
+    def get_inline_orders(self, obj):
         if not obj.is_freelancer:
             return 0
         return Order.objects.filter(
