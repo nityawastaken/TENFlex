@@ -24,9 +24,15 @@ const Navbar = () => {
     ];
 
     if (role === "freelancer") {
-      base.push({ name: "My Gigs", href: "/my-gigs" }, { name: "Orders", href: "/orders" });
+      base.push(
+        { name: "My Gigs", href: "/my-gigs" },
+        { name: "Orders", href: "/orders" }
+      );
     } else if (role === "customer") {
-      base.push({ name: "Browse Services", href: "/services" }, { name: "Hire a Freelancer", href: "/hire" });
+      base.push(
+        { name: "Browse Services", href: "/services" },
+        { name: "Hire a Freelancer", href: "/hire" }
+      );
     }
 
     return base;
@@ -44,7 +50,7 @@ const Navbar = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("token");
     setUser(null);
-    window.location.reload(); // Ensures UI updates everywhere
+    router.push("/signin");
   };
 
   const handleSearchSubmit = (e) => {
@@ -62,7 +68,7 @@ const Navbar = () => {
     if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
       setUser(parsedUser);
-      setProfileImage(parsedUser.profileImage || null);
+      setProfileImage(parsedUser.profile_picture || null);
       setNavLinks(getLinks(parsedUser.role));
     } else {
       setNavLinks(getLinks(null));
@@ -141,16 +147,23 @@ const Navbar = () => {
 
           {user ? (
             <div className="text-white flex items-center gap-4">
-              <Link href="/profile" className="flex items-center gap-2">
+              <Link
+                href={`/profile/${user?.id}`}
+                className="flex items-center gap-2"
+              >
                 {profileImage ? (
                   <img
-                    src={profileImage}
+                    src={
+                      profileImage.startsWith("http")
+                        ? profileImage
+                        : `${process.env.NEXT_PUBLIC_API_URL}${profileImage}`
+                    }
                     alt="Profile"
                     className="w-10 h-10 rounded-full border border-white object-cover"
                   />
                 ) : (
                   <div className="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center font-semibold">
-                    {getInitials(user.name)}
+                    {getInitials(user.first_name || user.username)}
                   </div>
                 )}
               </Link>
@@ -225,20 +238,29 @@ const Navbar = () => {
 
           {user ? (
             <>
-              <Link href="/profile" onClick={closeMenu}>
+              <Link
+                href={`/profile/${user?.id}`}
+                className="flex items-center gap-2"
+              >
                 <div className="flex items-center gap-2 mt-4">
                   {profileImage ? (
                     <img
-                      src={profileImage}
+                      src={
+                        profileImage.startsWith("http")
+                          ? profileImage
+                          : `${process.env.NEXT_PUBLIC_API_URL}${profileImage}`
+                      }
                       alt="Profile"
-                      className="w-10 h-10 rounded-full border object-cover"
+                      className="w-10 h-10 rounded-full border border-white object-cover"
                     />
                   ) : (
                     <div className="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center font-semibold">
-                      {getInitials(user.name)}
+                      {getInitials(user.first_name || user.username)}
                     </div>
                   )}
-                  <span className="text-lg font-semibold">{user.name}</span>
+                  <span className="text-lg font-semibold">
+                    {user?.name || user?.username || "User"}
+                  </span>
                 </div>
               </Link>
               <button

@@ -5,11 +5,13 @@ import Link from "next/link";
 
 export default function SignUpForm() {
   const router = useRouter();
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
   const [form, setForm] = useState({
     name: "",
     email: "",
     password: "",
+    confirmPassword: "", // ← added
     location: "",
     userType: "freelancer",
   });
@@ -37,7 +39,6 @@ export default function SignUpForm() {
     if (!form.email.trim()) newErrors.email = "Email is required.";
     else if (!/\S+@\S+\.\S+/.test(form.email))
       newErrors.email = "Invalid email address.";
-
     if (!form.password.trim()) {
       newErrors.password = "Password is required.";
     } else if (form.password.length < 6) {
@@ -46,7 +47,11 @@ export default function SignUpForm() {
       newErrors.password =
         "Password must include at least 1 lowercase, 1 uppercase, and 1 special character.";
     }
-
+    if (!form.confirmPassword.trim()) {
+      newErrors.confirmPassword = "Please confirm your password.";
+    } else if (form.confirmPassword !== form.password) {
+      newErrors.confirmPassword = "Passwords do not match.";
+    }
     if (!form.location.trim()) newErrors.location = "Location is required.";
     return newErrors;
   };
@@ -95,24 +100,30 @@ export default function SignUpForm() {
     if (Object.keys(validationErrors).length > 0) return;
 
     try {
-      const res = await fetch("/api/auth/signup", {
+      const res = await fetch(`${API_URL}/base/users/create/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: form.name,
+          username: form.name,
           email: form.email,
           password: form.password,
           location: form.location,
-          role: form.userType,
+          is_freelancer: form.userType === "freelancer",
         }),
       });
 
       const data = await res.json();
       if (res.ok) {
-        alert(data.message || "Sign-up successful!");
+        alert("Sign-up successful!");
         router.push("/signin");
       } else {
-        alert(data.message || "Something went wrong.");
+        // Handle errors from backend
+        const msg =
+          data?.detail ||
+          data?.message ||
+          Object.values(data)?.[0] ||
+          "Signup failed. Try again.";
+        alert(msg);
       }
     } catch (err) {
       console.error("Signup error:", err);
@@ -144,7 +155,9 @@ export default function SignUpForm() {
             errors.name ? "border border-red-500" : ""
           }`}
         />
-        {errors.name && <p className="text-red-500 text-sm mb-4">{errors.name}</p>}
+        {errors.name && (
+          <p className="text-red-500 text-sm mb-4">{errors.name}</p>
+        )}
 
         {/* Email */}
         <label className="block mb-2 text-sm">Email Address</label>
@@ -157,7 +170,9 @@ export default function SignUpForm() {
             errors.email ? "border border-red-500" : ""
           }`}
         />
-        {errors.email && <p className="text-red-500 text-sm mb-4">{errors.email}</p>}
+        {errors.email && (
+          <p className="text-red-500 text-sm mb-4">{errors.email}</p>
+        )}
 
         {/* Password */}
         <label className="block mb-2 text-sm">Password</label>
@@ -176,7 +191,9 @@ export default function SignUpForm() {
           <div className="mb-2">
             <div className="h-2 w-full rounded bg-gray-700 overflow-hidden mb-1">
               <div
-                className={`h-full transition-all duration-300 ${getStrength(form.password).color}`}
+                className={`h-full transition-all duration-300 ${
+                  getStrength(form.password).color
+                }`}
                 style={{ width: `${getStrength(form.password).percent}%` }}
               />
             </div>
@@ -188,21 +205,59 @@ export default function SignUpForm() {
 
         {/* Password Requirements */}
         <div className="text-sm text-gray-300 space-y-1 mb-4">
-          <p className={/[a-z]/.test(form.password) ? "text-green-400" : "text-red-400"}>
-            {/[a-z]/.test(form.password) ? "✓" : "✗"} Must include a lowercase letter
+          <p
+            className={
+              /[a-z]/.test(form.password) ? "text-green-400" : "text-red-400"
+            }
+          >
+            {/[a-z]/.test(form.password) ? "✓" : "✗"} Must include a lowercase
+            letter
           </p>
-          <p className={/[A-Z]/.test(form.password) ? "text-green-400" : "text-red-400"}>
-            {/[A-Z]/.test(form.password) ? "✓" : "✗"} Must include an uppercase letter
+          <p
+            className={
+              /[A-Z]/.test(form.password) ? "text-green-400" : "text-red-400"
+            }
+          >
+            {/[A-Z]/.test(form.password) ? "✓" : "✗"} Must include an uppercase
+            letter
           </p>
-          <p className={/[^a-zA-Z0-9]/.test(form.password) ? "text-green-400" : "text-red-400"}>
-            {/[^a-zA-Z0-9]/.test(form.password) ? "✓" : "✗"} Must include a special character
+          <p
+            className={
+              /[^a-zA-Z0-9]/.test(form.password)
+                ? "text-green-400"
+                : "text-red-400"
+            }
+          >
+            {/[^a-zA-Z0-9]/.test(form.password) ? "✓" : "✗"} Must include a
+            special character
           </p>
-          <p className={form.password.length >= 6 ? "text-green-400" : "text-red-400"}>
+          <p
+            className={
+              form.password.length >= 6 ? "text-green-400" : "text-red-400"
+            }
+          >
             {form.password.length >= 6 ? "✓" : "✗"} At least 6 characters
           </p>
         </div>
 
-        {errors.password && <p className="text-red-500 text-sm mb-4">{errors.password}</p>}
+        {errors.password && (
+          <p className="text-red-500 text-sm mb-4">{errors.password}</p>
+        )}
+
+        {/* Confirm Password */}
+        <label className="block mb-2 text-sm">Confirm Password</label>
+        <input
+          name="confirmPassword"
+          type="password"
+          value={form.confirmPassword}
+          onChange={handleChange}
+          className={`w-full p-3 mb-2 rounded-lg bg-gray-800 text-white focus:outline-none ${
+            errors.confirmPassword ? "border border-red-500" : ""
+          }`}
+        />
+        {errors.confirmPassword && (
+          <p className="text-red-500 text-sm mb-4">{errors.confirmPassword}</p>
+        )}
 
         {/* Location */}
         <label className="block mb-2 text-sm">Location</label>
@@ -215,10 +270,14 @@ export default function SignUpForm() {
             errors.location ? "border border-red-500" : ""
           }`}
         />
-        {errors.location && <p className="text-red-500 text-sm mb-4">{errors.location}</p>}
+        {errors.location && (
+          <p className="text-red-500 text-sm mb-4">{errors.location}</p>
+        )}
 
         {/* User Type */}
-        <label className="block mb-2 text-sm">Are you a Freelancer or Client?</label>
+        <label className="block mb-2 text-sm">
+          Are you a Freelancer or Client?
+        </label>
         <select
           name="userType"
           value={form.userType}

@@ -2,13 +2,17 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useUserContext } from "@/app/contexts/UserContext"; // ✅ IMPORT CONTEXT
 
 export default function SignInForm() {
   const router = useRouter();
-  const [checking, setChecking] = useState(true);
-  const [form, setForm] = useState({ email: "", password: "" });
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-  // 🔒 Redirect if already logged in
+  const [checking, setChecking] = useState(true);
+  const [form, setForm] = useState({ username: "", password: "" });
+
+  const { loginUser } = useUserContext(); // ✅ USE CONTEXT FUNCTION
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
@@ -23,33 +27,61 @@ export default function SignInForm() {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
- const handleSubmit = async (e) => {
-  e.preventDefault();
-  try {
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-    const data = await res.json();
+    try {
+      const res = await fetch(`${API_URL}/api-token-auth/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
 
-    if (res.ok) {
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
-      alert("Sign in successful!");
+      const data = await res.json();
 
-      // Use native redirect instead of router for full reload
-      window.location.href = "/";
-    } else {
-      alert(data.message || "Login failed");
+      if (res.ok && data.token) {
+        localStorage.setItem("token", data.token);
+
+        // ✅ Fetch user details
+        const userRes = await fetch(
+          `${API_URL}/base/get_user_by_username/${form.username}/`,
+          {
+            headers: {
+              Authorization: `Token ${data.token}`,
+            },
+          }
+        );
+
+        const userData = await userRes.json();
+
+        if (userRes.ok && userData.id) {
+          const userToStore = {
+            id: userData.id,
+            username: userData.username,
+            first_name: userData.first_name,
+            profile_picture: userData.profile_picture,
+            role: userData.is_freelancer ? "freelancer" : "customer",
+          };
+
+          // ✅ Use loginUser to update context + localStorage
+          loginUser(userToStore);
+
+          alert("Sign in successful!");
+          router.push("/");
+        } else {
+          alert("Could not fetch user info");
+        }
+      } else {
+        console.log("Error response:", data);
+        alert(data.detail || JSON.stringify(data));
+      }
+    } catch (err) {
+      console.error("Sign in error:", err);
+      alert("Something went wrong. Please try again.");
     }
-  } catch (err) {
-    console.error("Sign in error:", err);
-    alert("Something went wrong. Please try again.");
-  }
-};
-  if (checking) return null; // Prevent flash if already logged in
+  };
+
+  if (checking) return null;
 
   return (
     <div className="bg-gray-950 text-white font-sans min-h-screen flex flex-col items-center py-12 px-4 mt-20">
@@ -63,11 +95,11 @@ export default function SignInForm() {
         <hr className="text-white/80 mb-10" />
 
         <input
-          type="email"
-          name="email"
-          value={form.email}
+          type="text"
+          name="username"
+          value={form.username}
           onChange={handleChange}
-          placeholder="Email"
+          placeholder="Username"
           required
           className="w-full p-3 mb-4 rounded-lg bg-gray-800 text-white"
         />
@@ -91,7 +123,7 @@ export default function SignInForm() {
 
         <div className="mt-4 text-center">
           <span>
-            Don't have an account?{" "}
+            Don&apos;t have an account?{" "}
             <Link
               href="/signup"
               className="text-purple-400 hover:underline transition-all duration-200"
