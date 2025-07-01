@@ -26,6 +26,8 @@ urlpatterns = [
     # User profile operations
     path('users/create/', signup_view, name='create-profile'),
     path('users/<int:pk>/', profile_detail_view, name='profile-detail'),
+    path('get_user_by_username/<str:username>/', get_user_by_username, name='get-user-by-username'),
+
     # path('users/complete-profile/', complete_profile, name='complete-profile'),
     path('users/get-completion-percentage/',get_profile_completion, name='get-profile-completion'),
 
