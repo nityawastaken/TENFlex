@@ -220,7 +220,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
 
         return user
     
-    def get_in_line_orders(self, obj):
+    def get_inline_orders(self, obj):
         if not obj.is_freelancer:
             return 0
         return Order.objects.filter(
@@ -259,7 +259,7 @@ class GigSerializer(serializers.ModelSerializer):
             'price', 'delivery_time', 'created_at', 'picture',
             'avg_rating', 'review_count',
             'categories', 'category_ids',
-            'skills', 'skill_names'
+            'skills', 'skill_names','order_inline_count','order_completed_count'
         ]
         read_only_fields = [
             'id', 'created_at', 'freelancer',
