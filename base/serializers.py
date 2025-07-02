@@ -273,7 +273,7 @@ class GigSerializer(serializers.ModelSerializer):
         return 0.0
     def get_review_count(self, obj):
         return Review.objects.filter(gig=obj).count()
-    def get_order_in_line_count(self, obj):
+    def get_order_inline_count(self, obj):
         return Order.objects.filter(type='gig', item_id=obj.id, status__in=['pending', 'ongoing']).count()
     def get_order_completed_count(self, obj):
         return Order.objects.filter(type='gig', item_id=obj.id, status='completed').count()
