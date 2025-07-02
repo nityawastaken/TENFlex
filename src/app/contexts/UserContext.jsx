@@ -30,7 +30,7 @@ export function UserProvider({ children }) {
         if (!res.ok) throw new Error("User not found");
 
         const data = await res.json();
-        setCurrentUser(data);
+        setCurrentUser(data)
       } catch (err) {
         console.error("Error fetching current user:", err);
         setCurrentUser(null);
