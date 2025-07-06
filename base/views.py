@@ -348,6 +348,9 @@ def signup_view(request):
 
     if CustomUser.objects.filter(username=data['username']).exists():
         return Response({'error': 'Username already taken.'}, status=400)
+    
+    if CustomUser.objects.filter(email=data['email']).exists():
+        return Response({'error': 'An account with this email already exists.'}, status=400)
 
     user = CustomUser.objects.create_user(
         username=data['username'],
