@@ -17,6 +17,7 @@ import "react-toastify/dist/ReactToastify.css";
 
 export default function ProfilePage() {
   const { currentUser, loading } = useUserContext();
+  console.log(currentUser)
   const [selectedSection, setSelectedSection] = useState("home");
   const selectedOption = useRef();
   const [selectedOrderFilter, setSelectedOrderFilter] = useState("ongoing");
@@ -111,7 +112,7 @@ useEffect(() => {
               ></div>
               <div className="flex flex-col gap-2">
                 <h2 className="text-xl md:text-2xl font-bold tracking-wide">
-                  {currentUser?.name}
+                  {currentUser?.username}
                 </h2>
                 <h3 className="flex items-center gap-1 text-lg md:text-xl">
                   <CiLocationOn />
@@ -131,13 +132,13 @@ useEffect(() => {
 
             {/* About */}
             <SectionContainer title={"about"}>
-              <SectionParagraph text={currentUser?.about || "No bio yet."} />
+              <SectionParagraph text={currentUser?.bio || "No bio yet."} />
             </SectionContainer>
 
             {/* Languages */}
             <SectionContainer title={"languages"}>
               <ul className="flex flex-col gap-1">
-                {currentUser?.languages?.map((lang, i) => (
+                {currentUser?.lang_spoken?.map((lang, i) => (
                   <li key={i} className="text-base text-indigo-100">
                     {lang.name} - {lang.proficiency}
                   </li>
