@@ -2,19 +2,20 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useUserContext } from "@/app/contexts/UserContext"; // ✅ IMPORT CONTEXT
+import { useUserContext } from "@/app/contexts/UserContext";
+import { authService } from "@/utils/auth";
+import { apiCall, endpoints } from "@/utils/api";
 
 export default function SignInForm() {
   const router = useRouter();
-  const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
   const [checking, setChecking] = useState(true);
   const [form, setForm] = useState({ username: "", password: "" });
+  const [loading, setLoading] = useState(false);
 
-  const { loginUser } = useUserContext(); // ✅ USE CONTEXT FUNCTION
+  const { loginUser } = useUserContext();
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("authToken");
     if (token) {
       router.push("/");
     } else {
@@ -29,32 +30,21 @@ export default function SignInForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
     try {
-      const res = await fetch(`${API_URL}/api-token-auth/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
+      // Use the auth service to login
+      const response = await authService.login(form);
+      
+      if (response.token) {
+        // Fetch user details using our service
+        const userData = await apiCall(endpoints.getUserByUsername(form.username), {
+          headers: {
+            Authorization: `Token ${response.token}`,
+          },
+        });
 
-      const data = await res.json();
-
-      if (res.ok && data.token) {
-        localStorage.setItem("token", data.token);
-
-        // ✅ Fetch user details
-        const userRes = await fetch(
-          `${API_URL}/base/get_user_by_username/${form.username}/`,
-          {
-            headers: {
-              Authorization: `Token ${data.token}`,
-            },
-          }
-        );
-
-        const userData = await userRes.json();
-
-        if (userRes.ok && userData.id) {
+        if (userData.id) {
           const userToStore = {
             id: userData.id,
             username: userData.username,
@@ -63,8 +53,9 @@ export default function SignInForm() {
             role: userData.is_freelancer ? "freelancer" : "customer",
           };
 
-          // ✅ Use loginUser to update context + localStorage
+          // Update context and localStorage
           loginUser(userToStore);
+          authService.updateUserData(userToStore);
 
           alert("Sign in successful!");
           router.push("/");
@@ -72,12 +63,13 @@ export default function SignInForm() {
           alert("Could not fetch user info");
         }
       } else {
-        console.log("Error response:", data);
-        alert(data.detail || JSON.stringify(data));
+        alert("Login failed. Please check your credentials.");
       }
     } catch (err) {
       console.error("Sign in error:", err);
-      alert("Something went wrong. Please try again.");
+      alert(err.message || "Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -116,9 +108,10 @@ export default function SignInForm() {
 
         <button
           type="submit"
-          className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg transition"
+          disabled={loading}
+          className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 text-white py-3 rounded-lg transition"
         >
-          Sign In
+          {loading ? "Signing In..." : "Sign In"}
         </button>
 
         <div className="mt-4 text-center">

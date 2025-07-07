@@ -299,6 +299,14 @@ body.dark-mode .gig-card-fav {
   color: var(--primary-dark-hover);
 }
 
+.gig-card-duration {
+  font-size: 1rem;
+  color: var(--primary-color);
+  margin-top: 4px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
 .gig-filters-container {
   display: flex;
   justify-content: space-between;

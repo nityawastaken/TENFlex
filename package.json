@@ -9,13 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "bcrypt": "^6.0.0",
-    "bcryptjs": "^3.0.2",
-    "cloudinary": "^2.6.1",
-    "cookie": "^1.0.2",
-    "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.515.0",
-    "mongoose": "^8.15.2",
     "next": "15.3.3",
     "react": "^19.0.0",
     "react-css-spinners": "^4.0.2",

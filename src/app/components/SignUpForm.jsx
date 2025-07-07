@@ -2,25 +2,26 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { authService } from "@/utils/auth";
 
 export default function SignUpForm() {
   const router = useRouter();
-  const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
   const [form, setForm] = useState({
     name: "",
     email: "",
     password: "",
-    confirmPassword: "", // ← added
+    confirmPassword: "",
     location: "",
     userType: "freelancer",
   });
 
   const [errors, setErrors] = useState({});
   const [checking, setChecking] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("authToken");
     if (token) {
       router.push("/");
     } else {
@@ -99,35 +100,25 @@ export default function SignUpForm() {
     setErrors(validationErrors);
     if (Object.keys(validationErrors).length > 0) return;
 
+    setLoading(true);
+
     try {
-      const res = await fetch(`${API_URL}/base/users/create/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username: form.name,
-          email: form.email,
-          password: form.password,
-          location: form.location,
-          is_freelancer: form.userType === "freelancer",
-        }),
+      // Use the auth service to signup
+      const response = await authService.signup({
+        username: form.name,
+        email: form.email,
+        password: form.password,
+        location: form.location,
+        is_freelancer: form.userType === "freelancer",
       });
 
-      const data = await res.json();
-      if (res.ok) {
-        alert("Sign-up successful!");
-        router.push("/signin");
-      } else {
-        // Handle errors from backend
-        const msg =
-          data?.detail ||
-          data?.message ||
-          Object.values(data)?.[0] ||
-          "Signup failed. Try again.";
-        alert(msg);
-      }
+      alert("Sign-up successful!");
+      router.push("/signin");
     } catch (err) {
       console.error("Signup error:", err);
-      alert("Something went wrong. Try again.");
+      alert(err.message || "Something went wrong. Try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -202,44 +193,6 @@ export default function SignUpForm() {
             </p>
           </div>
         )}
-
-        {/* Password Requirements */}
-        <div className="text-sm text-gray-300 space-y-1 mb-4">
-          <p
-            className={
-              /[a-z]/.test(form.password) ? "text-green-400" : "text-red-400"
-            }
-          >
-            {/[a-z]/.test(form.password) ? "✓" : "✗"} Must include a lowercase
-            letter
-          </p>
-          <p
-            className={
-              /[A-Z]/.test(form.password) ? "text-green-400" : "text-red-400"
-            }
-          >
-            {/[A-Z]/.test(form.password) ? "✓" : "✗"} Must include an uppercase
-            letter
-          </p>
-          <p
-            className={
-              /[^a-zA-Z0-9]/.test(form.password)
-                ? "text-green-400"
-                : "text-red-400"
-            }
-          >
-            {/[^a-zA-Z0-9]/.test(form.password) ? "✓" : "✗"} Must include a
-            special character
-          </p>
-          <p
-            className={
-              form.password.length >= 6 ? "text-green-400" : "text-red-400"
-            }
-          >
-            {form.password.length >= 6 ? "✓" : "✗"} At least 6 characters
-          </p>
-        </div>
-
         {errors.password && (
           <p className="text-red-500 text-sm mb-4">{errors.password}</p>
         )}
@@ -275,34 +228,50 @@ export default function SignUpForm() {
         )}
 
         {/* User Type */}
-        <label className="block mb-2 text-sm">
-          Are you a Freelancer or Client?
-        </label>
-        <select
-          name="userType"
-          value={form.userType}
-          onChange={handleChange}
-          className="w-full p-3 mb-6 rounded-lg bg-gray-800 text-white focus:outline-none"
-        >
-          <option value="freelancer">Freelancer</option>
-          <option value="customer">Client</option>
-        </select>
+        <label className="block mb-2 text-sm">I want to</label>
+        <div className="flex gap-4 mb-6">
+          <label className="flex items-center">
+            <input
+              type="radio"
+              name="userType"
+              value="freelancer"
+              checked={form.userType === "freelancer"}
+              onChange={handleChange}
+              className="mr-2"
+            />
+            <span>Offer Services</span>
+          </label>
+          <label className="flex items-center">
+            <input
+              type="radio"
+              name="userType"
+              value="client"
+              checked={form.userType === "client"}
+              onChange={handleChange}
+              className="mr-2"
+            />
+            <span>Hire Services</span>
+          </label>
+        </div>
 
         <button
           type="submit"
-          className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-lg transition"
+          disabled={loading}
+          className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 text-white py-3 rounded-lg transition mb-4"
         >
-          Sign Up
+          {loading ? "Creating Account..." : "Create Account"}
         </button>
 
-        <div className="mt-4 text-center">
-          Already have an account?{" "}
-          <Link
-            href="/signin"
-            className="text-purple-400 hover:underline transition-all duration-200"
-          >
-            Sign In
-          </Link>
+        <div className="text-center">
+          <span>
+            Already have an account?{" "}
+            <Link
+              href="/signin"
+              className="text-purple-400 hover:underline transition-all duration-200"
+            >
+              Sign In
+            </Link>
+          </span>
         </div>
       </form>
     </div>

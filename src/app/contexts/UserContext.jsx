@@ -1,49 +1,51 @@
 "use client";
 import { createContext, useContext, useState, useEffect } from "react";
+import { authService } from "@/utils/auth";
 
 const UserContext = createContext();
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export function UserProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch current user using userId from localStorage
+  // Initialize user from localStorage
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user"));
-    const userId = user?.id;
-    const token = localStorage.getItem("token");
+    const user = authService.getCurrentUser();
+    const token = authService.getToken();
 
-    if (!userId || !token) {
+    if (!user || !token) {
       setLoading(false);
       return;
     }
 
-    async function fetchCurrentUser() {
-      try {
-        const res = await fetch(`${API_URL}/base/users/${userId}/`, {
-          headers: {
-            Authorization: `Token ${token}`,
-          },
-        });
-
-        if (!res.ok) throw new Error("User not found");
-
-        const data = await res.json();
-        setCurrentUser(data);
-      } catch (err) {
-        console.error("Error fetching current user:", err);
-        setCurrentUser(null);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchCurrentUser();
+    setCurrentUser(user);
+    setLoading(false);
   }, []);
 
+  const loginUser = (userData) => {
+    setCurrentUser(userData);
+    authService.updateUserData(userData);
+  };
+
+  const logoutUser = () => {
+    setCurrentUser(null);
+    authService.logout();
+  };
+
+  const updateUser = (userData) => {
+    setCurrentUser(userData);
+    authService.updateUserData(userData);
+  };
+
   return (
-    <UserContext.Provider value={{ currentUser, loading }}>
+    <UserContext.Provider value={{ 
+      currentUser, 
+      loading, 
+      loginUser, 
+      logoutUser, 
+      updateUser,
+      isAuthenticated: authService.isAuthenticated()
+    }}>
       {children}
     </UserContext.Provider>
   );

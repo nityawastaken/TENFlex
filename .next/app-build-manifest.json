@@ -21,10 +21,17 @@
       "static/chunks/main-app.js",
       "static/chunks/app/signup/page.js"
     ],
-    "/api/projects/user/route": [
+    "/gig-list/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/api/projects/user/route.js"
+      "static/css/app/gig-list/page.css",
+      "static/chunks/app/gig-list/page.js"
+    ],
+    "/gigDetails/[id]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/gigDetails/[id]/page.css",
+      "static/chunks/app/gigDetails/[id]/page.js"
     ],
     "/profile/[id]/page": [
       "static/chunks/webpack.js",
@@ -36,6 +43,11 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/profile/[id]/edit/page.js"
+    ],
+    "/_not-found/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/_not-found/page.js"
     ]
   }
 }

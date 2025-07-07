@@ -1,11 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 function GigImage({ image }) {
+  const [show, setShow] = useState(true);
+  if (!image || !show) return null;
   return (
     <img
       className="gig-image"
-      src="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=1000&auto=format&fit=crop"
-      alt="Person coding on laptop"
+      src={image}
+      alt="Gig visual"
+      style={{ maxHeight: '350px', width: '100%', objectFit: 'contain', background: '#181818' }}
+      onError={() => setShow(false)}
     />
   );
 }

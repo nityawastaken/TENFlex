@@ -7,6 +7,7 @@ import { Slider, Box, Typography } from "@mui/material";
 import GigCard from "@/app/components/GigCard";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { gigService } from "@/utils/services";
 
 const allLanguages = [
   "Any",
@@ -45,181 +46,65 @@ const priceOptions = [
   { label: "Above ₹15,000", min: 15000, max: 20000 },
 ];
 
-// const dummyFreelancers = [];
-const dummyFreelancers = [
-  {
-    name: "Alex Johnson",
-    title: "I will build your custom website or web app",
-    rating: 5.0,
-    reviews: 120,
-    price: 7500,
-    image: "https://randomuser.me/api/portraits/men/32.jpg",
-    badge: "Level 2",
-    tag: "TENFlex Choice",
-    duration: 7,
-    languages: ["English", "Hindi"],
-    location: "India",
-  },
-  {
-    name: "Priya Sharma",
-    title: "Full stack developer for modern web projects",
-    rating: 4.9,
-    reviews: 98,
-    price: 8200,
-    image: "https://randomuser.me/api/portraits/women/44.jpg",
-    badge: "Top Rated",
-    tag: "",
-    duration: 10,
-    languages: ["English"],
-    location: "USA",
-  },
-  {
-    name: "John Lee",
-    title: "Custom AI website development",
-    rating: 5.0,
-    reviews: 87,
-    price: 13400,
-    image: "https://randomuser.me/api/portraits/men/65.jpg",
-    badge: "Level 1",
-    tag: "",
-    duration: 14,
-    languages: ["English", "Chinese"],
-    location: "China",
-  },
-  {
-    name: "Sara Kim",
-    title: "Frontend & backend web solutions",
-    rating: 4.8,
-    reviews: 110,
-    price: 9900,
-    image: "https://randomuser.me/api/portraits/women/68.jpg",
-    badge: "",
-    tag: "",
-    duration: 5,
-    languages: ["English", "French"],
-    location: "France",
-  },
-  {
-    name: "David Miller",
-    title: "E-commerce & business website expert",
-    rating: 5.0,
-    reviews: 75,
-    price: 12000,
-    image: "https://randomuser.me/api/portraits/men/23.jpg",
-    badge: "Level 2",
-    tag: "",
-    duration: 12,
-    languages: ["English", "German"],
-    location: "Germany",
-  },
-  {
-    name: "Emily Clark",
-    title: "React & Node.js full stack developer",
-    rating: 4.7,
-    reviews: 60,
-    price: 10500,
-    image: "https://randomuser.me/api/portraits/women/12.jpg",
-    badge: "",
-    tag: "",
-    duration: 8,
-    languages: ["English", "Spanish"],
-    location: "Spain",
-  },
-  {
-    name: "Mohit Verma",
-    title: "Custom web app & API developer",
-    rating: 5.0,
-    reviews: 140,
-    price: 11500,
-    image: "https://randomuser.me/api/portraits/men/41.jpg",
-    badge: "Level 2",
-    tag: "",
-    duration: 6,
-    languages: ["English", "Hindi"],
-    location: "India",
-  },
-  {
-    name: "Anna Petrova",
-    title: "Modern UI/UX & web development",
-    rating: 4.9,
-    reviews: 102,
-    price: 9800,
-    image: "https://randomuser.me/api/portraits/women/50.jpg",
-    badge: "",
-    tag: "",
-    duration: 9,
-    languages: ["English", "Russian"],
-    location: "Russia",
-  },
-  {
-    name: "Carlos Diaz",
-    title: "Full stack solutions for your business",
-    rating: 4.8,
-    reviews: 88,
-    price: 8700,
-    image: "https://randomuser.me/api/portraits/men/77.jpg",
-    badge: "",
-    tag: "",
-    duration: 11,
-    languages: ["English", "Spanish"],
-    location: "Spain",
-  },
-  {
-    name: "Linda Wang",
-    title: "Professional website & dashboard dev",
-    rating: 5.0,
-    reviews: 99,
-    price: 11200,
-    image: "https://randomuser.me/api/portraits/women/33.jpg",
-    badge: "Top Rated",
-    tag: "",
-    duration: 13,
-    languages: ["English", "Chinese"],
-    location: "China",
-  },
-  {
-    name: "Ravi Patel",
-    title: "Backend APIs & scalable web apps",
-    rating: 4.9,
-    reviews: 70,
-    price: 9300,
-    image: "https://randomuser.me/api/portraits/men/12.jpg",
-    badge: "",
-    tag: "",
-    duration: 7,
-    languages: ["English", "Hindi"],
-    location: "India",
-  },
-  {
-    name: "Julia Smith",
-    title: "Landing pages & business websites",
-    rating: 5.0,
-    reviews: 55,
-    price: 7800,
-    image: "https://randomuser.me/api/portraits/women/21.jpg",
-    badge: "",
-    tag: "",
-    duration: 6,
-    languages: ["English", "French"],
-    location: "France",
-  },
-];
-
 function GigList() {
-  const [duration, setDuration] = useState(7); // Changed back to single value
+  const [duration, setDuration] = useState(7);
   const [price, setPrice] = useState({ min: 0, max: 20000 });
   const [language, setLanguage] = useState("Any");
   const [location, setLocation] = useState("Any");
-  const [sortBy, setSortBy] = useState("recent"); // Default sort by recent
+  const [sortBy, setSortBy] = useState("recent");
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showSort, setShowSort] = useState(false);
+  const [gigs, setGigs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const filtersRef = useRef();
-
   const width = useScreenWidth();
-
   const searchParams = useSearchParams();
   const searchQuery = searchParams.get("search")?.toLowerCase() || "";
+
+  useEffect(() => {
+    const fetchGigs = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        let filters = {};
+        if (searchQuery.trim() !== "") {
+          filters.search = searchQuery;
+        }
+        console.log("Fetching gigs from backend with filters:", filters);
+        const backendGigs = await gigService.getAllGigs(filters);
+        console.log("Backend gigs response:", backendGigs);
+        const mapped = backendGigs.map(gig => ({
+          id: gig.id,
+          name: gig.freelancer || "Unknown",
+          title: gig.title || "Untitled",
+          rating: gig.avg_rating ?? 0,
+          reviews: gig.review_count ?? 0,
+          price: gig.price ?? 0,
+          image: gig.picture
+            ? (gig.picture.startsWith("http")
+                ? gig.picture
+                : `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}${gig.picture}`)
+            : "https://via.placeholder.com/300x200?text=No+Image",
+          badge: "",
+          tag: "",
+          duration: gig.delivery_time ?? 0,
+          languages: ["English"],
+          location: "Any",
+        }));
+        console.log('Mapped gigs:', mapped);
+        setGigs(mapped);
+      } catch (err) {
+        setError("Failed to fetch gigs");
+        console.error("Error fetching gigs:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchGigs();
+  }, [searchQuery]);
 
   useEffect(() => {
     // Check if user has a theme preference in localStorage
@@ -265,7 +150,17 @@ function GigList() {
     return `₹${value.toLocaleString()}`;
   };
 
-  const filtered = dummyFreelancers
+  const handleSearchChange = (event) => {
+    setSearchTerm(event.target.value);
+  };
+
+  const handleSearchKeyDown = (event) => {
+    if (event.key === "Enter") {
+      setSearchTerm(event.target.value);
+    }
+  };
+
+  const filtered = gigs
     .filter(
       (f) =>
         (duration === 7 || f.duration <= duration) &&
@@ -285,12 +180,22 @@ function GigList() {
           return a.duration - b.duration;
         case "duration-desc":
           return b.duration - a.duration;
+        case "rating-desc":
+          return b.rating - a.rating;
+        case "rating-asc":
+          return a.rating - b.rating;
         case "recent":
         default:
           return 0;
       }
     });
 
+  if (loading) {
+    return <div className="flex justify-center items-center min-h-[200px]">Loading gigs...</div>;
+  }
+  if (error) {
+    return <div className="text-center text-red-600 p-4">{error}</div>;
+  }
 
   return (
     <div className="gig-list-container mt-18">
@@ -436,6 +341,8 @@ function GigList() {
                 <option value="price-desc">Price: High to Low</option>
                 <option value="duration-asc">Duration: Short to Long</option>
                 <option value="duration-desc">Duration: Long to Short</option>
+                <option value="rating-desc">Rating: High to Low</option>
+                <option value="rating-asc">Rating: Low to High</option>
               </select>
             </div>
           )
@@ -448,21 +355,26 @@ function GigList() {
               <option value="price-desc">Price: High to Low</option>
               <option value="duration-asc">Duration: Short to Long</option>
               <option value="duration-desc">Duration: Long to Short</option>
+              <option value="rating-desc">Rating: High to Low</option>
+              <option value="rating-asc">Rating: Low to High</option>
             </select>
           </div>
         )}
       </div>
       {filtered.length === 0 ? (
         <div className="no-freelancers-message">
-          No freelancers found matching your filters.
+          No gigs found matching your filters.
         </div>
       ) : (
         <div className="gig-list-grid">
-          {filtered.map((f, i) => (
-            <Link href={`/gigDetails`} key={i}>
+          {filtered.map((f, i) => {
+            console.log('Gig in list:', f);
+            return (
+              <Link href={`/gigDetails/${f.id}`} key={i}>
               <GigCard f={f} />
             </Link>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

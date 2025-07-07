@@ -24,6 +24,7 @@ const GigCard = ({ f }) => {
           <span className="gig-card-reviews">({f.reviews})</span>
         </div>
         <div className="gig-card-price">From ₹{f.price.toLocaleString()}</div>
+        <div className="gig-card-duration">Duration: {f.duration} day{f.duration === 1 ? '' : 's'}</div>
       </div>
     </div>
   );

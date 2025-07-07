@@ -57,7 +57,9 @@ const Navbar = () => {
     e.preventDefault();
     const query = e.target.search.value.trim();
     if (query) {
-      router.push(`/search?query=${encodeURIComponent(query)}`);
+      router.push(`/gig-list?search=${encodeURIComponent(query)}`);
+    } else {
+      router.push('/gig-list');
     }
   };
 

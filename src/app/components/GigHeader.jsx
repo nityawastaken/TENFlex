@@ -1,6 +1,6 @@
 import React from 'react';
 
-function GigHeader({ service_text, avg_rating, user_id, num_reviews }) {
+function GigHeader({ service_text, avg_rating, user_id, num_reviews, orders_in_queue }) {
   return (
     <div className="gig-header">
       <h2>{service_text}</h2>
@@ -14,7 +14,7 @@ function GigHeader({ service_text, avg_rating, user_id, num_reviews }) {
         <span className="separator">|</span>
         <span>{user_id}</span>
         <span className="separator">|</span>
-        <span>0 Orders in Queue</span> {/* Placeholder for orders in queue */}
+        <span>{orders_in_queue} Orders in Queue</span>
       </div>
     </div>
   );
