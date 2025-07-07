@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authService } from "@/utils/auth";
+import ErrorAlert from "./ErrorAlert";
 
 export default function SignUpForm() {
   const router = useRouter();
@@ -19,6 +20,8 @@ export default function SignUpForm() {
   const [errors, setErrors] = useState({});
   const [checking, setChecking] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+    const [isError, setIsError] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
@@ -26,6 +29,13 @@ export default function SignUpForm() {
       router.push("/");
     } else {
       setChecking(false);
+    }
+    if (isError) {
+      const timer = setTimeout(() => {
+        setIsError(false);
+        setError("");
+      }, 5000);
+      return () => clearTimeout(timer); // Clean up
     }
   }, []);
 
@@ -112,20 +122,30 @@ export default function SignUpForm() {
         is_freelancer: form.userType === "freelancer",
       });
 
-      alert("Sign-up successful!");
+      // alert("Sign-up successful!");
       router.push("/signin");
     } catch (err) {
       console.error("Signup error:", err);
-      alert(err.message || "Something went wrong. Try again.");
+      // alert(err.message || "Something went wrong. Try again.");
+      setError(err.message || "Something went wrong. Try again.");
+      setIsError(true);
     } finally {
       setLoading(false);
     }
   };
 
+ if (isError) {
+    setTimeout(() => {
+      setIsError(false);
+      setError("");
+    }, 3000);
+  }
+
   if (checking) return null;
 
   return (
     <div className="bg-gray-950 text-white font-sans min-h-screen flex flex-col items-center py-12 px-4 mt-20">
+      {isError && <ErrorAlert error={error} />}
       <form
         onSubmit={handleSubmit}
         className="w-full max-w-md p-8 bg-gray-900 rounded-2xl shadow-2xl"
