@@ -8,6 +8,8 @@ import { apiCall, endpoints } from "@/utils/api";
 import ErrorAlert from "./ErrorAlert";
 import Popup from "./PopupModal";
 import axios from "axios";
+import { useDispatch } from "react-redux";
+import { setReduxUser } from "@/utils/redux/slices/userSlice";
 
 export default function SignInForm() {
   const router = useRouter();
@@ -17,11 +19,14 @@ export default function SignInForm() {
   const [showPopup, setShowPopup] = useState(false);
   const [error, setError] = useState("");
   const [isError, setIsError] = useState(false);
+  const [isFreelancer, setIsFreelancer] = useState(false);
+
+  const dispatch = useDispatch();
 
   const { loginUser } = useUserContext();
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("authToken");
     if (token) {
       router.push("/");
     } else {
@@ -56,25 +61,39 @@ export default function SignInForm() {
       );
 
       if (response.status === 200) {
-        localStorage.setItem("token", response.data.token);
+        localStorage.setItem("authToken", response.data.token);
 
         const userData = await axios.get(
           `${process.env.NEXT_PUBLIC_API_URL}/base/get_user_by_username/${form.username}`
         );
 
-        if (userData?.data.id) {
+        if (userData.data.id) {
           const userToStore = {
-            id: userData.id,
-            username: userData.username,
-            first_name: userData.first_name,
-            profile_picture: userData.profile_picture,
-            role: userData.is_freelancer ? "freelancer" : "customer",
+            id: userData.data.id,
+            username: userData.data.username,
+            first_name: userData.data.first_name,
+            profile_picture: userData.data.profile_picture,
+            role: userData.data.is_freelancer ? "freelancer" : "customer",
           };
 
           loginUser(userToStore);
-          // authService.updateUserData(userToStore);
+          authService.updateUserData(userToStore);
+          dispatch(setReduxUser(userToStore));
+          setIsFreelancer(userData.data.is_freelancer);
 
-          handlePopup();
+          if (isFreelancer) {
+            if (
+              userData.data.first_name === "" ||
+              userData.data.first_name === null
+            ) {
+              handlePopup();
+            } else {
+              // router.push("/freelancer-profile");
+            }
+          } else {
+            // router.push("/client-profile");
+            handlePopup();
+          }
         } else {
           // alert("Could not fetch user info");
           setError("Could not fetch user info");
@@ -107,7 +126,7 @@ export default function SignInForm() {
     <>
       {showPopup ? (
         <div className=" w-full">
-          <Popup setShowPopup={setShowPopup} handlePopup={handlePopup} />
+          <Popup setShowPopup={setShowPopup} handlePopup={handlePopup} isFreelancer={isFreelancer} />
         </div>
       ) : (
         <div className="bg-gray-950 text-white font-sans min-h-screen flex flex-col items-center py-12 px-4">

@@ -144,7 +144,7 @@ export default function SignUpForm() {
   if (checking) return null;
 
   return (
-    <div className="bg-gray-950 text-white font-sans min-h-screen flex flex-col items-center py-12 px-4 mt-20">
+    <div className="bg-gray-950 text-white font-sans min-h-screen flex flex-col items-center py-12 px-4 mt-24">
       {isError && <ErrorAlert error={error} />}
       <form
         onSubmit={handleSubmit}

@@ -12,7 +12,7 @@ const steps = [
   { label: "Experience", completed: false },
 ];
 
-const Popup = ({setShowPopup,handlePopup}) => {
+const Popup = ({setShowPopup,handlePopup, isFreelancer}) => {
   const width = useScreenWidth();
   const [show, setShow] = useState(true);
   const [showAnim, setShowAnim] = useState(false);
@@ -44,7 +44,7 @@ const Popup = ({setShowPopup,handlePopup}) => {
   return (
     <div
       className={`flex min-h-screen backdrop-blur-lg justify-center items-center ${
-        width <= 1024 ? `mt-24` : `mt-10`
+        width <= 1024 ? `mt-26` : `mt-10`
       }`}
     >
       {/* <button className="bg-blue-400 rounded-xl p-5" onClick={openPopup}>show</button> */}
@@ -116,7 +116,7 @@ const Popup = ({setShowPopup,handlePopup}) => {
               >
                 Do it later
               </Link>
-              <Link href={'/profile'}  className="bg-[#A020F0] text-white px-8 py-2 rounded-lg hover:bg-[#7e4f9b] transition font-semibold shadow-lg">
+              <Link href={isFreelancer? '/profile': '/client-profile'}  className="bg-[#A020F0] text-white px-8 py-2 rounded-lg hover:bg-[#7e4f9b] transition font-semibold shadow-lg">
                 Proceed
               </Link>
             </div>
