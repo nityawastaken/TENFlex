@@ -66,13 +66,15 @@ const page = () => {
   const [editContact, setEditContact] = useState(
     userData?.currentUser?.contact || ""
   );
+  const [editProfilePicture, setEditProfilePicture] = useState(
+    userData?.currentUser?.profile_picture || ""
+  );
   const [isSuccess, setIsSuccess] = useState(false);
   const [isError, setIsError] = useState(false);
 
   const [selectedStatus, setSelectedStatus] = useState("ongoing");
 
   const dispatch = useDispatch();
-
 
   const token =
     typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
@@ -88,12 +90,16 @@ const page = () => {
 
   const fetchUserData = async () => {
     try {
-      const response = await axios.get(`http://127.0.0.1:8000/base/users/14`, {
-        headers: {
-          Authorization: `Token ${token}`,
-        },
-      });
+      const response = await axios.get(
+        `http://127.0.0.1:8000/base/users/${userData.currentUser.id}`,
+        {
+          headers: {
+            Authorization: `Token ${token}`,
+          },
+        }
+      );
       // console.log("User data fetched successfully:", response);
+      dispatch(setReduxUser(response.data));
     } catch (error) {
       console.error("Error fetching user data:", error);
     }
@@ -129,9 +135,6 @@ const page = () => {
     return <div className="text-center mt-24 text-purple-300 ">Loading...</div>;
   }
 
-  const { first_name, id, profile_picture, username, bio, location } =
-    userData.currentUser;
-
   // Save handler
   const handleSave = async () => {
     try {
@@ -153,10 +156,10 @@ const page = () => {
           },
         }
       );
-      if (response.status === 200) {
-        dispatch(setReduxUser(newUserData))
+      if (response.data.id) {
+        dispatch(setReduxUser(response.data));
         setIsSuccess(true);
-        localStorage.setItem("user", JSON.stringify(newUserData));
+        localStorage.setItem("user", JSON.stringify(response.data));
       }
     } catch (err) {
       console.error("Error saving profile data:", err);
@@ -179,7 +182,7 @@ const page = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#1a1333] to-[#2d1a4d] text-white p-6 pt-28 flex">
-      {isSuccess && <SuccesAlert message={"Update Success"}/>}
+      {isSuccess && <SuccesAlert message={"Update Success"} />}
       {/* Sidebar */}
       <aside className="w-56 mr-8 hidden md:block">
         <nav className="sticky top-32 bg-[#24194a] rounded-lg shadow-lg p-4">
@@ -234,7 +237,17 @@ const page = () => {
         <Section ref={profileRef} id="profile" title="Profile">
           <div className="flex items-center gap-6 ">
             <div className="w-20 h-20 rounded-full bg-purple-700 flex items-center justify-center text-3xl font-bold">
-              {first_name?.[0] || "U"}
+              {editProfilePicture ? (
+                <div>
+                  <img
+                    src={editProfilePicture}
+                    alt="Profile"
+                    className="w-full h-full rounded-full object-cover"
+                  />
+                </div>
+              ) : (
+                <div> {editFirstName?.[0] || "U"} </div>
+              )}
             </div>
             <div className="flex-1">
               {editMode ? (
@@ -265,14 +278,14 @@ const page = () => {
                         required
                       />
                     </div>
-                    <input
+                    {/* <input
                       className="w-full bg-[#24194a] text-white rounded px-3 py-2 mb-1 focus:outline-none focus:ring-2 focus:ring-purple-500"
                       value={editEmail}
                       onChange={(e) => setEditEmail(e.target.value)}
                       placeholder="Email"
                       type="email"
                       required
-                    />
+                    /> */}
                     <div className="flex gap-3 mb-1 justify-around">
                       <input
                         className="w-full bg-[#24194a] text-white rounded px-3 py-2  focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -280,7 +293,6 @@ const page = () => {
                         onChange={(e) => setEditContact(e.target.value)}
                         placeholder="Contact Number"
                         type="number"
-                        required
                       />
                       <input
                         className="w-full bg-[#24194a] text-white rounded px-3 py-2  focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -288,7 +300,7 @@ const page = () => {
                         onChange={(e) => setEditLocation(e.target.value)}
                         placeholder="Your Location"
                         type="text"
-                        required
+                        // required
                       />
                     </div>
                     <textarea
@@ -319,21 +331,23 @@ const page = () => {
               ) : (
                 <>
                   <div className="text-2xl font-semibold">
-                    {first_name || "User Name"}
+                    {editFirstName + " " + editLastName || "User Name"}
                   </div>
-                  {/* {email && (
-                    <>
-                      {" "}
-                      <div className="text-purple-300">{email || "email"}</div>
-                      <div className="mt-2 text-gray-300">
-                        {contact || "bio"}
-                      </div>
-                      <div className="mt-2 text-gray-300">
-                        {location || "bio"}
-                      </div>
-                      <div className="mt-2 text-gray-300">{bio || "bio"}</div>{" "}
-                    </>
-                  )} */}
+
+                  <>
+                    {" "}
+                    <div className="text-purple-300">
+                      {editEmail || "email@emai.com"}
+                    </div>
+                    <div className="mt-2 text-gray-300">
+                      {editContact || "contact"}
+                    </div>
+                    <div className="mt-2 text-gray-300">
+                      {editLocation || "location"}
+                    </div>
+                    <div className="mt-2 text-gray-300">{editBio || "bio"}</div>{" "}
+                  </>
+
                   <button
                     className="mt-3 px-4 py-1 bg-purple-600 hover:bg-purple-800 rounded text-sm"
                     onClick={() => setEditMode(true)}

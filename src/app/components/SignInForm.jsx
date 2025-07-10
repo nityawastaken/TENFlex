@@ -10,6 +10,7 @@ import Popup from "./PopupModal";
 import axios from "axios";
 import { useDispatch } from "react-redux";
 import { setReduxUser } from "@/utils/redux/slices/userSlice";
+import SuccesAlert from "./SuccessAlert";
 
 export default function SignInForm() {
   const router = useRouter();
@@ -19,6 +20,7 @@ export default function SignInForm() {
   const [showPopup, setShowPopup] = useState(false);
   const [error, setError] = useState("");
   const [isError, setIsError] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const [isFreelancer, setIsFreelancer] = useState(false);
 
   const dispatch = useDispatch();
@@ -31,6 +33,13 @@ export default function SignInForm() {
       router.push("/");
     } else {
       setChecking(false);
+    }
+    if (isError) {
+      const timer = setTimeout(() => {
+        setIsError(false);
+        setError("");
+      }, 5000);
+      return () => clearTimeout(timer); // Clean up
     }
     if (isError) {
       const timer = setTimeout(() => {
@@ -79,6 +88,7 @@ export default function SignInForm() {
           loginUser(userToStore);
           authService.updateUserData(userToStore);
           dispatch(setReduxUser(userToStore));
+          setIsSuccess(true);
           setIsFreelancer(userData.data.is_freelancer);
 
           if (isFreelancer) {
@@ -88,11 +98,18 @@ export default function SignInForm() {
             ) {
               handlePopup();
             } else {
-              // router.push("/freelancer-profile");
+              router.push("/profile/"+userData.data.id);
             }
           } else {
-            // router.push("/client-profile");
-            handlePopup();
+            if (
+              userData.data.first_name === "" ||
+              userData.data.first_name === null
+            ) {
+              handlePopup();
+            }
+            else{
+              router.push("client-profile");
+            } 
           }
         } else {
           // alert("Could not fetch user info");
@@ -119,6 +136,11 @@ export default function SignInForm() {
       setError("");
     }, 3000);
   }
+  if (isSuccess) {
+    setTimeout(() => {
+      setIsSuccess(false);
+    }, 3000);
+  }
 
   if (checking) return null;
 
@@ -126,11 +148,16 @@ export default function SignInForm() {
     <>
       {showPopup ? (
         <div className=" w-full">
-          <Popup setShowPopup={setShowPopup} handlePopup={handlePopup} isFreelancer={isFreelancer} />
+          <Popup
+            setShowPopup={setShowPopup}
+            handlePopup={handlePopup}
+            isFreelancer={isFreelancer}
+          />
         </div>
       ) : (
         <div className="bg-gray-950 text-white font-sans min-h-screen flex flex-col items-center py-12 px-4">
           {isError && <ErrorAlert error={error} />}
+          {isSuccess && <SuccesAlert message={"Login Success"} />}
           <form
             onSubmit={handleSubmit}
             className="bg-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-md mx-auto mt-35"
