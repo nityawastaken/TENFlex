@@ -96,11 +96,11 @@ const page = () => {
     try {
       await reviewService.createReview({
         gig_id: gig.id,
-        rating: newReviewRating,
+      rating: newReviewRating,
         comment: newReviewText,
       });
-      setNewReviewText("");
-      setNewReviewRating(5);
+    setNewReviewText("");
+    setNewReviewRating(5);
       // Refresh reviews from backend
       const apiHost = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       const res = await fetch(`${apiHost}/base/reviews/?gig=${gig.id}`);
@@ -372,10 +372,10 @@ const page = () => {
                   </h4>
                   <p className="review-meta">
                     {review.country_code && review.country && (
-                      <img
-                        src={`https://flagsapi.com/${review.country_code}/flat/32.png`}
-                        alt="Country Flag"
-                        className="country-flag"
+                    <img
+                      src={`https://flagsapi.com/${review.country_code}/flat/32.png`}
+                      alt="Country Flag"
+                      className="country-flag"
                       />
                     )}
                     {review.country ? `${review.country} • ` : ''}

@@ -37,20 +37,21 @@ export default function SignInForm() {
       const response = await authService.login(form);
       
       if (response.token) {
-        // Fetch user details using our service
-        const userData = await apiCall(endpoints.getUserByUsername(form.username), {
+        // Fetch user details using the /base/users/me/ endpoint
+        const userProfileRes = await fetch("http://localhost:8000/base/users/me/", {
           headers: {
             Authorization: `Token ${response.token}`,
           },
         });
+        const userData = await userProfileRes.json();
 
-        if (userData.id) {
+        // Patch: support id, pk, or user_id
+        const userId = userData.id || userData.pk || userData.user_id;
+        if (userId) {
           const userToStore = {
-            id: userData.id,
-            username: userData.username,
-            first_name: userData.first_name,
-            profile_picture: userData.profile_picture,
-            role: userData.is_freelancer ? "freelancer" : "customer",
+            ...userData,
+            id: userId,
+            token: response.token,
           };
 
           // Update context and localStorage

@@ -4,6 +4,8 @@ import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { FaArrowRight } from "react-icons/fa6";
 import { useRouter } from "next/navigation";
+import { useTheme } from "@/app/contexts/ThemeContext";
+import { FaMoon, FaSun } from "react-icons/fa";
 
 const Navbar = () => {
   const sideMenuRef = useRef(null);
@@ -15,6 +17,8 @@ const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScroll, setIsScroll] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+
+  const { theme, toggleTheme } = useTheme();
 
   const getLinks = (role) => {
     const base = [
@@ -147,6 +151,15 @@ const Navbar = () => {
             ))}
           </ul>
 
+          {/* Theme Toggle Button */}
+          <button
+            onClick={toggleTheme}
+            className="ml-4 p-2 rounded-full border border-gray-400 text-white hover:bg-gray-800 transition"
+            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {theme === "dark" ? <FaSun /> : <FaMoon />}
+          </button>
+
           {user ? (
             <div className="text-white flex items-center gap-4">
               <Link
@@ -197,6 +210,14 @@ const Navbar = () => {
 
         {/* Mobile Hamburger */}
         <div className="lg:hidden flex items-center">
+          {/* Theme Toggle Button (mobile) */}
+          <button
+            onClick={toggleTheme}
+            className="mr-2 p-2 rounded-full border border-gray-400 text-white hover:bg-gray-800 transition"
+            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {theme === "dark" ? <FaSun /> : <FaMoon />}
+          </button>
           <button onClick={openMenu} className="text-white focus:outline-none">
             <svg
               className="w-8 h-8"
