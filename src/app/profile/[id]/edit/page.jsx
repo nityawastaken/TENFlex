@@ -1,13 +1,15 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { FaTrash } from "react-icons/fa";
+import { FaTrash, FaRegEdit } from "react-icons/fa";
 import { LuSave } from "react-icons/lu";
 import { IoClose } from "react-icons/io5";
 import { Tooltip } from 'react-tooltip';
 import { useParams, useRouter } from "next/navigation";
 import { CiLocationOn } from "react-icons/ci";
 import Select from 'react-select';
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -68,7 +70,7 @@ export default function Edit() {
         const user = JSON.parse(localStorage.getItem("user"));
         const token = user?.token;
         if (!token) {
-          router.push("/signin"); // or show a login modal
+          router.push("/signin");
           return;
         }
 
@@ -89,11 +91,11 @@ export default function Edit() {
           profile_picture: data.profile_picture || "",
           name: data.name || data.username || "",
           email: data.email || "",
+          contact: data.phone || data.contact || "",
           experience: data.experience_display || data.experience || "",
           avgRating: data.avg_rating ?? "N/A",
           ongoingOrders: data.inline_orders ?? 0,
           completedOrders: data.completed_orders ?? 0,
-          // add more fields as needed for your form
         });
       } catch (error) {
         console.error("Error fetching user:", error);
@@ -127,7 +129,6 @@ export default function Edit() {
       return;
     }
 
-    // Check if language already exists
     const languageExists = userData.languages.some(
       lang => lang.language === selectedLanguage
     );
@@ -148,7 +149,6 @@ export default function Edit() {
       ],
     });
     
-    // Reset form
     languageRef.current.value = "";
     proficiencyRef.current.value = "";
     handleLanguageModal();
@@ -156,6 +156,12 @@ export default function Edit() {
 
   const saveChanges = async () => {
     try {
+      // Validate contact field
+      if (userData.contact && userData.contact.length !== 10) {
+        alert("Contact number must be exactly 10 characters long.");
+        return;
+      }
+
       const user = JSON.parse(localStorage.getItem("user"));
       const token = user?.token;
       if (!token) {
@@ -164,11 +170,11 @@ export default function Edit() {
       }
 
       let response;
-      // If uploading a file, use FormData
       if (userData.profile_picture instanceof File) {
         const formData = new FormData();
         formData.append('location', userData.location);
         formData.append('bio', userData.about);
+        formData.append('contact', userData.contact);
         formData.append('profile_picture', userData.profile_picture);
         formData.append('languages', JSON.stringify(userData.languages));
         response = await fetch(`${API_URL}/base/users/${id}/`, {
@@ -179,12 +185,11 @@ export default function Edit() {
           body: formData,
         });
       } else {
-        // Otherwise, send JSON
         const body = {
           location: userData.location,
           bio: userData.about,
+          contact: userData.contact,
           languages: userData.languages,
-          // Only include profile_picture if user wants to remove it
           ...(userData.profile_picture === "" && { profile_picture: null }),
         };
         response = await fetch(`${API_URL}/base/users/${id}/`, {
@@ -192,9 +197,9 @@ export default function Edit() {
         headers: {
           "Content-Type": "application/json",
             Authorization: `Token ${token}`,
-        },
+          },
           body: JSON.stringify(body),
-      });
+        });
       }
 
       if (!response.ok) {
@@ -214,12 +219,18 @@ export default function Edit() {
 
   if (loading || languagesLoading) {
     return (
-      <div className="text-white text-center py-32">Loading user data...</div>
+      <main className="min-h-screen flex items-center justify-center bg-black text-white">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-purple-400"></div>
+      </main>
     );
   }
 
   if (!userData) {
-    return <div className="text-white text-center py-32">User not found.</div>;
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-black text-white">
+        User not found.
+      </main>
+    );
   }
 
   // Section/card fade-in and hover effect
@@ -228,95 +239,375 @@ export default function Edit() {
   const buttonClass = "px-4 py-2 bg-purple-600 hover:bg-purple-800 rounded text-white font-semibold transition-transform duration-200 hover:scale-105 hover:shadow-lg";
 
   return (
-    <div className="min-h-screen flex flex-col text-indigo-50 bg-gradient-to-br from-[#1a1333] to-[#2d1a4d] p-6 pt-28">
-      <main className="flex flex-col flex-grow gap-4 md:gap-6 md:px-8 max-w-2xl mx-auto w-full">
-        <div className={cardClass + " flex flex-row justify-between items-center"}>
-          <h1 className="font-bold text-xl md:text-2xl text-purple-400 flex items-center gap-2">Editing Profile <IoClose className="text-xl lg:text-2xl cursor-pointer hover:text-red-500 transition-colors duration-200" onClick={() => router.push(`/profile/${userData.name}`)} data-tooltip-id="close-tip" /><Tooltip id="close-tip">Cancel</Tooltip></h1>
-          <button className={buttonClass + " flex items-center gap-2"} onClick={saveChanges} data-tooltip-id="save-tip"><LuSave className="text-lg" /> Save <Tooltip id="save-tip">Save Changes</Tooltip></button>
-        </div>
-        {/* Profile Picture */}
-        <div className={cardClass + " flex flex-col gap-4 items-center"}>
-          <label className="text-base md:text-lg font-bold text-purple-300">Profile Picture</label>
-          {userData.profile_picture && (
-            <img src={typeof userData.profile_picture === 'string' ? userData.profile_picture : URL.createObjectURL(userData.profile_picture)} alt="Profile" className="w-32 h-32 md:w-36 md:h-36 object-cover rounded-full border-4 border-purple-400 shadow-lg" />
-          )}
-          <div className="flex gap-2">
-            <label htmlFor="profile-upload" className={buttonClass + " text-sm md:text-base cursor-pointer w-fit"}>Choose New Photo</label>
-            {userData.profile_picture && (
-              <button
-                type="button"
-                className={buttonClass + " bg-red-500 hover:bg-red-600 text-white text-sm md:text-base"}
-                onClick={() => setUserData({ ...userData, profile_picture: "" })}
-          >
-                Remove Photo
-              </button>
-            )}
+    <>
+      <style jsx global>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(30px); }
+          to { opacity: 1; transform: none; }
+        }
+        .animate-fadeIn { animation: fadeIn 0.7s cubic-bezier(0.4,0,0.2,1) both; }
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(32px); }
+          to { opacity: 1; transform: none; }
+        }
+        .animate-fadeInUp { animation: fadeInUp 0.7s cubic-bezier(0.4,0,0.2,1) both; }
+        @keyframes popIn {
+          0% { opacity: 0; transform: scale(0.95); }
+          80% { opacity: 1; transform: scale(1.03); }
+          100% { opacity: 1; transform: scale(1); }
+        }
+        .animate-popIn { animation: popIn 0.4s cubic-bezier(0.4,0,0.2,1) both; }
+        .glass-card {
+          background: rgba(36, 25, 74, 0.7);
+          box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          border-radius: 16px;
+          border: 1px solid rgba(255, 255, 255, 0.18);
+          transition: transform 0.25s cubic-bezier(0.4,0,0.2,1), box-shadow 0.25s cubic-bezier(0.4,0,0.2,1);
+        }
+        .glass-card:hover {
+          transform: translateY(-6px) scale(1.025);
+          box-shadow: 0 20px 40px 0 rgba(126, 87, 194, 0.25);
+        }
+        .glass-sidebar {
+          background: rgba(36, 25, 74, 0.85);
+          box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.25);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          border-radius: 20px;
+          border: 1.5px solid rgba(255,255,255,0.10);
+          transition: box-shadow 0.2s;
+        }
+        .glass-sidebar:hover {
+          box-shadow: 0 16px 32px 0 rgba(126, 87, 194, 0.18);
+        }
+        html {
+          scroll-behavior: smooth;
+        }
+      `}</style>
+      <div className="min-h-screen bg-gradient-to-br from-[#1a1333] to-[#2d1a4d] text-white p-6 pt-28 flex">
+        <ToastContainer position="bottom-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover theme="dark" />
+        
+        {/* Sidebar */}
+        <aside className="w-64 mr-8 hidden md:block animate-fadeInUp glass-sidebar transition-all duration-500" style={{ animationDelay: '0.2s', minWidth: '260px' }}>
+          <div className="flex flex-col items-center gap-6 py-8 px-6 bg-white/10 rounded-xl shadow-xl border border-white/10 backdrop-blur-md transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 animate-popIn" style={{ animationDelay: '0.25s' }}>
+            <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-white/30 shadow-md mb-2 bg-gray-900 flex items-center justify-center">
+              {userData?.profile_picture ? (
+                <img src={typeof userData.profile_picture === 'string' ? userData.profile_picture : URL.createObjectURL(userData.profile_picture)} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-3xl font-bold text-gray-200">{userData?.name?.[0] || 'U'}</span>
+              )}
+            </div>
+            <div className="text-xl font-semibold text-white text-center">{userData?.name || 'User Name'}</div>
+            <div className="flex items-center gap-2 text-gray-300 text-sm">
+              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16 12a4 4 0 01-8 0m8 0a4 4 0 00-8 0m8 0V8a4 4 0 00-8 0v4m8 0v4a4 4 0 01-8 0v-4" />
+              </svg>
+              {userData?.email || 'email@email.com'}
+            </div>
+            <div className="flex items-center gap-2 text-gray-300 text-sm">
+              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+              </svg>
+              {userData?.contact || 'Contact'}
+            </div>
+            <div className="flex items-center gap-2 text-gray-300 text-sm">
+              <CiLocationOn className="text-gray-400 text-lg" />
+              {userData?.location || 'Location'}
+            </div>
+            <div className="h-px w-full bg-gradient-to-r from-gray-700 via-gray-500 to-gray-700 opacity-30 my-4"></div>
+            <div className="w-full flex flex-col gap-3 text-xs">
+              <div className="flex items-center gap-2 justify-between">
+                <span className="text-gray-400">Experience</span>
+                <span className="px-2 py-0.5 rounded bg-gray-800 text-gray-100 font-medium tracking-wide min-w-[60px] text-center">{userData?.experience || 'N/A'}</span>
+              </div>
+              <div className="flex items-center gap-2 justify-between">
+                <span className="text-gray-400">Avg. Rating</span>
+                <span className="px-2 py-0.5 rounded bg-gray-800 text-yellow-300 font-semibold flex items-center gap-1 min-w-[60px] justify-center">{userData?.avgRating ?? 'N/A'} <svg className="w-3.5 h-3.5 text-yellow-300" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.455a1 1 0 00-1.175 0l-3.38 2.455c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.049 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" /></svg></span>
+              </div>
+              <div className="flex items-center gap-2 justify-between">
+                <span className="text-gray-400">Ongoing Orders</span>
+                <span className="px-2 py-0.5 rounded bg-gray-800 text-blue-200 font-semibold min-w-[60px] text-center">{userData?.ongoingOrders || 0}</span>
+              </div>
+              <div className="flex items-center gap-2 justify-between">
+                <span className="text-gray-400">Completed Orders</span>
+                <span className="px-2 py-0.5 rounded bg-gray-800 text-green-200 font-semibold min-w-[60px] text-center">{userData?.completedOrders || 0}</span>
+              </div>
+              {/* Languages (non-editable, with hover popup) */}
+              <div className="flex items-center gap-2 justify-between">
+                <span className="text-gray-400">Languages</span>
+                <div className="relative group">
+                  <span className="px-2 py-0.5 rounded bg-gray-800 text-purple-300 font-medium text-center max-w-[120px] truncate">
+                    {(() => {
+                      let languageNames = [];
+                      if (Array.isArray(userData?.languages) && userData.languages.length > 0) {
+                        languageNames = userData.languages.map(lang => {
+                          const languageName = availableLanguages.find(l => l.code === lang.language)?.name || lang.language;
+                          return languageName;
+                        });
+                      }
+                      return languageNames.length > 0 ? languageNames.join(', ') : 'N/A';
+                    })()}
+                  </span>
+                  {/* Hover Popup for multiple languages */}
+                  {(() => {
+                    let languageNames = [];
+                    if (Array.isArray(userData?.languages) && userData.languages.length > 0) {
+                      languageNames = userData.languages.map(lang => {
+                        const languageName = availableLanguages.find(l => l.code === lang.language)?.name || lang.language;
+                        return languageName;
+                      });
+                    }
+                    if (languageNames.length > 1) {
+                      return (
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto z-10">
+                          <div className="bg-[#1a1333] border border-purple-500/30 rounded-lg shadow-2xl p-3 min-w-[200px] max-w-[300px] backdrop-blur-md">
+                            <div className="text-xs font-semibold text-purple-300 mb-2 border-b border-purple-500/30 pb-1">All Languages:</div>
+                            <div className="space-y-1">
+                              {languageNames.map((lang, index) => (
+                                <div key={index} className="text-xs text-gray-200 flex items-center gap-2">
+                                  <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
+                                  {lang}
+                                </div>
+                              ))}
+                            </div>
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-[#1a1333]"></div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
+              </div>
+            </div>
           </div>
-          <input id="profile-upload" type="file" accept="image/*" onChange={(e) => { const file = e.target.files[0]; if (file) { setUserData({ ...userData, profile_picture: file }); } }} className="hidden" />
+          
+          {/* Action Buttons */}
+          <div className="mt-6 space-y-3">
+            <button
+              onClick={saveChanges}
+              className="w-full px-4 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-semibold transition-all duration-200 hover:scale-105 hover:shadow-lg flex items-center justify-center gap-2"
+            >
+              <LuSave className="text-lg" /> Save Changes
+            </button>
+            <button
+              onClick={() => router.push(`/profile/${id}`)}
+              className="w-full px-4 py-3 bg-gray-600 hover:bg-gray-700 rounded-lg text-white font-semibold transition-all duration-200 hover:scale-105 hover:shadow-lg flex items-center justify-center gap-2"
+            >
+              <IoClose className="text-lg" /> Cancel
+            </button>
+          </div>
+        </aside>
+
+        {/* Main Content */}
+        <div className="flex-1 max-w-4xl mx-auto">
+          {/* Header */}
+          <div className={cardClass + " animate-fadeInUp animate-popIn transition-all duration-500 hover:shadow-2xl hover:-translate-y-1"} style={{ animationDelay: '0.3s' }}>
+            <h1 className="text-2xl font-bold text-purple-400 mb-2 animate-popIn" style={{ animationDelay: '0.35s' }}>
+              Edit Profile
+            </h1>
+            <p className="text-gray-300">Update your profile information and settings</p>
         </div>
-        {/* Location */}
-        <div className={cardClass + " flex flex-col gap-2"}>
-          <label htmlFor="location" className="text-base font-bold md:text-lg text-purple-300">Location</label>
-          <input type="text" value={userData.location} onChange={(e) => setUserData({ ...userData, location: e.target.value })} className="border border-purple-700 rounded w-2/3 px-2 py-1 md:text-lg md:w-fit bg-[#24194a] text-white focus:ring-2 focus:ring-purple-400 transition-all" />
-        </div>
-        {/* About */}
-        <div className={cardClass + " flex flex-col gap-2"}>
-          <label htmlFor="about" className="text-base font-bold md:text-lg text-purple-300">About</label>
-          <textarea value={userData.about} onChange={(e) => setUserData({ ...userData, about: e.target.value })} rows={10} className="border border-purple-700 rounded px-2 py-1 md:text-lg bg-[#24194a] text-white focus:ring-2 focus:ring-purple-400 transition-all" />
-          <span className={`text-sm ${userData.about?.length > 500 ? 'text-red-400' : 'text-purple-300'}`}>Maximum 500 characters allowed. {userData.about?.length || 0}/500 characters</span>
-        </div>
-        {/* Languages */}
-        <div className={cardClass + " flex flex-col gap-4"}>
-          <h2 className="text-base font-bold md:text-lg text-purple-300 flex items-center gap-2">Languages <button className={buttonClass + " py-1 px-2 ml-2 text-xs"} onClick={handleLanguageModal} data-tooltip-id="add-lang-tip">Add<Tooltip id="add-lang-tip">Add New Language</Tooltip></button></h2>
-          <ul className="flex flex-col gap-2">
+
+          {/* Profile Picture Section */}
+          <div className={cardClass + " animate-fadeInUp animate-popIn transition-all duration-500 hover:shadow-2xl hover:-translate-y-1"} style={{ animationDelay: '0.4s' }}>
+            <h2 className="text-xl font-bold text-purple-400 mb-4 animate-popIn" style={{ animationDelay: '0.45s' }}>Profile Picture</h2>
+            <div className="flex flex-col md:flex-row items-center gap-6">
+              <div className="relative">
+                <div className="w-32 h-32 md:w-36 md:h-36 rounded-full overflow-hidden border-4 border-purple-400 shadow-lg bg-gray-800 flex items-center justify-center">
+                  {userData.profile_picture ? (
+                    <img 
+                      src={typeof userData.profile_picture === 'string' ? userData.profile_picture : URL.createObjectURL(userData.profile_picture)} 
+              alt="Profile"
+                      className="w-full h-full object-cover" 
+                    />
+                  ) : (
+                    <span className="text-4xl font-bold text-gray-400">{userData?.name?.[0] || 'U'}</span>
+                  )}
+                </div>
+                <div className="absolute -bottom-2 -right-2 bg-purple-600 rounded-full p-2 cursor-pointer hover:bg-purple-700 transition-colors">
+                  <label htmlFor="profile-upload" className="cursor-pointer">
+                    <FaRegEdit className="text-white text-sm" />
+          </label>
+                </div>
+              </div>
+              <div className="flex flex-col gap-3">
+                <label htmlFor="profile-upload" className={buttonClass + " text-sm cursor-pointer w-fit flex items-center gap-2"}>
+                  <FaRegEdit /> Choose New Photo
+          </label>
+                {userData.profile_picture && (
+                  <button
+                    type="button"
+                    className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded transition-all duration-200 hover:scale-105 hover:shadow-lg text-sm flex items-center gap-2"
+                    onClick={() => setUserData({ ...userData, profile_picture: "" })}
+                  >
+                    <FaTrash /> Remove Photo
+                  </button>
+                )}
+              </div>
+            </div>
+            <input id="profile-upload" type="file" accept="image/*" onChange={(e) => { const file = e.target.files[0]; if (file) { setUserData({ ...userData, profile_picture: file }); } }} className="hidden" />
+          </div>
+
+          {/* Personal Information Section */}
+          <div className={cardClass + " animate-fadeInUp animate-popIn transition-all duration-500 hover:shadow-2xl hover:-translate-y-1"} style={{ animationDelay: '0.5s' }}>
+            <h2 className="text-xl font-bold text-purple-400 mb-4 animate-popIn" style={{ animationDelay: '0.55s' }}>Personal Information</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-purple-300">Location</label>
+          <input
+            type="text"
+            value={userData.location}
+                  onChange={(e) => setUserData({ ...userData, location: e.target.value })} 
+                  placeholder="Enter your location"
+                  className="w-full border border-purple-700 rounded-lg px-4 py-3 bg-[#24194a] text-white focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all" 
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-purple-300">Contact Number</label>
+                <input 
+                  type="text" 
+                  value={userData.contact} 
+                  onChange={(e) => setUserData({ ...userData, contact: e.target.value })} 
+                  placeholder="Enter 10-digit phone number" 
+                  maxLength={10}
+                  className="w-full border border-purple-700 rounded-lg px-4 py-3 bg-[#24194a] text-white focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all" 
+                />
+                {userData.contact && userData.contact.length < 10 && (
+                  <span className="text-red-400 text-xs">Contact number must be exactly 10 characters long. Current: {userData.contact.length}/10</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* About Section */}
+          <div className={cardClass + " animate-fadeInUp animate-popIn transition-all duration-500 hover:shadow-2xl hover:-translate-y-1"} style={{ animationDelay: '0.6s' }}>
+            <h2 className="text-xl font-bold text-purple-400 mb-4 animate-popIn" style={{ animationDelay: '0.65s' }}>About</h2>
+            <div className="space-y-2">
+          <textarea
+            value={userData.about}
+                onChange={(e) => setUserData({ ...userData, about: e.target.value })} 
+                rows={6} 
+                placeholder="Tell us about yourself..."
+                className="w-full border border-purple-700 rounded-lg px-4 py-3 bg-[#24194a] text-white focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all resize-none" 
+              />
+              <div className="flex justify-between items-center">
+                <span className={`text-sm ${userData.about?.length > 500 ? 'text-red-400' : 'text-purple-300'}`}>
+                  Maximum 500 characters allowed. {userData.about?.length || 0}/500 characters
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Languages Section */}
+          <div className={cardClass + " animate-fadeInUp animate-popIn transition-all duration-500 hover:shadow-2xl hover:-translate-y-1"} style={{ animationDelay: '0.7s' }}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-purple-400 animate-popIn" style={{ animationDelay: '0.75s' }}>Languages</h2>
+              <button 
+                className={buttonClass + " py-2 px-4 text-sm flex items-center gap-2"} 
+                onClick={handleLanguageModal}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                Add Language
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {userData.languages.length > 0 ? (
               userData.languages.map((language, key) => (
-                <li key={key} className={cardInnerClass + " flex flex-row items-center gap-2 md:text-lg"}>
-                  <button className="cursor-pointer text-red-400 hover:text-red-200 transition-colors" onClick={() => deleteLanguage(key)} data-tooltip-id={`del-lang-tip-${key}`}><FaTrash /><Tooltip id={`del-lang-tip-${key}`}>Delete</Tooltip></button>
-                  {availableLanguages.find(lang => lang.code === language.language)?.name || language.language} - {proficiencyLevels.find(prof => prof.code === language.proficiency)?.name || language.proficiency}
-                </li>
+                  <div key={key} className={cardInnerClass + " flex items-center justify-between p-4"}>
+                    <div className="flex-1">
+                      <div className="font-semibold text-purple-200">
+                        {availableLanguages.find(lang => lang.code === language.language)?.name || language.language}
+                      </div>
+                      <div className="text-sm text-purple-300">
+                        {proficiencyLevels.find(prof => prof.code === language.proficiency)?.name || language.proficiency}
+                      </div>
+                    </div>
+                  <button
+                      className="text-red-400 hover:text-red-200 transition-colors p-2" 
+                    onClick={() => deleteLanguage(key)}
+                  >
+                    <FaTrash />
+                  </button>
+                  </div>
               ))
             ) : (
-              <p className="text-sm text-purple-300">No languages added yet.</p>
-            )}
-          </ul>
-          {isLanguageModalOpen ? (
-            <form className="flex flex-col gap-4 animate-fadeIn">
-              <div className="flex flex-row gap-4 md:text-lg">
-                <div className="w-2/3">
-                  <Select
-                  ref={languageRef}
-                    options={availableLanguages.map(lang => ({ value: lang.code, label: lang.name }))}
-                    classNamePrefix="rs"
-                    placeholder="Search or select language..."
-                    onChange={option => languageRef.current = { value: option.value, label: option.label }}
-                    styles={{
-                      control: (base) => ({ ...base, backgroundColor: '#24194a', borderColor: '#a78bfa', color: 'white', boxShadow: 'none' }),
-                      menu: (base) => ({ ...base, backgroundColor: '#24194a', color: 'white' }),
-                      option: (base, state) => ({ ...base, backgroundColor: state.isFocused ? '#6d28d9' : '#24194a', color: 'white', cursor: 'pointer' }),
-                      singleValue: (base) => ({ ...base, color: 'white' }),
-                      input: (base) => ({ ...base, color: 'white' }),
-                      placeholder: (base) => ({ ...base, color: '#a78bfa' }),
-                    }}
-                />
+                <div className="col-span-full text-center py-8 text-gray-400">
+                  <svg className="w-12 h-12 mx-auto mb-4 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                  <p>No languages added yet.</p>
+                  <p className="text-sm">Click "Add Language" to get started</p>
                 </div>
-                <select ref={proficiencyRef} className="border border-purple-700 rounded px-2 py-1 bg-[#24194a] text-white">
-                  <option value="">Select Level</option>
-                  {proficiencyLevels.map((level) => (
-                    <option key={level.code} value={level.code} className="text-black">
-                      {level.name}
+              )}
+            </div>
+
+            {/* Language Modal */}
+            {isLanguageModalOpen && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-purple-900/80 to-pink-900/80 backdrop-blur-md animate-fadeIn">
+                <div className="bg-gradient-to-br from-[#1a1333] to-[#24194a] rounded-2xl shadow-2xl p-8 relative animate-popIn max-w-md w-full mx-4 border border-purple-500/30">
+                  <button onClick={handleLanguageModal} className="absolute top-4 right-4 text-white text-2xl hover:text-purple-400 transition-colors bg-purple-600/20 hover:bg-purple-600/40 rounded-full w-8 h-8 flex items-center justify-center">&times;</button>
+                  <h3 className="text-xl font-bold text-purple-400 mb-6">Add New Language</h3>
+                  <form className="space-y-4" onSubmit={addLanguage}>
+                    <div>
+                      <label className="block text-sm font-semibold text-purple-300 mb-2">Language</label>
+                      <Select
+                  ref={languageRef}
+                        options={availableLanguages.map(lang => ({ value: lang.code, label: lang.name }))}
+                        classNamePrefix="rs"
+                        placeholder="Search or select language..."
+                        onChange={option => languageRef.current = { value: option.value, label: option.label }}
+                        styles={{
+                          control: (base) => ({ ...base, backgroundColor: '#24194a', borderColor: '#a78bfa', color: 'white', boxShadow: 'none' }),
+                          menu: (base) => ({ ...base, backgroundColor: '#24194a', color: 'white' }),
+                          option: (base, state) => ({ ...base, backgroundColor: state.isFocused ? '#6d28d9' : '#24194a', color: 'white', cursor: 'pointer' }),
+                          singleValue: (base) => ({ ...base, color: 'white' }),
+                          input: (base) => ({ ...base, color: 'white' }),
+                          placeholder: (base) => ({ ...base, color: '#a78bfa' }),
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-purple-300 mb-2">Proficiency Level</label>
+                <select
+                  ref={proficiencyRef}
+                        className="w-full border border-purple-700 rounded-lg px-4 py-3 bg-[#24194a] text-white focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                      >
+                        <option value="">Select Level</option>
+                        {proficiencyLevels.map((level) => (
+                          <option key={level.code} value={level.code} className="text-black">
+                            {level.name}
                       </option>
-                  ))}
+                        ))}
                 </select>
               </div>
-              <div className="grid grid-cols-2 gap-4 w-[220px]">
-                <button type="button" className={buttonClass + " bg-red-400 hover:bg-red-300 text-black"} onClick={handleLanguageModal}>Cancel</button>
-                <button type="submit" className={buttonClass + " bg-green-400 hover:bg-green-300 text-black"} onClick={addLanguage}>Save</button>
+                    <div className="flex gap-3 pt-4">
+                <button
+                        type="button" 
+                        className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg transition-all duration-200 hover:scale-105" 
+                  onClick={handleLanguageModal}
+                >
+                  Cancel
+                </button>
+                <button
+                        type="submit" 
+                        className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-all duration-200 hover:scale-105"
+                >
+                        Add Language
+                </button>
               </div>
             </form>
-          ) : null}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-      </main>
     </div>
+    </>
   );
 }

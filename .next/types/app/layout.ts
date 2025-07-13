@@ -1,4 +1,4 @@
-// File: C:\Rishi's Folder\Coding\Internship\Rishi's integration - Frontend\TENFlex\src\app\layout.jsx
+// File: C:\Rishi's Folder\Coding\Internship\final frontend to push\TENFlex\src\app\layout.jsx
 import * as entry from '../../../src/app/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

@@ -32,8 +32,12 @@ export const gigService = {
 
   // Delete gig
   async deleteGig(id) {
+    const token = (typeof window !== 'undefined') ? localStorage.getItem('authToken') : null;
     return await apiCall(endpoints.gigDetails(id), {
       method: 'DELETE',
+      headers: {
+        ...(token ? { 'Authorization': `Token ${token}` } : {}),
+      },
     });
   },
 
@@ -194,8 +198,13 @@ export const reviewService = {
 
   // Update review
   async updateReview(id, reviewData) {
+    const token = (typeof window !== 'undefined') ? localStorage.getItem('authToken') : null;
     return await apiCall(`${endpoints.reviews}${id}/`, {
       method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Token ${token}` } : {}),
+      },
       body: JSON.stringify(reviewData),
     });
   },

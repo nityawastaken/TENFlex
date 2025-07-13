@@ -7,7 +7,7 @@ import { CiLocationOn } from "react-icons/ci";
 import { GoPencil } from "react-icons/go";
 import { toast, ToastContainer } from "react-toastify";
 import Link from "next/link";
-import { FaRegEdit } from 'react-icons/fa';
+import { FaRegEdit, FaCopy, FaPencilAlt, FaTrash } from 'react-icons/fa';
 import { Tooltip } from 'react-tooltip';
 import { FaRegImage } from "react-icons/fa";
 import { formatDistanceToNow } from 'date-fns';
@@ -21,6 +21,8 @@ import "react-toastify/dist/ReactToastify.css";
 import { gigService } from '@/utils/services';
 import GigImage from "@/app/components/GigImage";
 import { orderService } from '@/utils/services';
+// Remove: import GigCard from "@/app/components/GigCard";
+// Remove: import "@/app/gig-list/GigList.css";
 
 // Add this mapping at the top of the file
 const LANGUAGE_CODE_TO_NAME = {
@@ -74,6 +76,46 @@ export default function ProfilePage() {
   // After fetching orders, set as_freelancer and as_buyer arrays
   const [freelancerOrders, setFreelancerOrders] = useState([]);
   const [buyerOrders, setBuyerOrders] = useState([]);
+
+  // Copy contact info function
+  const copyContactInfo = async (type, value) => {
+    let textToCopy = '';
+    let successMessage = '';
+    
+    switch(type) {
+      case 'email':
+        textToCopy = value;
+        successMessage = 'Email copied to clipboard!';
+        break;
+      case 'phone':
+        textToCopy = value;
+        successMessage = 'Phone number copied to clipboard!';
+        break;
+      default:
+        return;
+    }
+    
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+      toast.success(successMessage, {
+        position: "bottom-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    } catch (err) {
+      toast.error('Failed to copy to clipboard', {
+        position: "bottom-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    }
+  };
 
   // Fetch available languages and proficiency levels
   useEffect(() => {
@@ -217,6 +259,7 @@ useEffect(() => {
           name: (`${profileData.first_name || ""} ${profileData.last_name || ""}`.trim()) || profileData.username,
           location: profileData.location,
           email: profileData.email,
+          contact: profileData.phone || profileData.contact,
           role: profileData.role_display,
           purpose: profileData.use_purpose_display,
           experience: profileData.experience_display,
@@ -232,6 +275,7 @@ useEffect(() => {
           skills: profileData.skills,
           category_tags: profileData.category_tags,
           gig_ids: gigIds,
+          last_updated: profileData.last_updated,
         };
         setProfileUser(mappedProfile);
         setReviews(reviewsData.results || reviewsData); // handle paginated or array
@@ -261,27 +305,78 @@ useEffect(() => {
   };
 
   const handleDeleteAccount = async () => {
-    const confirmDelete = window.confirm("Are you sure you want to delete your account?");
+    const confirmDelete = window.confirm("Are you sure you want to delete your account? This action is irreversible.");
     if (!confirmDelete) return;
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/base/users/${currentUser.id}/`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      if (!res.ok) throw new Error("Failed to delete account");
+      const user = JSON.parse(localStorage.getItem("user"));
+      const token = user?.token;
+      if (!token) throw new Error("Not authenticated");
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/base/users/delete-account/`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Token ${token}`,
+        },
+      });
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || "Failed to delete account");
+      }
+      const data = await res.json();
+      toast.success(data.message || "Account deleted successfully", {
+        position: "bottom-right",
+        autoClose: 4000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      console.log("Delete response:", data);
       localStorage.removeItem("token");
-      localStorage.removeItem("userId");
-      toast.success("Account deleted successfully");
-      router.push("/signin");
+      localStorage.removeItem("user");
+      setTimeout(() => {
+        router.push("/signin");
+      }, 1500);
     } catch (error) {
       console.error("Error deleting account:", error);
-      toast.error("Could not delete account. Try again.");
+      toast.error("Could not delete account. Try again.", {
+        position: "bottom-right",
+        autoClose: 4000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    }
+  };
+
+  const handleDeleteGig = async (gigId, e) => {
+    e.stopPropagation();
+    const confirmDelete = window.confirm("Are you sure you want to delete this gig? This action is irreversible.");
+    if (!confirmDelete) return;
+    
+    try {
+      await gigService.deleteGig(gigId);
+      toast.success("Gig deleted successfully", {
+        position: "bottom-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      // Refresh the gigs list
+      const updatedGigs = gigs.filter(gig => gig.id !== gigId);
+      setGigs(updatedGigs);
+    } catch (error) {
+      console.error("Error deleting gig:", error);
+      toast.error("Could not delete gig. Try again.", {
+        position: "bottom-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
     }
   };
 
@@ -406,15 +501,82 @@ useEffect(() => {
         {/* Sidebar */}
         <aside className="w-64 mr-8 hidden md:block animate-fadeInUp glass-sidebar transition-all duration-500" style={{ animationDelay: '0.2s', minWidth: '260px' }}>
           <div className="flex flex-col items-center gap-6 py-8 px-6 bg-white/10 rounded-xl shadow-xl border border-white/10 backdrop-blur-md transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 animate-popIn" style={{ animationDelay: '0.25s' }}>
-            <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-white/30 shadow-md mb-2 bg-gray-900 flex items-center justify-center">
-              {profileUser?.profile_picture ? (
-                <img src={profileUser.profile_picture} alt="Profile" className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-3xl font-bold text-gray-200">{profileUser?.name?.[0] || 'U'}</span>
+            <div className="relative">
+              <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-white/30 shadow-md bg-gray-900 flex items-center justify-center">
+                {profileUser?.profile_picture ? (
+                  <img src={profileUser.profile_picture} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-3xl font-bold text-gray-200">{profileUser?.name?.[0] || 'U'}</span>
+                )}
+              </div>
+              {/* Progress Ring */}
+              {completionPercent !== null && (
+                <div className="absolute -inset-2">
+                  <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
+                    {/* Background Circle */}
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="45"
+                      stroke="rgba(156, 163, 175, 0.2)"
+                      strokeWidth="3"
+                      fill="none"
+                    />
+                    {/* Progress Circle */}
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="45"
+                      stroke="url(#progressGradient)"
+                      strokeWidth="3"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeDasharray={`${2 * Math.PI * 45}`}
+                      strokeDashoffset={`${2 * Math.PI * 45 * (1 - completionPercent / 100)}`}
+                      className="transition-all duration-1000 ease-out"
+                    />
+                    {/* Gradient Definition */}
+                    <defs>
+                      <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#A020F0" />
+                        <stop offset="100%" stopColor="#EC4899" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                </div>
               )}
             </div>
             <div className="text-xl font-semibold text-white text-center">{profileUser?.name || 'User Name'}</div>
-            <div className="flex items-center gap-2 text-gray-300 text-sm"><svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16 12a4 4 0 01-8 0m8 0a4 4 0 00-8 0m8 0V8a4 4 0 00-8 0v4m8 0v4a4 4 0 01-8 0v-4" /></svg>{profileUser?.email || 'email@email.com'}</div>
+            <div className="flex items-center gap-2 text-gray-300 text-sm group">
+              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16 12a4 4 0 01-8 0m8 0a4 4 0 00-8 0m8 0V8a4 4 0 00-8 0v4m8 0v4a4 4 0 01-8 0v-4" />
+              </svg>
+              <span>{profileUser?.email || 'email@email.com'}</span>
+              {isOwnProfile && (
+                <button 
+                  onClick={() => copyContactInfo('email', profileUser?.email)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-purple-400 hover:text-purple-300 p-1"
+                  title="Copy Email"
+                >
+                  <FaCopy className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-2 text-gray-300 text-sm group">
+              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 001.21-.502l4.493 1.498a1 1 0 00.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+              </svg>
+              <span>{profileUser?.contact || 'Contact'}</span>
+              {isOwnProfile && (
+                <button 
+                  onClick={() => copyContactInfo('phone', profileUser?.contact)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-purple-400 hover:text-purple-300 p-1"
+                  title="Copy Phone"
+                >
+                  <FaCopy className="w-3 h-3" />
+                </button>
+              )}
+            </div>
             <div className="flex items-center gap-2 text-gray-300 text-sm"><CiLocationOn className="text-gray-400 text-lg" />{profileUser?.location || 'Location'}</div>
             <div className="h-px w-full bg-gradient-to-r from-gray-700 via-gray-500 to-gray-700 opacity-30 my-4"></div>
             <div className="w-full flex flex-col gap-3 text-xs">
@@ -434,13 +596,72 @@ useEffect(() => {
                 <span className="text-gray-400">Completed Orders</span>
                 <span className="px-2 py-0.5 rounded bg-gray-800 text-green-200 font-semibold min-w-[60px] text-center">{completedOrdersCount}</span>
               </div>
+              <div className="flex items-center gap-2 justify-between">
+                <span className="text-gray-400">Languages</span>
+                <div className="relative group">
+                  <span className="px-2 py-0.5 rounded bg-gray-800 text-purple-300 font-medium text-center max-w-[120px] truncate">
+                    {(() => {
+                      if (Array.isArray(profileUser?.languages) && profileUser.languages.length > 0) {
+                        const languageNames = profileUser.languages.map(lang => {
+                          const languageName = availableLanguages.find(l => l.code === lang.language)?.name || lang.language;
+                          return languageName;
+                        });
+                        return languageNames.join(', ');
+                      } else if (Array.isArray(profileUser?.lang_spoken) && profileUser.lang_spoken.length > 0) {
+                        const languageNames = profileUser.lang_spoken.map(code => LANGUAGE_CODE_TO_NAME[code] || code);
+                        return languageNames.join(', ');
+                      } else {
+                        return 'N/A';
+                      }
+                    })()}
+                  </span>
+                  {/* Hover Popup for multiple languages */}
+                  {(() => {
+                    let languageNames = [];
+                    if (Array.isArray(profileUser?.languages) && profileUser.languages.length > 0) {
+                      languageNames = profileUser.languages.map(lang => {
+                        const languageName = availableLanguages.find(l => l.code === lang.language)?.name || lang.language;
+                        return languageName;
+                      });
+                    } else if (Array.isArray(profileUser?.lang_spoken) && profileUser.lang_spoken.length > 0) {
+                      languageNames = profileUser.lang_spoken.map(code => LANGUAGE_CODE_TO_NAME[code] || code);
+                    }
+                    
+                    if (languageNames.length > 1) {
+                      return (
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto z-10">
+                          <div className="bg-[#1a1333] border border-purple-500/30 rounded-lg shadow-2xl p-3 min-w-[200px] max-w-[300px] backdrop-blur-md">
+                            <div className="text-xs font-semibold text-purple-300 mb-2 border-b border-purple-500/30 pb-1">All Languages:</div>
+                            <div className="space-y-1">
+                              {languageNames.map((lang, index) => (
+                                <div key={index} className="text-xs text-gray-200 flex items-center gap-2">
+                                  <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
+                                  {lang}
+                                </div>
+                              ))}
+                            </div>
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-[#1a1333]"></div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
+              </div>
             </div>
+            {isOwnProfile && (
+              <div className="w-full mt-4">
+                <Link href={`/profile/${profileUser?.id}/edit`} className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-semibold transition-all duration-200 hover:scale-105 hover:shadow-lg flex items-center justify-center gap-2" style={{textDecoration: 'none'}}>
+                  <FaRegEdit className="text-base" /> Edit Profile
+                </Link>
+              </div>
+            )}
           </div>
           <div className="h-px w-full bg-gradient-to-r from-gray-700 via-gray-500 to-gray-700 opacity-30 my-4"></div>
           <nav className="sticky top-32 p-0">
             <ul className="space-y-2">
               <li><a href="#about" className="w-full block text-left px-4 py-2 rounded-lg font-semibold text-purple-300 hover:text-white hover:bg-purple-700/40 transition-all duration-200 sidebar-nav-item" data-tooltip-id="about-tip">About</a><Tooltip id="about-tip">About</Tooltip></li>
-              <li><a href="#languages" className="w-full block text-left px-4 py-2 rounded-lg font-semibold text-purple-300 hover:text-white hover:bg-purple-700/40 transition-all duration-200 sidebar-nav-item" data-tooltip-id="languages-tip">Languages</a><Tooltip id="languages-tip">Languages</Tooltip></li>
               <li><a href="#gigs" className="w-full block text-left px-4 py-2 rounded-lg font-semibold text-purple-300 hover:text-white hover:bg-purple-700/40 transition-all duration-200 sidebar-nav-item" data-tooltip-id="gigs-tip">Gigs</a><Tooltip id="gigs-tip">Gigs</Tooltip></li>
               <li><a href="#orders" className="w-full block text-left px-4 py-2 rounded-lg font-semibold text-purple-300 hover:text-white hover:bg-purple-700/40 transition-all duration-200 sidebar-nav-item" data-tooltip-id="orders-tip">Orders</a><Tooltip id="orders-tip">Orders</Tooltip></li>
               <li><a href="#reviews" className="w-full block text-left px-4 py-2 rounded-lg font-semibold text-purple-300 hover:text-white hover:bg-purple-700/40 transition-all duration-200 sidebar-nav-item" data-tooltip-id="reviews-tip">Reviews</a><Tooltip id="reviews-tip">Reviews</Tooltip></li>
@@ -468,177 +689,237 @@ useEffect(() => {
           <div id="about" className={cardClass + " animate-fadeInUp animate-popIn transition-all duration-500 hover:shadow-2xl hover:-translate-y-1"} style={{ animationDelay: '0.3s' }}>
             <h2 className="text-xl font-bold text-purple-400 mb-4 flex items-center gap-2 animate-popIn" style={{ animationDelay: '0.35s' }}>
               About
-              {isOwnProfile && (
-                <Link href={`/profile/${profileUser?.id}/edit`} className={buttonClass + " absolute top-6 right-6 flex items-center gap-2 text-sm"} style={{textDecoration: 'none'}}>
-                  <FaRegEdit className="text-base" /> Edit
-                </Link>
-              )}
                 </h2>
             <div className="text-base text-gray-200">{profileUser?.bio || "No bio yet."}</div>
               </div>
-          {/* Languages Section */}
-          <div id="languages" className={cardClass + " animate-fadeInUp animate-popIn transition-all duration-500 hover:shadow-2xl hover:-translate-y-1"} style={{ animationDelay: '0.35s' }}>
-            <h2 className="text-xl font-bold text-purple-400 mb-4 animate-popIn" style={{ animationDelay: '0.4s' }}>Languages</h2>
-              <ul className="flex flex-col gap-1">
-              {Array.isArray(profileUser?.languages) && profileUser.languages.length > 0 ? (
-                profileUser.languages.map((lang, i) => {
-                  const languageName = availableLanguages.find(l => l.code === lang.language)?.name || lang.language;
-                  const proficiencyName = proficiencyLevels.find(p => p.code === lang.proficiency)?.name || lang.proficiency;
-                  return (
-                    <li key={i} className="text-base text-purple-300">
-                      {languageName} ({proficiencyName})
-                  </li>
-                  );
-                })
-              ) : Array.isArray(profileUser?.lang_spoken) && profileUser.lang_spoken.length > 0 ? (
-                profileUser.lang_spoken.map((code, i) => (
-                  <li key={i} className="text-base text-purple-300">
-                    {LANGUAGE_CODE_TO_NAME[code] || code}
-                    </li>
-                ))
-              ) : (
-                <li className="text-base text-purple-300">N/A</li>
-              )}
-              </ul>
-          </div>
           {/* Gigs Section (was Services) */}
           <div id="gigs" className={cardClass + " animate-fadeInUp animate-popIn transition-all duration-500 hover:shadow-2xl hover:-translate-y-1"} style={{ animationDelay: '0.4s' }}>
-            <h2 className="text-xl font-bold text-purple-400 mb-4 animate-popIn" style={{ animationDelay: '0.45s' }}>Gigs</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-purple-400 animate-popIn" style={{ animationDelay: '0.45s' }}>Gigs</h2>
+              {isOwnProfile && (
+                <button 
+                  onClick={() => router.push('/create-gig')}
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-lg flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                  </svg>
+                  Create Gig
+                </button>
+              )}
+            </div>
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
               {gigs.length === 0 ? (
                 <div className="text-gray-300">No gigs found.</div>
               ) : (
                 gigs.map(gig => {
-                  // Helper to get correct image URL
-                  const getImageUrl = (picture) => {
-                    if (!picture) return undefined;
-                    if (picture.startsWith('http')) return picture;
-                    return `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}${picture}`;
-                  };
-                  const imageUrl = getImageUrl(gig.picture);
+                  const imageUrl = gig.picture
+                    ? (gig.picture.startsWith("http")
+                        ? gig.picture
+                        : `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}${gig.picture}`)
+                    : "https://via.placeholder.com/300x200?text=No+Image";
                   return (
-                    <Link key={gig.id} href={`/gigDetails/${gig.id}`} className="block">
-                      <div className="gig-profile-card group flex flex-col gap-2 items-center h-full min-h-[260px] transition-transform duration-300 rounded-2xl shadow-lg border border-purple-900/30 bg-gradient-to-br from-gray-900 via-[#1a1333] to-[#24194a] hover:scale-105 hover:shadow-2xl hover:border-purple-500 relative overflow-hidden">
-                        <div className="w-full flex justify-center items-center mb-2 h-48 bg-gradient-to-tr from-[#A020F0]/30 to-[#24194a] rounded-xl overflow-hidden relative shadow-md group-hover:shadow-xl transition-all duration-300">
-                          {imageUrl ? (
-                            <GigImage image={imageUrl} />
-                          ) : (
-                            <div className="flex flex-col items-center justify-center w-full h-full text-gray-500">
-                              <FaRegImage className="text-3xl md:text-4xl mb-1" />
-                              <span className="text-xs">No Image</span>
-                            </div>
-                          )}
-                          <div className="absolute top-2 left-2 bg-[#A020F0]/80 text-white text-[10px] px-2 py-0.5 rounded-full shadow font-semibold tracking-wide group-hover:bg-purple-700/90 transition">GIG</div>
-                        </div>
-                        <div className="font-semibold text-purple-200 text-xs md:text-sm text-center line-clamp-2 group-hover:text-white transition">{gig.title}</div>
-                        <div className="font-bold text-purple-400 text-xs md:text-sm text-center group-hover:text-[#A020F0] transition">From ${Number(gig.price).toLocaleString(undefined, { minimumFractionDigits: 0 })}</div>
+                    <div
+                      key={gig.id}
+                      className="bg-gradient-to-br from-gray-900 via-[#1a1333] to-[#24194a] rounded-xl shadow-lg border border-purple-900/30 hover:border-purple-500 hover:shadow-2xl transition-all duration-300 flex flex-col overflow-hidden group w-[270px] min-w-[270px] flex-shrink-0 cursor-pointer"
+                      onClick={() => router.push(`/gigDetails/${gig.id}`)}
+                    >
+                      <div className="relative w-full h-[130px] bg-gray-800 flex items-center justify-center">
+                        <img src={imageUrl} alt={gig.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                        <button className="absolute top-2 right-2 bg-transparent border-none text-xl text-gray-400 hover:text-[#A020F0] transition-colors">♡</button>
+                        {isOwnProfile && (
+                          <div className="absolute top-2 left-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
+                            <button 
+                              className="bg-purple-600 hover:bg-purple-700 text-white p-1.5 rounded-md transition-all duration-200 hover:scale-110 shadow-lg"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/edit-gig/${gig.id}`);
+                              }}
+                              title="Edit Gig"
+                            >
+                              <FaPencilAlt className="w-3 h-3" />
+                            </button>
+                            <button 
+                              className="bg-purple-600 hover:bg-red-600 text-white p-1.5 rounded-md transition-all duration-200 hover:scale-110 shadow-lg"
+                              onClick={(e) => handleDeleteGig(gig.id, e)}
+                              title="Delete Gig"
+                            >
+                              <FaTrash className="w-3 h-3" />
+                            </button>
+                          </div>
+                        )}
                       </div>
-                    </Link>
+                      <div className="flex-1 flex flex-col p-3 gap-2">
+                        <div className="flex items-center gap-2 mb-1">
+                          <img src={imageUrl} alt={gig.name || gig.freelancer || "Unknown"} className="w-6 h-6 rounded-full object-cover border border-purple-500 bg-gray-900" />
+                          <span className="text-sm font-semibold text-purple-200 truncate">{gig.freelancer || gig.name || "Unknown"}</span>
+                        </div>
+                        <div className="font-semibold text-purple-100 text-sm line-clamp-2 group-hover:text-white transition break-words">{gig.title || "Untitled"}</div>
+                        {gig.created_at && (
+                          <div className="text-xs text-purple-300 mt-1">Created: {new Date(gig.created_at).toLocaleDateString()}</div>
+                        )}
+                        <div className="flex items-center gap-2 text-xs text-yellow-400">
+                          <span>★ {gig.avg_rating ?? gig.rating ?? 0}</span>
+                          <span className="text-gray-400">({gig.review_count ?? gig.reviews ?? 0})</span>
+                        </div>
+                        <div className="flex items-center justify-between mt-1">
+                          <span className="font-bold text-purple-400 text-sm">From ₹{(gig.price ?? 0).toLocaleString()}</span>
+                          <span className="text-xs text-gray-300">{gig.delivery_time ?? gig.duration ?? 0}d</span>
+                        </div>
+                      </div>
+                    </div>
                   );
                 })
               )}
+            </div>
+            <div className="flex justify-center mt-4">
+              <div className="flex items-center gap-2 text-xs text-gray-400">
+                <svg className="w-4 h-4 animate-pulse" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M7 16l-4-4m0 0l4-4m-4 4h18" />
+                </svg>
+                <span>Scroll horizontally to see more gigs</span>
+                <svg className="w-4 h-4 animate-pulse" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                </svg>
+              </div>
             </div>
           </div>
           {/* Orders Section */}
           <div id="orders" className={cardClass + " animate-fadeInUp animate-popIn transition-all duration-500 hover:shadow-2xl hover:-translate-y-1"} style={{ animationDelay: '0.45s' }}>
             <h2 className="text-xl font-bold text-purple-400 mb-4 animate-popIn" style={{ animationDelay: '0.5s' }}>Orders</h2>
-            {/* Tabs for Gig Orders and Project Orders */}
-            <div className="flex gap-2 mb-4">
-              <button
-                className={`px-4 py-2 rounded-t-lg font-semibold transition-colors duration-200 ${selectedOrderType === 'gig' ? 'bg-purple-700 text-white' : 'bg-[#24194a] text-purple-300 hover:bg-purple-800/40'}`}
-                onClick={() => setSelectedOrderType('gig')}
-              >
-                Gig Orders
-              </button>
-              <button
-                className={`px-4 py-2 rounded-t-lg font-semibold transition-colors duration-200 ${selectedOrderType === 'project' ? 'bg-purple-700 text-white' : 'bg-[#24194a] text-purple-300 hover:bg-purple-800/40'}`}
-                onClick={() => setSelectedOrderType('project')}
-              >
-                Project Orders
-              </button>
-            </div>
-            <div className="mb-4">
-              <select className="px-4 py-2 border border-purple-700 rounded bg-[#24194a] text-white" value={selectedOrderStatus} onChange={e => setSelectedOrderStatus(e.target.value)}>
-                {orderStatusOptions.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
+            <div className="mb-4 flex gap-4">
+              <div className="flex flex-col gap-1">
+                <label className="text-sm text-gray-300">Order Type</label>
+                <select 
+                  className="px-4 py-2 border border-purple-700 rounded bg-[#24194a] text-white" 
+                  value={selectedOrderType} 
+                  onChange={e => setSelectedOrderType(e.target.value)}
+                >
+                  <option value="all">All Orders</option>
+                  <option value="gig">Gig Orders</option>
+                  <option value="project">Project Orders</option>
+              </select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-sm text-gray-300">Status</label>
+                <select 
+                  className="px-4 py-2 border border-purple-700 rounded bg-[#24194a] text-white" 
+                  value={selectedOrderStatus} 
+                  onChange={e => setSelectedOrderStatus(e.target.value)}
+                >
+                  <option value="">All Status</option>
+                  {orderStatusOptions.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
                 </select>
+              </div>
             </div>
             <div className="space-y-6">
-              {(selectedOrderType === 'gig' ? filteredGigOrders : filteredProjectOrders).length === 0 ? (
-                <div className="text-gray-300">No orders found.</div>
-              ) : (
-                (selectedOrderType === 'gig' ? filteredGigOrders : filteredProjectOrders).map(order => (
-                  <div key={order.id} className="bg-[#18112c] rounded-lg p-6 shadow-md border border-purple-900/30 mb-2 relative">
-                    {/* Type badge */}
-                    <span className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-bold ${order.type === 'gig' ? 'bg-purple-600 text-white' : 'bg-pink-500 text-white'}`}>{order.type === 'gig' ? 'Gig' : 'Project'}</span>
-                    
-                    {order.type === 'gig' ? (
-                      // Gig Order Display
-                      <div className="space-y-3">
-                        <div className="text-base font-semibold mb-2 text-purple-200">Gig: {order.gig_title || 'Untitled Gig'}</div>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <span className="text-gray-400">Order Placed:</span>
-                            <div className="text-purple-200 font-medium">
-                              {order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}
+              {(() => {
+                let filteredOrders = [];
+                if (selectedOrderType === 'all') {
+                  filteredOrders = freelancerOrders;
+                } else if (selectedOrderType === 'gig') {
+                  filteredOrders = gigOrders;
+                } else if (selectedOrderType === 'project') {
+                  filteredOrders = projectOrders;
+                }
+                
+                // Apply status filter
+                if (selectedOrderStatus) {
+                  filteredOrders = filteredOrders.filter(
+                    o => o.status && o.status.toLowerCase() === selectedOrderStatus.toLowerCase()
+                  );
+                }
+                
+                return filteredOrders.length === 0 ? (
+                  <div className="text-gray-300">No orders found.</div>
+                ) : (
+                  <>
+                    <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                      {filteredOrders.map((order, index) => (
+                        <div 
+                          key={order.id} 
+                          className="bg-[#18112c] rounded-lg p-4 shadow-md border border-purple-900/30 w-[320px] h-[200px] flex-shrink-0 relative flex flex-col transform transition-all duration-500 hover:scale-105 hover:shadow-xl hover:border-purple-500 animate-fadeInUp"
+                          style={{ 
+                            animationDelay: `${index * 0.1}s`,
+                            animationFillMode: 'both'
+                          }}
+                        >
+                          {/* Type badge */}
+                          <span className={`absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-bold ${order.type === 'gig' ? 'bg-purple-600 text-white' : 'bg-pink-500 text-white'}`}>{order.type === 'gig' ? 'GIG' : 'PROJECT'}</span>
+                          
+                          {order.type === 'gig' ? (
+                            // Gig Order Display
+                            <div className="space-y-2 flex-1">
+                              <div className="text-sm font-semibold mb-2 text-purple-200 break-words hyphens-auto leading-relaxed pr-16">
+                                Gig: {order.gig_title || 'Untitled Gig'}
+                              </div>
+                              <div className="space-y-1 text-xs">
+                                <div>
+                                  <span className="text-gray-400">Order Placed:</span>
+                                  <div className="text-purple-200 font-medium">
+                                    {order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}
+                                  </div>
+                                </div>
+                                <div>
+                                  <span className="text-gray-400">Client:</span>
+                                  <div className="text-purple-200 font-medium truncate">{order.buyer_name || 'Unknown'}</div>
+                                </div>
+                                <div>
+                                  <span className="text-gray-400">Price:</span>
+                                  <div className="text-green-400 font-bold">${order.price || 'N/A'}</div>
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                          <div>
-                            <span className="text-gray-400">Client:</span>
-                            <div className="text-purple-200 font-medium">{order.buyer_name || 'Unknown'}</div>
-                          </div>
-                          <div>
-                            <span className="text-gray-400">Price:</span>
-                            <div className="text-green-400 font-bold">${order.price || 'N/A'}</div>
-                          </div>
-                          <div>
-                            <span className="text-gray-400">Deadline:</span>
-                            <div className="text-purple-200 font-medium">
-                              {order.deadline ? new Date(order.deadline).toLocaleDateString() : 'N/A'}
+                          ) : (
+                            // Project Order Display
+                            <div className="space-y-2 flex-1">
+                              <div className="text-sm font-semibold mb-2 text-purple-200 break-words hyphens-auto leading-relaxed pr-16">
+                                Project: {order.project_title || 'Untitled Project'}
+                              </div>
+                              <div className="space-y-1 text-xs">
+                                <div>
+                                  <span className="text-gray-400">Order Placed:</span>
+                                  <div className="text-purple-200 font-medium">
+                                    {order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}
+                                  </div>
+                                </div>
+                                <div>
+                                  <span className="text-gray-400">Client:</span>
+                                  <div className="text-purple-200 font-medium truncate">{order.buyer_name || 'Unknown'}</div>
+                                </div>
+                                <div>
+                                  <span className="text-gray-400">Price:</span>
+                                  <div className="text-green-400 font-bold">${order.price || 'N/A'}</div>
+                                </div>
+                                <div>
+                                  <span className="text-gray-400">Deadline:</span>
+                                  <div className="text-purple-200 font-medium">
+                                    {order.deadline ? new Date(order.deadline).toLocaleDateString() : 'N/A'}
+                                  </div>
+                                </div>
+                              </div>
                             </div>
-                          </div>
+                          )}
                         </div>
-                      </div>
-                    ) : (
-                      // Project Order Display
-                      <div className="space-y-3">
-                        <div className="text-base font-semibold mb-2 text-purple-200">Project: {order.project_title || 'Untitled Project'}</div>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <span className="text-gray-400">Order Placed:</span>
-                            <div className="text-purple-200 font-medium">
-                              {order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}
-                            </div>
-                          </div>
-                          <div>
-                            <span className="text-gray-400">Client:</span>
-                            <div className="text-purple-200 font-medium">{order.buyer_name || 'Unknown'}</div>
-                          </div>
-                          <div>
-                            <span className="text-gray-400">Price:</span>
-                            <div className="text-green-400 font-bold">${order.price || 'N/A'}</div>
-                          </div>
-                          <div>
-                            <span className="text-gray-400">Deadline:</span>
-                            <div className="text-purple-200 font-medium">
-                              {order.deadline ? new Date(order.deadline).toLocaleDateString() : 'N/A'}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    
-                    <div className="flex items-center gap-8 mt-4 mb-2">
-                      <img src={order.buyer_avatar || 'https://randomuser.me/api/portraits/men/32.jpg'} alt="avatar" className="w-20 h-20 rounded-full object-cover border-4 border-yellow-400 bg-yellow-400" />
-                      <div className="flex-1 flex justify-end">
-                        <a href={`/${order.type}Details/${order.item_id}`} className="text-purple-400 font-bold underline hover:text-pink-400 transition-colors">View</a>
+                      ))}
+                    </div>
+                    {/* Horizontal Scroll Indicator */}
+                    <div className="flex justify-center mt-4">
+                      <div className="flex items-center gap-2 text-xs text-gray-400">
+                        <svg className="w-4 h-4 animate-pulse" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M7 16l-4-4m0 0l4-4m-4 4h18" />
+                        </svg>
+                        <span>Scroll horizontally to see more orders</span>
+                        <svg className="w-4 h-4 animate-pulse" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                        </svg>
                       </div>
                     </div>
-                    <hr className="border-t border-purple-900/30 mt-4" />
-                  </div>
-                ))
-              )}
+                  </>
+                );
+              })()}
             </div>
           </div>
           {/* Reviews Section */}

@@ -9,9 +9,12 @@ import "@/app/gigDetails/GigProfilePage.css"
 import { useParams } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { reviewService } from '@/utils/services';
+import { useUserContext } from '@/app/contexts/UserContext';
+import { FaPencilAlt, FaCheck, FaTimes } from 'react-icons/fa';
 
 const page = () => {
   const { id } = useParams();
+  const { currentUser } = useUserContext();
   const [gig, setGig] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -25,6 +28,9 @@ const page = () => {
   const [filteredReviews, setFilteredReviews] = useState(reviews);
   const [expandedReviewId, setExpandedReviewId] = useState(null);
   const options = ["None", "Most relevant", "Most recent"];
+  const [editReviewId, setEditReviewId] = useState(null);
+  const [editReviewText, setEditReviewText] = useState("");
+  const [editReviewRating, setEditReviewRating] = useState(5);
 
   // Theme state and persistence
   const [theme, setTheme] = useState("dark");
@@ -96,7 +102,7 @@ const page = () => {
     try {
       await reviewService.createReview({
         gig_id: gig.id,
-      rating: newReviewRating,
+        rating: newReviewRating,
         comment: newReviewText,
       });
     setNewReviewText("");
@@ -112,6 +118,45 @@ const page = () => {
     } catch (err) {
       alert('Failed to add review: ' + (err.message || 'Unknown error'));
       console.error('Add review error:', err);
+    }
+  };
+
+  // Start editing a review
+  const handleEditReview = (review) => {
+    setEditReviewId(review.id);
+    setEditReviewText(review.comment);
+    setEditReviewRating(review.rating);
+  };
+
+  // Cancel editing
+  const handleCancelEdit = () => {
+    setEditReviewId(null);
+    setEditReviewText("");
+    setEditReviewRating(5);
+  };
+
+  // Save edited review
+  const handleSaveEdit = async (review) => {
+    try {
+      await reviewService.updateReview(review.id, {
+        gig_id: gig.id,
+        rating: editReviewRating,
+        comment: editReviewText,
+      });
+      setEditReviewId(null);
+      setEditReviewText("");
+      setEditReviewRating(5);
+      // Refresh reviews from backend
+      const apiHost = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const res = await fetch(`${apiHost}/base/reviews/?gig=${gig.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setReviews(data.results || data);
+        setFilteredReviews(data.results || data);
+      }
+    } catch (err) {
+      alert('Failed to update review: ' + (err.message || 'Unknown error'));
+      console.error('Edit review error:', err);
     }
   };
 
@@ -359,36 +404,101 @@ const page = () => {
           </div>
           {/* Individual Reviews */}
           {filteredReviews.length > 0 ? (
-            filteredReviews.map((review) => (
-              <div key={review.id} className="individual-review">
-                <img
-                  src={review.avatar || 'https://via.placeholder.com/40'}
-                  alt="Reviewer Avatar"
-                  className="reviewer-avatar"
-                />
-                <div className="review-content">
-                  <h4>
-                    {review.reviewer_name}
-                  </h4>
-                  <p className="review-meta">
-                    {review.country_code && review.country && (
-                    <img
-                      src={`https://flagsapi.com/${review.country_code}/flat/32.png`}
-                      alt="Country Flag"
-                      className="country-flag"
-                      />
+            filteredReviews.map((review) => {
+              const isOwnReview = currentUser && (review.reviewer_id === currentUser.id || review.reviewer_name === currentUser.username);
+              return (
+                <div key={review.id} className="individual-review">
+                  <img
+                    src={review.avatar || 'https://via.placeholder.com/40'}
+                    alt="Reviewer Avatar"
+                    className="reviewer-avatar"
+                  />
+                  <div className="review-content">
+                    <h4>
+                      {review.reviewer_name}
+                    </h4>
+                    <p className="review-meta">
+                      {review.country_code && review.country && (
+                      <img
+                        src={`https://flagsapi.com/${review.country_code}/flat/32.png`}
+                        alt="Country Flag"
+                        className="country-flag"
+                        />
+                      )}
+                      {review.country ? `${review.country} • ` : ''}
+                      {review.created_at ?
+                        formatDistanceToNow(new Date(review.created_at), { addSuffix: true }) :
+                        (review.time || '')
+                      }
+                    </p>
+                    {editReviewId === review.id ? (
+                      <>
+                        <div className="review-rating-selector mb-3 flex gap-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <span
+                              key={star}
+                              className={`star ${star <= editReviewRating ? "active" : ""}`}
+                              style={{
+                                color: star <= editReviewRating ? '#FFD700' : '#555',
+                                cursor: 'pointer',
+                                fontSize: '1.5em',
+                                textShadow: star <= editReviewRating ? '0 0 8px #FFD70099' : 'none',
+                                transition: 'color 0.2s, text-shadow 0.2s',
+                              }}
+                              onClick={() => setEditReviewRating(star)}
+                            >
+                              ★
+                            </span>
+                          ))}
+                        </div>
+                        <textarea
+                          value={editReviewText}
+                          onChange={e => setEditReviewText(e.target.value)}
+                          rows={3}
+                          className="mb-3 w-full px-4 py-2 rounded-lg shadow focus:outline-none resize-none"
+                          style={{
+                            background: '#18112c',
+                            color: '#fff',
+                            border: '2px solid #A020F0',
+                            boxShadow: '0 2px 8px 0 #A020F033',
+                            fontSize: '1em',
+                            transition: 'border 0.2s, box-shadow 0.2s',
+                          }}
+                        />
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => handleSaveEdit(review)}
+                            className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg shadow-md transition-all duration-200 flex items-center gap-2"
+                            style={{ boxShadow: '0 2px 8px 0 #A020F055' }}
+                          >
+                            <FaCheck /> Save
+                          </button>
+                          <button
+                            onClick={handleCancelEdit}
+                            className="px-5 py-2 border-2 border-purple-400 text-purple-300 hover:bg-purple-900/30 hover:text-white rounded-lg font-semibold transition-all duration-200 flex items-center gap-2"
+                          >
+                            <FaTimes /> Cancel
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <p className="review-rating">★ {review.rating}</p>
+                        <div className="review-comment">{review.comment}</div>
+                        {isOwnReview && (
+                          <button
+                            onClick={() => handleEditReview(review)}
+                            className="mt-2 px-2 py-1 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded flex items-center gap-1 text-xs"
+                          >
+                            <FaPencilAlt /> Edit
+                          </button>
+                        )}
+                      </>
                     )}
-                    {review.country ? `${review.country} • ` : ''}
-                    {review.created_at ?
-                      formatDistanceToNow(new Date(review.created_at), { addSuffix: true }) :
-                      (review.time || '')
-                    }
-                  </p>
-                  <p className="review-rating">★ {review.rating}</p>
-                  <div className="review-comment">{review.comment}</div>
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           ) : (
             <p>No reviews found.</p>
           )}

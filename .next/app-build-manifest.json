@@ -16,16 +16,6 @@
       "static/chunks/main-app.js",
       "static/css/app/profile/[id]/page.css",
       "static/chunks/app/profile/[id]/page.js"
-    ],
-    "/profile/[id]/edit/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/profile/[id]/edit/page.js"
-    ],
-    "/_not-found/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/_not-found/page.js"
     ]
   }
 }
