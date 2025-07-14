@@ -8,6 +8,15 @@ from .filters import *
 from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
+from django.contrib.auth.models import User
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework import status
+from django.contrib.auth import get_user_model
+
+
+User = get_user_model()
 
 # View for sign up
 # class SignUpView(FormView):
@@ -339,6 +348,9 @@ def signup_view(request):
 
     if CustomUser.objects.filter(username=data['username']).exists():
         return Response({'error': 'Username already taken.'}, status=400)
+    
+    if CustomUser.objects.filter(email=data['email']).exists():
+        return Response({'error': 'An account with this email already exists.'}, status=400)
 
     user = CustomUser.objects.create_user(
         username=data['username'],
@@ -374,6 +386,36 @@ def profile_detail_view(request, pk):
     elif request.method == 'DELETE':
         profile.delete()
         return Response({'detail': 'Your account has been deleted successfully.'}, status=204)
+    
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_user_by_username(request, username):
+    try:
+        user = User.objects.get(username=username)
+
+        profile_data = {
+            "profile_picture": None,
+            "is_freelancer": False,
+        }
+
+        if hasattr(user, "profile"):
+            profile = user.profile
+            profile_data["profile_picture"] = (
+                profile.profile_picture.url if profile.profile_picture else None
+            )
+            profile_data["is_freelancer"] = profile.is_freelancer
+
+        return Response({
+            "id": user.id,
+            "username": user.username,
+            "first_name": user.first_name,
+            **profile_data
+        })
+
+    except User.DoesNotExist:
+        return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"detail": f"Internal server error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # @api_view(['PATCH'])
 # @permission_classes([IsAuthenticated])
