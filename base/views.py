@@ -655,3 +655,22 @@ class CategoryViewSet(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     lookup_field = 'id'
+    
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def freelancer_bid_projects(request):
+    user = request.user
+    # Get all open projects the freelancer has bid on
+    bid_project_ids = Bid.objects.filter(
+        freelancer=user
+    ).values_list('project_id', flat=True)
+    projects = ProjectPost.objects.filter(
+        id__in=bid_project_ids, is_open=True
+    ).distinct()
+    # For each project, attach all its bids (to allow counter-bidding)
+    for project in projects:
+        project.bids_filtered = project.bids.all().order_by('-created_at')
+    serializer = ProjectPostWithBidsSerializer(
+        projects, many=True, context={'bids_override': True}
+    )
+    return Response(serializer.data, status=200)
