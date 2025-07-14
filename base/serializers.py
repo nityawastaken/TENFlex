@@ -17,7 +17,7 @@ class CategorySerializer(serializers.ModelSerializer):
 class ReviewSerializer(serializers.ModelSerializer):
     reviewer_id = serializers.ReadOnlyField(source='reviewer.id') 
     gig_id = serializers.IntegerField()
-    reviewer_name = serializers.CharField(source='reviewer.name', read_only=True)  
+    reviewer_name = serializers.CharField(source='reviewer.username', read_only=True)  
     gig_title = serializers.CharField(source='gig.title', read_only=True)  
 
     class Meta:
@@ -366,7 +366,7 @@ class ProjectPostSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 class BidSerializer(serializers.ModelSerializer):
-    freelancer_name = serializers.CharField(source='freelancer.name', read_only=True)
+    freelancer_name = serializers.CharField(source='freelancer.username', read_only=True)
     project_title = serializers.CharField(source='project.title', read_only=True)
 
     class Meta:
@@ -383,13 +383,13 @@ class BidSerializer(serializers.ModelSerializer):
 
 # A mini serializer for displaying each bid inside a project
 class BidMiniSerializer(serializers.ModelSerializer):
-    freelancer_name = serializers.CharField(source='freelancer.name', read_only=True)
+    freelancer_name = serializers.CharField(source='freelancer.username', read_only=True)
     class Meta:
         model = Bid
         fields = ['id', 'freelancer_name', 'bid_amount', 'message', 'is_accepted', 'created_at']
 
 class ProjectPostWithBidsSerializer(serializers.ModelSerializer):
-    client_name = serializers.CharField(source='client.name', read_only=True)
+    client_name = serializers.CharField(source='client.username', read_only=True)
     bids = serializers.SerializerMethodField()
     class Meta:
         model = ProjectPost
