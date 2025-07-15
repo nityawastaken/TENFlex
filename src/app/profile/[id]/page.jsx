@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useUserContext } from "@/app/contexts/UserContext";
 import { CiLocationOn } from "react-icons/ci";
 import { GoPencil } from "react-icons/go";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import Link from "next/link";
 import { FaRegEdit, FaCopy, FaPencilAlt, FaTrash } from 'react-icons/fa';
 import { Tooltip } from 'react-tooltip';
@@ -53,6 +53,65 @@ function Modal({ open, onClose, children }) {
   );
 }
 
+// Add a simple 3-dots menu component
+function ThreeDotsMenu({ options, onSelect }) {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef();
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+    if (open) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [open]);
+
+  return (
+    <div className="relative" ref={menuRef}>
+      <button
+        className={`text-gray-400 hover:text-purple-400 text-xl focus:outline-none ${options.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+        onClick={() => options.length > 0 && setOpen((v) => !v)}
+        aria-label="Order options"
+        type="button"
+        disabled={options.length === 0}
+        title={options.length === 0 ? 'No actions available' : 'Change order status'}
+      >
+        <span className="inline-block w-6 h-6 flex items-center justify-center">
+          <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <circle cx="5" cy="12" r="2" />
+            <circle cx="12" cy="12" r="2" />
+            <circle cx="19" cy="12" r="2" />
+          </svg>
+        </span>
+      </button>
+      {open && options.length > 0 && (
+        <div className="absolute right-0 top-8 bg-[#2d225a] border border-purple-700 rounded shadow-lg z-40 min-w-[140px] flex flex-col">
+          {options.map((opt) => (
+            <button
+              key={opt.value}
+              className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-purple-600 transition-colors whitespace-nowrap"
+              onClick={() => {
+                setOpen(false);
+                onSelect(opt.value);
+              }}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   const { currentUser, loading: userLoading } = useUserContext();
   const [selectedSection, setSelectedSection] = useState("home");
@@ -76,6 +135,8 @@ export default function ProfilePage() {
   // After fetching orders, set as_freelancer and as_buyer arrays
   const [freelancerOrders, setFreelancerOrders] = useState([]);
   const [buyerOrders, setBuyerOrders] = useState([]);
+  // Add loading state for order status change
+  const [orderStatusLoading, setOrderStatusLoading] = useState(false);
 
   // Copy contact info function
   const copyContactInfo = async (type, value) => {
@@ -380,6 +441,40 @@ useEffect(() => {
     }
   };
 
+  // Move the handler inside the component so it can access the state
+  async function handleOrderStatusChange(orderId, newStatus) {
+    if (orderStatusLoading) return;
+    setOrderStatusLoading(true);
+    try {
+      const user = JSON.parse(localStorage.getItem('user'));
+      const token = user?.token;
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/base/orders/${orderId}/update-status/`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Token ${token}` } : {}),
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || data.message || 'Failed to update order status.');
+        return;
+      }
+      toast.success('Order status updated!');
+      setFreelancerOrders(prevOrders =>
+        prevOrders.map(order =>
+          order.id === orderId ? { ...order, status: newStatus } : order
+        )
+      );
+      fetchOrders();
+    } catch (err) {
+      toast.error('Failed to update order status.');
+    } finally {
+      setOrderStatusLoading(false);
+    }
+  }
+
   const [modalOpen, setModalOpen] = useState(false);
   const [modalImg, setModalImg] = useState(null);
 
@@ -497,7 +592,6 @@ useEffect(() => {
         }
       `}</style>
       <div className="min-h-screen bg-gradient-to-br from-[#1a1333] to-[#2d1a4d] text-white p-6 pt-28 flex">
-        <ToastContainer position="bottom-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover theme="dark" />
         {/* Sidebar */}
         <aside className="w-64 mr-8 hidden md:block animate-fadeInUp glass-sidebar transition-all duration-500" style={{ animationDelay: '0.2s', minWidth: '260px' }}>
           <div className="flex flex-col items-center gap-6 py-8 px-6 bg-white/10 rounded-xl shadow-xl border border-white/10 backdrop-blur-md transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 animate-popIn" style={{ animationDelay: '0.25s' }}>
@@ -837,73 +931,95 @@ useEffect(() => {
                 ) : (
                   <>
                     <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-                      {filteredOrders.map((order, index) => (
-                        <div 
-                          key={order.id} 
-                          className="bg-[#18112c] rounded-lg p-4 shadow-md border border-purple-900/30 w-[320px] h-[200px] flex-shrink-0 relative flex flex-col transform transition-all duration-500 hover:scale-105 hover:shadow-xl hover:border-purple-500 animate-fadeInUp"
-                          style={{ 
-                            animationDelay: `${index * 0.1}s`,
-                            animationFillMode: 'both'
-                          }}
-                        >
-                          {/* Type badge */}
-                          <span className={`absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-bold ${order.type === 'gig' ? 'bg-purple-600 text-white' : 'bg-pink-500 text-white'}`}>{order.type === 'gig' ? 'GIG' : 'PROJECT'}</span>
-                          
-                          {order.type === 'gig' ? (
-                            // Gig Order Display
-                            <div className="space-y-2 flex-1">
-                              <div className="text-sm font-semibold mb-2 text-purple-200 break-words hyphens-auto leading-relaxed pr-16">
-                                Gig: {order.gig_title || 'Untitled Gig'}
-                              </div>
-                              <div className="space-y-1 text-xs">
-                                <div>
-                                  <span className="text-gray-400">Order Placed:</span>
-                                  <div className="text-purple-200 font-medium">
-                                    {order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}
-                                  </div>
-                                </div>
-                                <div>
-                                  <span className="text-gray-400">Client:</span>
-                                  <div className="text-purple-200 font-medium truncate">{order.buyer_name || 'Unknown'}</div>
-                                </div>
-                                <div>
-                                  <span className="text-gray-400">Price:</span>
-                                  <div className="text-green-400 font-bold">${order.price || 'N/A'}</div>
-                                </div>
-                              </div>
+                      {filteredOrders.map((order, index) => {
+                        // Determine menu options based on status
+                        let menuOptions = [];
+                        if (order.status === 'pending') {
+                          menuOptions = [
+                            { value: 'ongoing', label: 'Move to Ongoing' },
+                          ];
+                        } else if (order.status === 'ongoing') {
+                          menuOptions = [
+                            { value: 'pending', label: 'Move to Pending' },
+                            { value: 'completed', label: 'Move to Completed' },
+                          ];
+                        } // completed: no options
+                        return (
+                          <div 
+                            key={order.id} 
+                            className="bg-[#18112c] rounded-lg p-4 shadow-md border border-purple-900/30 w-[320px] h-[200px] flex-shrink-0 relative flex flex-col transform transition-all duration-500 hover:scale-105 hover:shadow-xl hover:border-purple-500 animate-fadeInUp overflow-visible"
+                            style={{ 
+                              animationDelay: `${index * 0.1}s`,
+                              animationFillMode: 'both',
+                              zIndex: 1
+                            }}
+                          >
+                            {/* 3-dots menu for state change (absolute top-right of card) */}
+                            <div className="absolute top-3 right-3 z-30">
+                              <ThreeDotsMenu
+                                options={menuOptions}
+                                onSelect={(newStatus) => handleOrderStatusChange(order.id, newStatus)}
+                              />
                             </div>
-                          ) : (
-                            // Project Order Display
-                            <div className="space-y-2 flex-1">
-                              <div className="text-sm font-semibold mb-2 text-purple-200 break-words hyphens-auto leading-relaxed pr-16">
-                                Project: {order.project_title || 'Untitled Project'}
-                              </div>
-                              <div className="space-y-1 text-xs">
-                                <div>
-                                  <span className="text-gray-400">Order Placed:</span>
-                                  <div className="text-purple-200 font-medium">
-                                    {order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}
+                            {/* Type badge, at the bottom-right */}
+                            <span className={`absolute bottom-3 right-3 px-2 py-1 rounded-full text-xs font-bold ${order.type === 'gig' ? 'bg-purple-600 text-white' : 'bg-pink-500 text-white'}`}>{order.type === 'gig' ? 'GIG' : 'PROJECT'}</span>
+                            
+                            {order.type === 'gig' ? (
+                              // Gig Order Display
+                              <div className="space-y-2 flex-1">
+                                <div className="text-sm font-semibold mb-2 text-purple-200 break-words hyphens-auto leading-relaxed pr-16">
+                                  Gig: {order.gig_title || 'Untitled Gig'}
+                                </div>
+                                <div className="space-y-1 text-xs">
+                                  <div>
+                                    <span className="text-gray-400">Order Placed:</span>
+                                    <div className="text-purple-200 font-medium">
+                                      {order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}
+                                    </div>
                                   </div>
-                                </div>
-                                <div>
-                                  <span className="text-gray-400">Client:</span>
-                                  <div className="text-purple-200 font-medium truncate">{order.buyer_name || 'Unknown'}</div>
-                                </div>
-                                <div>
-                                  <span className="text-gray-400">Price:</span>
-                                  <div className="text-green-400 font-bold">${order.price || 'N/A'}</div>
-                                </div>
-                                <div>
-                                  <span className="text-gray-400">Deadline:</span>
-                                  <div className="text-purple-200 font-medium">
-                                    {order.deadline ? new Date(order.deadline).toLocaleDateString() : 'N/A'}
+                                  <div>
+                                    <span className="text-gray-400">Client:</span>
+                                    <div className="text-purple-200 font-medium truncate">{order.buyer_name || 'Unknown'}</div>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-400">Price:</span>
+                                    <div className="text-green-400 font-bold">${order.price || 'N/A'}</div>
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                            ) : (
+                              // Project Order Display
+                              <div className="space-y-2 flex-1">
+                                <div className="text-sm font-semibold mb-2 text-purple-200 break-words hyphens-auto leading-relaxed pr-16">
+                                  Project: {order.project_title || 'Untitled Project'}
+                                </div>
+                                <div className="space-y-1 text-xs">
+                                  <div>
+                                    <span className="text-gray-400">Order Placed:</span>
+                                    <div className="text-purple-200 font-medium">
+                                      {order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-400">Client:</span>
+                                    <div className="text-purple-200 font-medium truncate">{order.buyer_name || 'Unknown'}</div>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-400">Price:</span>
+                                    <div className="text-green-400 font-bold">${order.price || 'N/A'}</div>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-400">Deadline:</span>
+                                    <div className="text-purple-200 font-medium">
+                                      {order.deadline ? new Date(order.deadline).toLocaleDateString() : 'N/A'}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                     {/* Horizontal Scroll Indicator */}
                     <div className="flex justify-center mt-4">

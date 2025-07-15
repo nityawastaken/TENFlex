@@ -110,8 +110,6 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-white mt-20 flex">
-      <ToastContainer position="bottom-right" />
-
       {/* Sidebar */}
       <aside className="w-64 bg-gray-900 p-6">
         <h2 className="text-xl font-bold mb-6">My Account</h2>
