@@ -40,20 +40,18 @@ export default function TestIntegration() {
           error: error
         };
       }
-
-      // Test 2: Check categories
-      console.log('Testing categories endpoint...');
+      // Test 2: Check if categories API is reachable
       try {
         const categories = await categoryService.getAllCategories();
-        results.categories = {
+        results.categoryConnectivity = {
           status: 'PASS',
-          message: `Categories endpoint working. Found ${categories.length} categories.`,
+          message: `Categories API is reachable. Found ${categories.length} categories.`,
           data: categories.slice(0, 3)
         };
       } catch (error) {
-        results.categories = {
+        results.categoryConnectivity = {
           status: 'FAIL',
-          message: `Categories endpoint failed: ${error.message}`,
+          message: `Categories API connectivity failed: ${error.message}`,
           error: error
         };
       }

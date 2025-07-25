@@ -14,30 +14,104 @@ export const gigService = {
     return await apiCall(endpoints.gigDetails(id));
   },
 
-  // Create new gig
+  // Create new gig (use FormData for picture, otherwise JSON)
   async createGig(gigData) {
-    return await apiCall(endpoints.gigs, {
+    const token = localStorage.getItem('token');
+    const formData = new FormData();
+    
+    // Add text fields
+    formData.append('title', gigData.title);
+    formData.append('description', gigData.description);
+    formData.append('price', gigData.price);
+    formData.append('delivery_time', gigData.delivery_time);
+    
+    // Add picture if available
+    if (gigData.picture) {
+      formData.append('picture', gigData.picture);
+    }
+    
+    // Add categories
+    if (gigData.category_ids && Array.isArray(gigData.category_ids)) {
+      gigData.category_ids.forEach(id => formData.append('category_ids', id));
+    } else if (gigData.category_ids) {
+      formData.append('category_ids', gigData.category_ids);
+    }
+    
+    // Add skills
+    if (gigData.skill_names && Array.isArray(gigData.skill_names)) {
+      gigData.skill_names.forEach(name => formData.append('skill_names', name));
+    } else if (gigData.skill_names) {
+      formData.append('skill_names', gigData.skill_names);
+    }
+    
+    // Direct fetch to have more control over the FormData
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/base/${endpoints.gigs}`, {
       method: 'POST',
-      body: JSON.stringify(gigData),
+      headers: {
+        'Authorization': `Token ${token}`
+      },
+      body: formData
     });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || errorData.message || 'Failed to create gig');
+    }
+    
+    return await response.json();
   },
 
   // Update gig
   async updateGig(id, gigData) {
-    return await apiCall(endpoints.gigDetails(id), {
-      method: 'PUT',
-      body: JSON.stringify(gigData),
+    const token = localStorage.getItem('token');
+    const formData = new FormData();
+    
+    // Add text fields
+    if (gigData.title) formData.append('title', gigData.title);
+    if (gigData.description) formData.append('description', gigData.description);
+    if (gigData.price) formData.append('price', gigData.price);
+    if (gigData.delivery_time) formData.append('delivery_time', gigData.delivery_time);
+    
+    // Add picture if available
+    if (gigData.picture instanceof File) {
+      formData.append('picture', gigData.picture);
+    }
+    
+    // Add categories
+    if (gigData.category_ids && Array.isArray(gigData.category_ids)) {
+      gigData.category_ids.forEach(id => formData.append('category_ids', id));
+    } else if (gigData.category_ids) {
+      formData.append('category_ids', gigData.category_ids);
+    }
+    
+    // Add skills
+    if (gigData.skill_names && Array.isArray(gigData.skill_names)) {
+      gigData.skill_names.forEach(name => formData.append('skill_names', name));
+    } else if (gigData.skill_names) {
+      formData.append('skill_names', gigData.skill_names);
+    }
+    
+    // Direct fetch to have more control over the FormData
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/base/${endpoints.gigDetails(id)}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Token ${token}`
+      },
+      body: formData
     });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || errorData.message || 'Failed to update gig');
+    }
+    
+    return await response.json();
   },
 
   // Delete gig
   async deleteGig(id) {
-    const token = (typeof window !== 'undefined') ? localStorage.getItem('authToken') : null;
     return await apiCall(endpoints.gigDetails(id), {
       method: 'DELETE',
-      headers: {
-        ...(token ? { 'Authorization': `Token ${token}` } : {}),
-      },
     });
   },
 
@@ -49,38 +123,27 @@ export const gigService = {
 
 // Order services
 export const orderService = {
-  // Get buyer orders
   async getBuyerOrders() {
     return await apiCall(endpoints.buyerOrders);
   },
-
-  // Get freelancer orders
   async getFreelancerOrders() {
     return await apiCall(endpoints.freelancerOrders);
   },
-
-  // Get order by ID
   async getOrderById(id) {
     return await apiCall(endpoints.orderDetail(id));
   },
-
-  // Create order from gig
   async createOrder(gigId, orderData) {
     return await apiCall(endpoints.createOrder(gigId), {
       method: 'POST',
       body: JSON.stringify(orderData),
     });
   },
-
-  // Update order status
   async updateOrderStatus(id, status) {
     return await apiCall(endpoints.updateOrderStatus(id), {
-      method: 'PUT',
+      method: 'PATCH',
       body: JSON.stringify({ status }),
     });
   },
-
-  // Repeat order
   async repeatOrder(id) {
     return await apiCall(endpoints.repeatOrder(id), {
       method: 'POST',
@@ -90,57 +153,42 @@ export const orderService = {
 
 // Project services
 export const projectService = {
-  // Get all projects
   async getAllProjects(filters = {}) {
     const queryParams = new URLSearchParams(filters).toString();
     const endpoint = queryParams ? `${endpoints.projects}?${queryParams}` : endpoints.projects;
     return await apiCall(endpoint);
   },
-
-  // Get project by ID
   async getProjectById(id) {
     return await apiCall(endpoints.projectDetail(id));
   },
-
-  // Create new project
   async createProject(projectData) {
     return await apiCall(endpoints.createProject, {
       method: 'POST',
       body: JSON.stringify(projectData),
     });
   },
-
-  // Update project
   async updateProject(id, projectData) {
     return await apiCall(endpoints.updateProject(id), {
       method: 'PUT',
       body: JSON.stringify(projectData),
     });
   },
-
-  // Delete project
   async deleteProject(id) {
     return await apiCall(endpoints.deleteProject(id), {
       method: 'DELETE',
     });
   },
-
-  // Reopen project
   async reopenProject(id) {
     return await apiCall(endpoints.reopenProject(id), {
       method: 'POST',
     });
   },
-
-  // Place bid on project
   async placeBid(projectId, bidData) {
     return await apiCall(endpoints.placeBid(projectId), {
       method: 'POST',
       body: JSON.stringify(bidData),
     });
   },
-
-  // Accept bid
   async acceptBid(bidId) {
     return await apiCall(endpoints.acceptBid(bidId), {
       method: 'POST',
@@ -157,14 +205,24 @@ export const userService = {
 
   // Get user profile
   async getUserProfile(id) {
-    return await apiCall(endpoints.profileDetail(id));
+    const user = JSON.parse(localStorage.getItem('user'));
+    const token = user?.token;
+    return await apiCall(endpoints.profileDetail(id), {
+      headers: token ? { Authorization: `Token ${token}` } : {},
+    });
   },
 
   // Update user profile
-  async updateUserProfile(id, profileData) {
+  async updateUserProfile(id, profileData, useFormData = false) {
+    const user = JSON.parse(localStorage.getItem('user'));
+    const token = user?.token;
     return await apiCall(endpoints.profileDetail(id), {
       method: 'PUT',
-      body: JSON.stringify(profileData),
+      body: useFormData ? profileData : JSON.stringify(profileData),
+      headers: {
+        ...(token ? { Authorization: `Token ${token}` } : {}),
+        ...(useFormData ? {} : { 'Content-Type': 'application/json' }),
+      },
     });
   },
 
@@ -211,22 +269,25 @@ export const reviewService = {
 
   // Delete review
   async deleteReview(id) {
+    const token = (typeof window !== 'undefined') ? localStorage.getItem('authToken') : null;
     return await apiCall(`${endpoints.reviews}${id}/`, {
       method: 'DELETE',
+      headers: {
+        ...(token ? { 'Authorization': `Token ${token}` } : {}),
+      },
     });
   },
 };
 
-// Skills and Categories services
+// Skill services
 export const skillService = {
-  // Get all skills
   async getAllSkills() {
     return await apiCall(endpoints.skills);
   },
 };
 
+// Category services
 export const categoryService = {
-  // Get all categories
   async getAllCategories() {
     return await apiCall(endpoints.categories);
   },

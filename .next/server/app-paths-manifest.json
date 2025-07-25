@@ -1,5 +1,8 @@
 {
-  "/_not-found/page": "app/_not-found/page.js",
+  "/gig-list/page": "app/gig-list/page.js",
   "/page": "app/page.js",
-  "/profile/[id]/page": "app/profile/[id]/page.js"
+  "/gigDetails/[id]/page": "app/gigDetails/[id]/page.js",
+  "/gigs/create/page": "app/gigs/create/page.js",
+  "/projects/page": "app/projects/page.js",
+  "/profile/[id]/edit/page": "app/profile/[id]/edit/page.js"
 }

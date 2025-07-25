@@ -103,17 +103,40 @@ export default function SignUpForm() {
     setLoading(true);
 
     try {
-      // Use the auth service to signup
-      const response = await authService.signup({
+      // Prepare payload for backend
+      const payload = {
         username: form.name,
         email: form.email,
         password: form.password,
-        location: form.location,
         is_freelancer: form.userType === "freelancer",
-      });
-
-      alert("Sign-up successful!");
-      router.push("/signin");
+        location: form.location,
+        // bio: form.bio, // Uncomment if you have a bio field in your form
+      };
+      const response = await authService.signup(payload);
+      if (response && response.id) {
+        // Immediately log in after signup to get the token
+        const loginRes = await authService.login({
+          username: form.name, // backend expects username
+          password: form.password,
+        });
+        if (loginRes.token) {
+          localStorage.setItem('token', loginRes.token);
+          // Fetch user profile to get is_freelancer and all user info
+          const userProfileRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/base/users/${response.id}/`, {
+            headers: { Authorization: `Token ${loginRes.token}` }
+          });
+          const userData = await userProfileRes.json();
+          const userToStore = { ...userData, token: loginRes.token };
+          localStorage.setItem('user', JSON.stringify(userToStore));
+          alert("Sign-up successful!");
+          router.push("/");
+        } else {
+          alert("Sign-up succeeded, but login failed. Please sign in manually.");
+          router.push("/signin");
+        }
+      } else {
+        alert("Sign-up failed. Please try again.");
+      }
     } catch (err) {
       console.error("Signup error:", err);
       alert(err.message || "Something went wrong. Try again.");

@@ -44,15 +44,32 @@ export default function GigList() {
     try {
       setLoading(true);
       setError(null);
-
       // Remove empty search filter to avoid sending an empty query
       const activeFilters = { ...currentFilters };
       if (!activeFilters.search) {
         delete activeFilters.search;
       }
-      
       const data = await gigService.getAllGigs(activeFilters);
-      setGigs(data);
+      // Map backend fields
+      const mapped = data.map(gig => ({
+        id: gig.id,
+        name: gig.freelancer || "Unknown",
+        title: gig.title || "Untitled",
+        rating: gig.avg_rating ?? 0,
+        reviews: gig.review_count ?? 0,
+        price: gig.price ?? 0,
+        image: gig.picture
+          ? (gig.picture.startsWith("http")
+              ? gig.picture
+              : `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}${gig.picture}`)
+          : "https://via.placeholder.com/300x200?text=No+Image",
+        badge: "",
+        tag: "",
+        duration: gig.delivery_time ?? 0,
+        languages: ["English"],
+        location: gig.location || "Any",
+      }));
+      setGigs(mapped);
     } catch (err) {
       console.error('Error fetching gigs:', err);
       setError(err.message || 'Failed to fetch gigs');
@@ -125,9 +142,9 @@ export default function GigList() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {gigs.map((gig) => (
           <div key={gig.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-            {gig.gig_picture && (
+            {gig.image && (
               <img
-                src={gig.gig_picture}
+                src={gig.image}
                 alt={gig.title}
                 className="w-full h-48 object-cover"
               />
@@ -145,7 +162,7 @@ export default function GigList() {
                   ${gig.price}
                 </span>
                 <span className="text-sm text-gray-500">
-                  {gig.delivery_time} days delivery
+                  {gig.duration} days delivery
                 </span>
               </div>
 
@@ -163,11 +180,11 @@ export default function GigList() {
                   </span>
                 </div>
                 
-                {gig.avg_rating && (
+                {gig.rating && (
                   <div className="flex items-center">
                     <span className="text-yellow-500">★</span>
                     <span className="text-sm text-gray-600 ml-1">
-                      {gig.avg_rating.toFixed(1)}
+                      {gig.rating.toFixed(1)}
                     </span>
                   </div>
                 )}

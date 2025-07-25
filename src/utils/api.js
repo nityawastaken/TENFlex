@@ -1,44 +1,52 @@
-const BASE_URL = 'http://localhost:8000'; // Or whatever the backend URL is
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'; // Or whatever the backend URL is
 
 export const endpoints = {
+  // Auth endpoints
   signup: 'users/create/',
   login: 'api-token-auth/',
+  
+  // Gig endpoints
   gigs: 'gigs/',
   gigDetails: (id) => `gigs/${id}/`,
-  gigsByFreelancer: (freelancerId) => `gigs/freelancer/${freelancerId}/`,
+  gigsByFreelancer: (freelancerId) => `user/${freelancerId}/gigs/`,
 
-  buyerOrders: 'orders/buyer/',
-  freelancerOrders: 'orders/freelancer/',
+  // Order endpoints
+  buyerOrders: 'buyer/orders/',
+  freelancerOrders: 'freelancer/orders/',
   orderDetail: (id) => `orders/${id}/`,
-  createOrder: (gigId) => `orders/create/${gigId}/`,
-  updateOrderStatus: (id) => `orders/update-status/${id}/`,
-  repeatOrder: (id) => `orders/repeat/${id}/`,
+  createOrder: (gigId) => `orders/gigs/${gigId}/book/`,
+  updateOrderStatus: (id) => `orders/${id}/update-status/`,
+  repeatOrder: (id) => `orders/${id}/repeat/`,
 
+  // Project endpoints
   projects: 'projects/',
-  projectDetail: (id) => `projects/${id}/`,
   createProject: 'projects/create/',
-  updateProject: (id) => `projects/update/${id}/`,
-  deleteProject: (id) => `projects/delete/${id}/`,
-  reopenProject: (id) => `projects/reopen/${id}/`,
+  updateProject: (id) => `projects/${id}/update/`,
+  deleteProject: (id) => `projects/${id}/delete/`,
+  reopenProject: (id) => `projects/${id}/reopen/`,
   placeBid: (projectId) => `projects/${projectId}/bid/`,
-  acceptBid: (bidId) => `bids/accept/${bidId}/`,
+  acceptBid: (bidId) => `bids/${bidId}/accept/`,
 
-  getUserByUsername: (username) => `users/${username}/`,
-  profileDetail: (id) => `profiles/${id}/`,
-  profileCompletion: 'profiles/completion/',
+  // User profile endpoints
+  getUserByUsername: (username) => `get_user_by_username/${username}/`,
+  profileDetail: (id) => `users/${id}/`,
+  profileCompletion: 'users/get-completion-percentage/',
 
+  // Review endpoints
   reviews: 'reviews/',
 
+  // Skills and Categories
   skills: 'skills/',
   categories: 'categories/',
 
-  gigLists: 'gig-lists/',
-  createGigList: 'gig-lists/create/',
-  gigListDetail: (id) => `gig-lists/${id}/`,
-  updateGigList: (id) => `gig-lists/update/${id}/`,
-  deleteGigList: (id) => `gig-lists/delete/${id}/`,
-  addGigToList: (listId, gigId) => `gig-lists/${listId}/add/${gigId}/`,
-  removeGigFromList: (listId, gigId) => `gig-lists/${listId}/remove/${gigId}/`,
+  // Gig list endpoints
+  gigLists: 'giglists/',
+  createGigList: 'giglists/create/',
+  gigListDetail: (id) => `giglists/${id}/`,
+  updateGigList: (id) => `giglists/${id}/update/`,
+  deleteGigList: (id) => `giglists/${id}/delete/`,
+  addGigToList: (listId) => `giglists/${listId}/gigs/add/`,
+  removeGigFromList: (listId) => `giglists/${listId}/gigs/remove/`,
 };
 
 export const apiCall = async (endpoint, options = {}) => {
@@ -47,12 +55,25 @@ export const apiCall = async (endpoint, options = {}) => {
     ? `${BASE_URL}/${endpoint}`
     : `${BASE_URL}/base/${endpoint}`;
 
+  // Get token from localStorage if available
+  let headers = { ...options.headers };
+  const user = localStorage.getItem('user');
+  if (user) {
+    const userData = JSON.parse(user);
+    if (userData && userData.token) {
+      headers['Authorization'] = `Token ${userData.token}`;
+    }
+  }
+
+  // Only set Content-Type if body is a string (JSON), not FormData
+  if (typeof options.body === 'string') {
+    headers['Content-Type'] = 'application/json';
+  }
+  // If body is FormData, do NOT set Content-Type (let browser handle it)
+
   const config = {
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
+    headers,
   };
 
   try {

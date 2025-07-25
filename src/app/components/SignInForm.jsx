@@ -35,40 +35,21 @@ export default function SignInForm() {
     try {
       // Use the auth service to login
       const response = await authService.login(form);
-      
       if (response.token) {
-        // Fetch user details using the /base/users/me/ endpoint
-        const userProfileRes = await fetch("http://localhost:8000/base/users/me/", {
-          headers: {
-            Authorization: `Token ${response.token}`,
-          },
-        });
-        const userData = await userProfileRes.json();
-
-        // Patch: support id, pk, or user_id
-        const userId = userData.id || userData.pk || userData.user_id;
-        if (userId) {
-          const userToStore = {
-            ...userData,
-            id: userId,
-            token: response.token,
-          };
-
-          // Update context and localStorage
-          loginUser(userToStore);
-          authService.updateUserData(userToStore);
-
-          alert("Sign in successful!");
-          router.push("/");
-        } else {
-          alert("Could not fetch user info");
-        }
+        // Use user data from login response
+        const userToStore = {
+          ...response.user,
+          token: response.token,
+        };
+        loginUser(userToStore);
+        authService.updateUserData(userToStore);
+        alert("Sign in successful!");
+        router.push("/");
       } else {
-        alert("Login failed. Please check your credentials.");
+        alert("Sign in failed. Please check your credentials.");
       }
-    } catch (err) {
-      console.error("Sign in error:", err);
-      alert(err.message || "Something went wrong. Please try again.");
+    } catch (error) {
+      alert("Sign in failed. Please check your credentials.");
     } finally {
       setLoading(false);
     }

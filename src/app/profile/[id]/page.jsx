@@ -21,6 +21,8 @@ import "react-toastify/dist/ReactToastify.css";
 import { gigService } from '@/utils/services';
 import GigImage from "@/app/components/GigImage";
 import { orderService } from '@/utils/services';
+import { userService } from '@/utils/services';
+import { reviewService } from '@/utils/services';
 // Remove: import GigCard from "@/app/components/GigCard";
 // Remove: import "@/app/gig-list/GigList.css";
 
@@ -38,7 +40,7 @@ const LANGUAGE_CODE_TO_NAME = {
 
 // Add fade-in animation keyframes
 
-// Add fade-in and slide-up animation keyframes (if not already present)
+// Add fade-in and slide-up animation keyframes (if not already present)x`
 
 // Modal component
 function Modal({ open, onClose, children }) {
@@ -112,6 +114,19 @@ function ThreeDotsMenu({ options, onSelect }) {
   );
 }
 
+// Helper to always attach token
+function authFetch(url, options = {}) {
+  const user = JSON.parse(localStorage.getItem('user'));
+  const token = user?.token;
+  return fetch(url, {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      ...(token ? { Authorization: `Token ${token}` } : {}),
+    },
+  });
+}
+
 export default function ProfilePage() {
   const { currentUser, loading: userLoading } = useUserContext();
   const [selectedSection, setSelectedSection] = useState("home");
@@ -182,49 +197,48 @@ export default function ProfilePage() {
   useEffect(() => {
     async function fetchLanguageData() {
       try {
-        const user = JSON.parse(localStorage.getItem('user'));
-        const token = user?.token;
-        
         const [languagesRes, proficiencyRes] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/base/languages/`, {
-            headers: token ? { Authorization: `Token ${token}` } : {},
-          }),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/base/proficiency-levels/`, {
-            headers: token ? { Authorization: `Token ${token}` } : {},
-          })
+          authFetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/base/languages/`),
+          authFetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/base/proficiency-levels/`)
         ]);
-
         if (languagesRes.ok) {
           const languagesData = await languagesRes.json();
           setAvailableLanguages(languagesData);
+        } else {
+          setAvailableLanguages([]);
         }
-
         if (proficiencyRes.ok) {
           const proficiencyData = await proficiencyRes.json();
           setProficiencyLevels(proficiencyData);
+        } else {
+          setProficiencyLevels([]);
         }
       } catch (error) {
-        console.error("Error fetching language data:", error);
+        setAvailableLanguages([]);
+        setProficiencyLevels([]);
       }
     }
-
     fetchLanguageData();
   }, []);
 
   // Fetch orders
-useEffect(() => {
+  useEffect(() => {
     async function fetchOrders() {
       try {
-        const user = JSON.parse(localStorage.getItem('user'));
-        const token = user?.token;
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/base/my_orders/`, {
-          headers: token ? { Authorization: `Token ${token}` } : {},
-        });
-        if (!res.ok) throw new Error('Failed to fetch orders');
-        const data = await res.json();
-        console.log('Fetched orders:', data);
-        setFreelancerOrders(Array.isArray(data.as_freelancer) ? data.as_freelancer : []);
-        setBuyerOrders(Array.isArray(data.as_buyer) ? data.as_buyer : []);
+        const [buyerRes, freelancerRes] = await Promise.all([
+          authFetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/base/buyer/orders/`),
+          authFetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/base/freelancer/orders/`)
+        ]);
+        const buyerData = buyerRes.ok ? await buyerRes.json() : {};
+        const freelancerData = freelancerRes.ok ? await freelancerRes.json() : {};
+        // Combine all orders for filtering and display
+        const allOrders = [
+          ...(freelancerData.pending || []),
+          ...(freelancerData.ongoing || []),
+          ...(freelancerData.completed || [])
+        ];
+        setFreelancerOrders(allOrders);
+        setBuyerOrders(Array.isArray(buyerData.completed) ? buyerData.completed : []);
       } catch (err) {
         setFreelancerOrders([]);
         setBuyerOrders([]);
@@ -263,12 +277,7 @@ useEffect(() => {
   useEffect(() => {
     async function fetchCompletionPercent() {
       try {
-        const user = JSON.parse(localStorage.getItem('user'));
-        const token = user?.token;
-        if (!token) return;
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/base/users/get-completion-percentage/`, {
-          headers: { Authorization: `Token ${token}` },
-        });
+        const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/base/users/get-completion-percentage/`);
         if (!res.ok) throw new Error('Failed to fetch completion percent');
         const percent = await res.json();
         setCompletionPercent(percent);
@@ -292,25 +301,13 @@ useEffect(() => {
     if (!userIdFromURL) return;
     setLoading(true);
     setError(null);
-    const user = JSON.parse(localStorage.getItem('user'));
-    const token = user?.token;
     Promise.all([
-      fetch(`http://localhost:8000/base/users/${userIdFromURL}/`, {
-        headers: token ? { Authorization: `Token ${token}` } : {},
-      }).then(res => {
-        if (!res.ok) throw new Error("Profile not found");
-        return res.json();
-      }),
-      fetch(`http://localhost:8000/base/reviews/?reviewee_id=${userIdFromURL}`, {
-        headers: token ? { Authorization: `Token ${token}` } : {},
-      }).then(res => res.json())
+      userService.getUserProfile(userIdFromURL),
+      reviewService.getAllReviews({ reviewee_id: userIdFromURL })
     ])
       .then(async ([profileData, reviewsData]) => {
-        // Log the full profile data for debugging
-        console.log("Profile data:", profileData);
-        // Get gig IDs from the correct path
-        const gigIds = profileData.gig_ids || (profileData.debug_info && profileData.debug_info.gig_ids) || [];
         // Map backend fields to frontend fields
+        const gigIds = profileData.gig_ids || (profileData.debug_info && profileData.debug_info.gig_ids) || [];
         const getProfilePictureUrl = (picture) => {
           if (!picture) return null;
           if (picture.startsWith('http')) return picture;
@@ -320,7 +317,7 @@ useEffect(() => {
           name: (`${profileData.first_name || ""} ${profileData.last_name || ""}`.trim()) || profileData.username,
           location: profileData.location,
           email: profileData.email,
-          contact: profileData.phone || profileData.contact,
+          contact: profileData.contact_number || profileData.phone || profileData.contact,
           role: profileData.role_display,
           purpose: profileData.use_purpose_display,
           experience: profileData.experience_display,
@@ -339,15 +336,11 @@ useEffect(() => {
           last_updated: profileData.last_updated,
         };
         setProfileUser(mappedProfile);
-        setReviews(reviewsData.results || reviewsData); // handle paginated or array
+        setReviews(reviewsData.results || reviewsData);
         // Fetch gig details for each gig_id
         if (gigIds.length > 0) {
           const gigDetails = await Promise.all(
-            gigIds.map(id =>
-              fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/base/gigs/${id}/`)
-                .then(res => res.json())
-                .catch(() => null)
-            )
+            gigIds.map(id => gigService.getGigById(id).catch(() => null))
           );
           setGigs(gigDetails.filter(gig => gig && gig.id));
         } else {
@@ -446,15 +439,12 @@ useEffect(() => {
     if (orderStatusLoading) return;
     setOrderStatusLoading(true);
     try {
-      const user = JSON.parse(localStorage.getItem('user'));
-      const token = user?.token;
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/base/orders/${orderId}/update-status/`, {
+      // Map 'completed' to 'complete' for backend compatibility
+      const backendStatus = newStatus === 'completed' ? 'complete' : newStatus;
+      const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/base/orders/${orderId}/update-status/`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Token ${token}` } : {}),
-        },
-        body: JSON.stringify({ status: newStatus }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: backendStatus }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -792,7 +782,7 @@ useEffect(() => {
               <h2 className="text-xl font-bold text-purple-400 animate-popIn" style={{ animationDelay: '0.45s' }}>Gigs</h2>
               {isOwnProfile && (
                 <button 
-                  onClick={() => router.push('/create-gig')}
+                  onClick={() => router.push('/gigs/create')}
                   className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-lg flex items-center gap-2"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -827,7 +817,7 @@ useEffect(() => {
                               className="bg-purple-600 hover:bg-purple-700 text-white p-1.5 rounded-md transition-all duration-200 hover:scale-110 shadow-lg"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                router.push(`/edit-gig/${gig.id}`);
+                                router.push(`/gigs/edit/${gig.id}`);
                               }}
                               title="Edit Gig"
                             >
@@ -937,23 +927,29 @@ useEffect(() => {
                         if (order.status === 'pending') {
                           menuOptions = [
                             { value: 'ongoing', label: 'Move to Ongoing' },
+                            { value: 'completed', label: 'Move to Completed' },
                           ];
                         } else if (order.status === 'ongoing') {
                           menuOptions = [
                             { value: 'pending', label: 'Move to Pending' },
                             { value: 'completed', label: 'Move to Completed' },
                           ];
-                        } // completed: no options
+                        } else if (order.status === 'completed') {
+                          menuOptions = [
+                            { value: 'pending', label: 'Move to Pending' },
+                            { value: 'ongoing', label: 'Move to Ongoing' },
+                          ];
+                        }
                         return (
-                          <div 
-                            key={order.id} 
+                        <div 
+                          key={order.id} 
                             className="bg-[#18112c] rounded-lg p-4 shadow-md border border-purple-900/30 w-[320px] h-[200px] flex-shrink-0 relative flex flex-col transform transition-all duration-500 hover:scale-105 hover:shadow-xl hover:border-purple-500 animate-fadeInUp overflow-visible"
-                            style={{ 
-                              animationDelay: `${index * 0.1}s`,
+                          style={{ 
+                            animationDelay: `${index * 0.1}s`,
                               animationFillMode: 'both',
                               zIndex: 1
-                            }}
-                          >
+                          }}
+                        >
                             {/* 3-dots menu for state change (absolute top-right of card) */}
                             <div className="absolute top-3 right-3 z-30">
                               <ThreeDotsMenu
@@ -963,61 +959,61 @@ useEffect(() => {
                             </div>
                             {/* Type badge, at the bottom-right */}
                             <span className={`absolute bottom-3 right-3 px-2 py-1 rounded-full text-xs font-bold ${order.type === 'gig' ? 'bg-purple-600 text-white' : 'bg-pink-500 text-white'}`}>{order.type === 'gig' ? 'GIG' : 'PROJECT'}</span>
-                            
-                            {order.type === 'gig' ? (
-                              // Gig Order Display
-                              <div className="space-y-2 flex-1">
-                                <div className="text-sm font-semibold mb-2 text-purple-200 break-words hyphens-auto leading-relaxed pr-16">
-                                  Gig: {order.gig_title || 'Untitled Gig'}
+                          
+                          {order.type === 'gig' ? (
+                            // Gig Order Display
+                            <div className="space-y-2 flex-1">
+                              <div className="text-sm font-semibold mb-2 text-purple-200 break-words hyphens-auto leading-relaxed pr-16">
+                                Gig: {order.gig_title || 'Untitled Gig'}
+                              </div>
+                              <div className="space-y-1 text-xs">
+                                <div>
+                                  <span className="text-gray-400">Order Placed:</span>
+                                  <div className="text-purple-200 font-medium">
+                                    {order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}
+                                  </div>
                                 </div>
-                                <div className="space-y-1 text-xs">
-                                  <div>
-                                    <span className="text-gray-400">Order Placed:</span>
-                                    <div className="text-purple-200 font-medium">
-                                      {order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}
-                                    </div>
+                                <div>
+                                  <span className="text-gray-400">Client:</span>
+                                  <div className="text-purple-200 font-medium truncate">{order.buyer_name || 'Unknown'}</div>
+                                </div>
+                                <div>
+                                  <span className="text-gray-400">Price:</span>
+                                  <div className="text-green-400 font-bold">${order.price || 'N/A'}</div>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            // Project Order Display
+                            <div className="space-y-2 flex-1">
+                              <div className="text-sm font-semibold mb-2 text-purple-200 break-words hyphens-auto leading-relaxed pr-16">
+                                Project: {order.project_title || 'Untitled Project'}
+                              </div>
+                              <div className="space-y-1 text-xs">
+                                <div>
+                                  <span className="text-gray-400">Order Placed:</span>
+                                  <div className="text-purple-200 font-medium">
+                                    {order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}
                                   </div>
-                                  <div>
-                                    <span className="text-gray-400">Client:</span>
-                                    <div className="text-purple-200 font-medium truncate">{order.buyer_name || 'Unknown'}</div>
-                                  </div>
-                                  <div>
-                                    <span className="text-gray-400">Price:</span>
-                                    <div className="text-green-400 font-bold">${order.price || 'N/A'}</div>
+                                </div>
+                                <div>
+                                  <span className="text-gray-400">Client:</span>
+                                  <div className="text-purple-200 font-medium truncate">{order.buyer_name || 'Unknown'}</div>
+                                </div>
+                                <div>
+                                  <span className="text-gray-400">Price:</span>
+                                  <div className="text-green-400 font-bold">${order.price || 'N/A'}</div>
+                                </div>
+                                <div>
+                                  <span className="text-gray-400">Deadline:</span>
+                                  <div className="text-purple-200 font-medium">
+                                    {order.deadline ? new Date(order.deadline).toLocaleDateString() : 'N/A'}
                                   </div>
                                 </div>
                               </div>
-                            ) : (
-                              // Project Order Display
-                              <div className="space-y-2 flex-1">
-                                <div className="text-sm font-semibold mb-2 text-purple-200 break-words hyphens-auto leading-relaxed pr-16">
-                                  Project: {order.project_title || 'Untitled Project'}
-                                </div>
-                                <div className="space-y-1 text-xs">
-                                  <div>
-                                    <span className="text-gray-400">Order Placed:</span>
-                                    <div className="text-purple-200 font-medium">
-                                      {order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}
-                                    </div>
-                                  </div>
-                                  <div>
-                                    <span className="text-gray-400">Client:</span>
-                                    <div className="text-purple-200 font-medium truncate">{order.buyer_name || 'Unknown'}</div>
-                                  </div>
-                                  <div>
-                                    <span className="text-gray-400">Price:</span>
-                                    <div className="text-green-400 font-bold">${order.price || 'N/A'}</div>
-                                  </div>
-                                  <div>
-                                    <span className="text-gray-400">Deadline:</span>
-                                    <div className="text-purple-200 font-medium">
-                                      {order.deadline ? new Date(order.deadline).toLocaleDateString() : 'N/A'}
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
+                            </div>
+                          )}
+                        </div>
                         );
                       })}
                     </div>

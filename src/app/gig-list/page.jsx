@@ -73,9 +73,7 @@ function GigList() {
         if (searchQuery.trim() !== "") {
           filters.search = searchQuery;
         }
-        console.log("Fetching gigs from backend with filters:", filters);
         const backendGigs = await gigService.getAllGigs(filters);
-        console.log("Backend gigs response:", backendGigs);
         const mapped = backendGigs.map(gig => ({
           id: gig.id,
           name: gig.freelancer || "Unknown",
@@ -92,9 +90,8 @@ function GigList() {
           tag: "",
           duration: gig.delivery_time ?? 0,
           languages: ["English"],
-          location: "Any",
+          location: gig.location || "Any",
         }));
-        console.log('Mapped gigs:', mapped);
         setGigs(mapped);
       } catch (err) {
         setError("Failed to fetch gigs");

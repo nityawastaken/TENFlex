@@ -3,6 +3,7 @@ import "./globals.css";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import { UserProvider } from "@/app/contexts/UserContext";
+import Link from "next/link";
 
 export const metadata = {
   title: "TENFlex",

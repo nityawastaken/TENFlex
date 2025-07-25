@@ -7,8 +7,27 @@ const UserContext = createContext();
 
 function isProfileIncomplete(user) {
   if (!user) return true;
-  // Define your own completeness logic here
-  return !user.profile_picture || !user.bio || !user.languages || user.languages.length === 0;
+  
+  // More comprehensive profile completeness check
+  const requiredFields = [
+    'profile_picture',
+    'bio',
+    'location',
+    'contact_number'
+  ];
+  
+  // Check if any required field is missing or empty
+  for (const field of requiredFields) {
+    if (!user[field]) return true;
+  }
+  
+  // If user is a freelancer, check additional required fields
+  if (user.is_freelancer) {
+    if (!user.skills || user.skills.length === 0) return true;
+    if (!user.experience) return true;
+  }
+  
+  return false;
 }
 
 export function UserProvider({ children }) {
@@ -17,24 +36,79 @@ export function UserProvider({ children }) {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const router = useRouter();
 
-  // Initialize user from localStorage
+  // Initialize user from localStorage and validate token
   useEffect(() => {
-    const user = authService.getCurrentUser();
-    const token = authService.getToken();
-
-    setCurrentUser(user);
-    setLoading(false);
-
-    // Only show modal if just signed in and profile is incomplete
-    if (
-      user &&
-      token &&
-      isProfileIncomplete(user) &&
-      sessionStorage.getItem('showProfileModal') === '1'
-    ) {
-      setShowProfileModal(true);
-      sessionStorage.removeItem('showProfileModal');
-    }
+    const initializeUser = async () => {
+      setLoading(true);
+      
+      // Get user from localStorage
+      const user = authService.getCurrentUser();
+      const token = authService.getToken();
+      
+      if (token) {
+        // Validate token with backend
+        try {
+          const isValid = await authService.validateToken();
+          if (!isValid) {
+            // Token invalid, clear user data
+            setCurrentUser(null);
+            setLoading(false);
+            return;
+          }
+          
+          // If token is valid but we don't have user data, fetch it
+          if (!user && token) {
+            try {
+              const userData = await authService.fetchUserData(token);
+              if (userData) {
+                authService.updateUserData(userData);
+                setCurrentUser(userData);
+              }
+            } catch (err) {
+              console.error("Error fetching user data:", err);
+            }
+          } else {
+            setCurrentUser(user);
+          }
+        } catch (err) {
+          console.error("Error validating token:", err);
+          setCurrentUser(user); // Still set user from localStorage as fallback
+        }
+      } else {
+        setCurrentUser(null);
+      }
+      
+      setLoading(false);
+      
+      // Only show modal if just signed in and profile is incomplete
+      if (
+        user &&
+        token &&
+        isProfileIncomplete(user) &&
+        sessionStorage.getItem('showProfileModal') === '1'
+      ) {
+        setShowProfileModal(true);
+        sessionStorage.removeItem('showProfileModal');
+      }
+    };
+    
+    initializeUser();
+    
+    // Set up periodic token validation (every 15 minutes)
+    const tokenCheckInterval = setInterval(async () => {
+      if (authService.getToken()) {
+        try {
+          const isValid = await authService.validateToken();
+          if (!isValid && currentUser) {
+            setCurrentUser(null);
+          }
+        } catch (err) {
+          console.error("Error during periodic token validation:", err);
+        }
+      }
+    }, 15 * 60 * 1000); // 15 minutes
+    
+    return () => clearInterval(tokenCheckInterval);
   }, []);
 
   useEffect(() => {
@@ -43,10 +117,10 @@ export function UserProvider({ children }) {
     }
   }, [currentUser]);
 
-  const loginUser = (userData) => {
+  const loginUser = async (userData) => {
     setCurrentUser(userData);
     authService.updateUserData(userData);
-    console.log("User after loginUser:", userData);
+    
     // Set flag to show modal after sign-in if profile is incomplete
     if (isProfileIncomplete(userData)) {
       sessionStorage.setItem('showProfileModal', '1');
@@ -70,7 +144,8 @@ export function UserProvider({ children }) {
       loginUser, 
       logoutUser, 
       updateUser,
-      isAuthenticated: authService.isAuthenticated()
+      isAuthenticated: !!currentUser && authService.isAuthenticated(),
+      isProfileIncomplete: currentUser ? isProfileIncomplete(currentUser) : true
     }}>
       {/* Blur and overlay when modal is open */}
       <div className={showProfileModal ? "relative" : ""}>

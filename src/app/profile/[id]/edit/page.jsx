@@ -4,14 +4,26 @@ import React, { useEffect, useRef, useState } from "react";
 import { FaTrash, FaRegEdit } from "react-icons/fa";
 import { LuSave } from "react-icons/lu";
 import { IoClose } from "react-icons/io5";
-import { Tooltip } from 'react-tooltip';
 import { useParams, useRouter } from "next/navigation";
 import { CiLocationOn } from "react-icons/ci";
 import Select from 'react-select';
-import { ToastContainer } from "react-toastify";
+import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { userService } from "@/utils/services";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+// Define language code to name mapping
+const LANGUAGE_CODE_TO_NAME = {
+  en: 'English',
+  hi: 'Hindi',
+  fr: 'French',
+  es: 'Spanish',
+  de: 'German',
+  zh: 'Chinese',
+  ru: 'Russian',
+  // Add more languages as needed
+};
 
 export default function Edit() {
   const router = useRouter();
@@ -20,57 +32,45 @@ export default function Edit() {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false);
-  const [availableLanguages, setAvailableLanguages] = useState([]);
-  const [proficiencyLevels, setProficiencyLevels] = useState([]);
-  const [languagesLoading, setLanguagesLoading] = useState(true);
+  const [selectedLanguages, setSelectedLanguages] = useState([]);
+  const [availableLanguages, setAvailableLanguages] = useState(Object.keys(LANGUAGE_CODE_TO_NAME).map(code => ({
+    code,
+    name: LANGUAGE_CODE_TO_NAME[code]
+  })));
+  const [languagesLoading, setLanguagesLoading] = useState(false);
 
-  const proficiencyRef = useRef("");
-  const languageRef = useRef("");
+  const languageRef = useRef(null);
 
-  // Fetch available languages and proficiency levels
-  useEffect(() => {
-    async function fetchLanguageData() {
-      try {
-        const user = JSON.parse(localStorage.getItem("user"));
-        const token = user?.token;
-        
-        const [languagesRes, proficiencyRes] = await Promise.all([
-          fetch(`${API_URL}/base/languages/`, {
-            headers: token ? { Authorization: `Token ${token}` } : {},
-          }),
-          fetch(`${API_URL}/base/proficiency-levels/`, {
-            headers: token ? { Authorization: `Token ${token}` } : {},
-          })
-        ]);
-
-        if (languagesRes.ok) {
-          const languagesData = await languagesRes.json();
-          setAvailableLanguages(languagesData);
-        }
-
-        if (proficiencyRes.ok) {
-          const proficiencyData = await proficiencyRes.json();
-          setProficiencyLevels(proficiencyData);
-        }
-      } catch (error) {
-        console.error("Error fetching language data:", error);
-      } finally {
-        setLanguagesLoading(false);
-      }
-    }
-
-    fetchLanguageData();
-  }, []);
+  // Helper for E.164 international phone validation
+  const isValidPhoneNumber = (number) => {
+    if (!number) return true; // Empty is valid
+    return /^\+\d{10,15}$/.test(number);
+  };
 
   useEffect(() => {
     if (!id) return;
 
     async function fetchUser() {
       try {
-        const user = JSON.parse(localStorage.getItem("user"));
+        setLoading(true);
+        
+        const storedUser = localStorage.getItem("user");
+        if (!storedUser) {
+          router.push("/signin");
+          return;
+        }
+        
+        const user = JSON.parse(storedUser);
         const token = user?.token;
         if (!token) {
           router.push("/signin");
+          return;
+        }
+
+        // Check if user is editing their own profile
+        if (user.id !== parseInt(id)) {
+          toast.error("You can only edit your own profile");
+          router.push(`/profile/${user.id}`);
           return;
         }
 
@@ -80,25 +80,41 @@ export default function Edit() {
           },
         });
 
-        if (!res.ok) throw new Error("Failed to fetch user");
+        if (!res.ok) throw new Error("Failed to fetch user profile");
+        
         const data = await res.json();
         console.log("Fetched user data:", data);
-        console.log("Languages from backend:", data.languages);
+        
+        // Format languages for display
+        let userLangs = [];
+        if (Array.isArray(data.lang_spoken) && data.lang_spoken.length > 0) {
+          userLangs = data.lang_spoken.map(langCode => ({
+            code: langCode,
+            name: LANGUAGE_CODE_TO_NAME[langCode] || langCode
+          }));
+        }
+        
         setUserData({
           about: data.bio || "",
           location: data.location || "",
-          languages: data.languages || data.lang_spoken || [],
+          languages: userLangs,
           profile_picture: data.profile_picture || "",
-          name: data.name || data.username || "",
+          name: data.username || "",
           email: data.email || "",
-          contact: data.phone || data.contact || "",
-          experience: data.experience_display || data.experience || "",
+          contact: data.contact_number || "",
+          experience: data.experience || "",
           avgRating: data.avg_rating ?? "N/A",
           ongoingOrders: data.inline_orders ?? 0,
           completedOrders: data.completed_orders ?? 0,
+          is_freelancer: data.is_freelancer,
         });
+        
+        // Set selected languages
+        setSelectedLanguages(userLangs.map(lang => lang.code));
+        
       } catch (error) {
         console.error("Error fetching user:", error);
+        toast.error("Failed to load profile data");
         setUserData(null);
       } finally {
         setLoading(false);
@@ -106,118 +122,118 @@ export default function Edit() {
     }
 
     fetchUser();
-  }, [id]);
+  }, [id, router]);
 
   const handleLanguageModal = () => {
     setIsLanguageModalOpen(!isLanguageModalOpen);
   };
 
-  const deleteLanguage = (key) => {
-    const updatedLanguages = userData.languages.filter(
-      (_, index) => index !== key
-    );
-    setUserData({ ...userData, languages: updatedLanguages });
+  const handleLanguageChange = (selectedOptions) => {
+    const selectedCodes = selectedOptions.map(option => option.value);
+    setSelectedLanguages(selectedCodes);
+    
+    // Update userData.languages with the full language objects
+    const updatedLanguages = selectedCodes.map(code => ({
+      code: code,
+      name: LANGUAGE_CODE_TO_NAME[code] || code
+    }));
+    
+    setUserData(prev => ({
+      ...prev,
+      languages: updatedLanguages
+    }));
   };
 
-  const addLanguage = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const selectedLanguage = languageRef.current.value;
-    const selectedProficiency = proficiencyRef.current.value;
+    setLoading(true);
     
-    if (!selectedLanguage || !selectedProficiency) {
-      alert("Please select both language and proficiency level");
+    // Validate contact number (must be E.164 format if provided)
+    if (userData.contact && !isValidPhoneNumber(userData.contact)) {
+      toast.error("Please enter a valid phone number in international format (e.g. +919876543210)");
+      setLoading(false);
       return;
     }
-
-    const languageExists = userData.languages.some(
-      lang => lang.language === selectedLanguage
-    );
     
-    if (languageExists) {
-      alert("This language is already added");
-      return;
-    }
-
-    setUserData({
-      ...userData,
-      languages: [
-        ...userData.languages,
-        {
-          language: selectedLanguage,
-          proficiency: selectedProficiency,
-        },
-      ],
-    });
-    
-    languageRef.current.value = "";
-    proficiencyRef.current.value = "";
-    handleLanguageModal();
-  };
-
-  const saveChanges = async () => {
     try {
-      // Validate contact field
-      if (userData.contact && userData.contact.length !== 10) {
-        alert("Contact number must be exactly 10 characters long.");
-        return;
-      }
-
       const user = JSON.parse(localStorage.getItem("user"));
       const token = user?.token;
       if (!token) {
-        alert("User not logged in");
+        toast.error("You must be logged in to update your profile.");
+        setLoading(false);
+        router.push("/signin");
         return;
       }
-
-      let response;
+      
+      // Prepare data for API
+      let formData = new FormData();
+      
+      // Basic info
+      formData.append('bio', userData.about || '');
+      formData.append('location', userData.location || '');
+      
+      // Phone number
+        if (userData.contact) {
+        formData.append('contact_number', userData.contact);
+        }
+      
+      // Languages - joined as comma-separated list
+      if (selectedLanguages.length > 0) {
+        selectedLanguages.forEach(lang => {
+          formData.append('lang_spoken', lang);
+        });
+      }
+      
+      // Profile picture
       if (userData.profile_picture instanceof File) {
-        const formData = new FormData();
-        formData.append('location', userData.location);
-        formData.append('bio', userData.about);
-        formData.append('contact', userData.contact);
         formData.append('profile_picture', userData.profile_picture);
-        formData.append('languages', JSON.stringify(userData.languages));
-        response = await fetch(`${API_URL}/base/users/${id}/`, {
-          method: "PATCH",
-          headers: {
-            Authorization: `Token ${token}`,
-          },
-          body: formData,
-        });
-      } else {
-        const body = {
-          location: userData.location,
-          bio: userData.about,
-          contact: userData.contact,
-          languages: userData.languages,
-          ...(userData.profile_picture === "" && { profile_picture: null }),
-        };
-        response = await fetch(`${API_URL}/base/users/${id}/`, {
-          method: "PATCH",
+        }
+      
+      // Send request to update profile
+      const response = await fetch(`${API_URL}/base/users/${id}/`, {
+        method: 'PATCH',
         headers: {
-          "Content-Type": "application/json",
-            Authorization: `Token ${token}`,
-          },
-          body: JSON.stringify(body),
-        });
-      }
-
+          Authorization: `Token ${token}`
+        },
+        body: formData
+      });
+      
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Response not ok:", response.status, errorText);
-        throw new Error(`Failed to update user: ${response.status} - ${errorText}`);
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update profile");
       }
-
-      const updatedUser = await response.json();
-      console.log("Updated user response:", updatedUser);
+      
+      // Get updated profile data
+      const updatedProfile = await response.json();
+      
+      // Update local storage
+      const updatedUser = {
+        ...user,
+        ...updatedProfile
+      };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      toast.success("Profile updated successfully!");
       router.push(`/profile/${id}`);
     } catch (error) {
-      console.error("Error saving changes:", error);
-      alert("Something went wrong while saving changes: " + error.message);
+      console.error("Error updating profile:", error);
+      toast.error(error.message || "Error updating profile");
+    } finally {
+    setLoading(false);
     }
   };
 
-  if (loading || languagesLoading) {
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setUserData(prev => ({
+        ...prev,
+        profile_picture: file
+      }));
+    }
+  };
+
+  if (loading) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-black text-white">
         <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-purple-400"></div>
@@ -233,10 +249,39 @@ export default function Edit() {
     );
   }
 
+  // Get profile image URL
+  const getProfileImageUrl = (profileImage) => {
+    if (!profileImage) return null;
+    
+    // If it's a File object from new upload
+    if (profileImage instanceof File) {
+      return URL.createObjectURL(profileImage);
+    }
+    
+    // If it's a URL string
+    if (typeof profileImage === 'string') {
+      if (profileImage.startsWith('http')) return profileImage;
+      return `${API_URL}${profileImage}`;
+    }
+    
+    return null;
+  };
+
   // Section/card fade-in and hover effect
   const cardClass = "mb-8 bg-[#1a1333] rounded-lg shadow-lg p-6 animate-fadeIn transition-all duration-700 ease-out backdrop-blur-md border-2 border-transparent hover:border-gradient-to-r from-purple-400 to-pink-400 hover:scale-105 hover:shadow-2xl";
   const cardInnerClass = "bg-[#24194a] p-3 rounded mb-2 hover:scale-105 hover:shadow-xl transition-transform duration-300";
   const buttonClass = "px-4 py-2 bg-purple-600 hover:bg-purple-800 rounded text-white font-semibold transition-transform duration-200 hover:scale-105 hover:shadow-lg";
+
+  // Format language options for the Select component
+  const languageOptions = availableLanguages.map(lang => ({
+    value: lang.code,
+    label: lang.name
+  }));
+  
+  // Get the currently selected language values
+  const selectedLanguageValues = languageOptions.filter(option => 
+    selectedLanguages.includes(option.value)
+  );
 
   return (
     <>
@@ -294,7 +339,7 @@ export default function Edit() {
           <div className="flex flex-col items-center gap-6 py-8 px-6 bg-white/10 rounded-xl shadow-xl border border-white/10 backdrop-blur-md transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 animate-popIn" style={{ animationDelay: '0.25s' }}>
             <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-white/30 shadow-md mb-2 bg-gray-900 flex items-center justify-center">
               {userData?.profile_picture ? (
-                <img src={typeof userData.profile_picture === 'string' ? userData.profile_picture : URL.createObjectURL(userData.profile_picture)} alt="Profile" className="w-full h-full object-cover" />
+                <img src={getProfileImageUrl(userData.profile_picture)} alt="Profile" className="w-full h-full object-cover" />
               ) : (
                 <span className="text-3xl font-bold text-gray-200">{userData?.name?.[0] || 'U'}</span>
               )}
@@ -318,6 +363,8 @@ export default function Edit() {
             </div>
             <div className="h-px w-full bg-gradient-to-r from-gray-700 via-gray-500 to-gray-700 opacity-30 my-4"></div>
             <div className="w-full flex flex-col gap-3 text-xs">
+              {userData.is_freelancer && (
+              <>
               <div className="flex items-center gap-2 justify-between">
                 <span className="text-gray-400">Experience</span>
                 <span className="px-2 py-0.5 rounded bg-gray-800 text-gray-100 font-medium tracking-wide min-w-[60px] text-center">{userData?.experience || 'N/A'}</span>
@@ -334,51 +381,35 @@ export default function Edit() {
                 <span className="text-gray-400">Completed Orders</span>
                 <span className="px-2 py-0.5 rounded bg-gray-800 text-green-200 font-semibold min-w-[60px] text-center">{userData?.completedOrders || 0}</span>
               </div>
+              </>
+              )}
               {/* Languages (non-editable, with hover popup) */}
               <div className="flex items-center gap-2 justify-between">
                 <span className="text-gray-400">Languages</span>
                 <div className="relative group">
                   <span className="px-2 py-0.5 rounded bg-gray-800 text-purple-300 font-medium text-center max-w-[120px] truncate">
-                    {(() => {
-                      let languageNames = [];
-                      if (Array.isArray(userData?.languages) && userData.languages.length > 0) {
-                        languageNames = userData.languages.map(lang => {
-                          const languageName = availableLanguages.find(l => l.code === lang.language)?.name || lang.language;
-                          return languageName;
-                        });
-                      }
-                      return languageNames.length > 0 ? languageNames.join(', ') : 'N/A';
-                    })()}
+                    {userData.languages.length > 0 
+                      ? userData.languages.map(lang => lang.name).join(', ')
+                      : 'N/A'
+                    }
                   </span>
                   {/* Hover Popup for multiple languages */}
-                  {(() => {
-                    let languageNames = [];
-                    if (Array.isArray(userData?.languages) && userData.languages.length > 0) {
-                      languageNames = userData.languages.map(lang => {
-                        const languageName = availableLanguages.find(l => l.code === lang.language)?.name || lang.language;
-                        return languageName;
-                      });
-                    }
-                    if (languageNames.length > 1) {
-                      return (
+                  {userData.languages.length > 1 && (
                         <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto z-10">
                           <div className="bg-[#1a1333] border border-purple-500/30 rounded-lg shadow-2xl p-3 min-w-[200px] max-w-[300px] backdrop-blur-md">
                             <div className="text-xs font-semibold text-purple-300 mb-2 border-b border-purple-500/30 pb-1">All Languages:</div>
                             <div className="space-y-1">
-                              {languageNames.map((lang, index) => (
+                          {userData.languages.map((lang, index) => (
                                 <div key={index} className="text-xs text-gray-200 flex items-center gap-2">
                                   <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
-                                  {lang}
+                              {lang.name}
                                 </div>
                               ))}
                             </div>
                             <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-[#1a1333]"></div>
                           </div>
                         </div>
-                      );
-                    }
-                    return null;
-                  })()}
+                  )}
                 </div>
               </div>
             </div>
@@ -387,7 +418,7 @@ export default function Edit() {
           {/* Action Buttons */}
           <div className="mt-6 space-y-3">
             <button
-              onClick={saveChanges}
+              onClick={handleSubmit}
               className="w-full px-4 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-semibold transition-all duration-200 hover:scale-105 hover:shadow-lg flex items-center justify-center gap-2"
             >
               <LuSave className="text-lg" /> Save Changes
@@ -419,7 +450,7 @@ export default function Edit() {
                 <div className="w-32 h-32 md:w-36 md:h-36 rounded-full overflow-hidden border-4 border-purple-400 shadow-lg bg-gray-800 flex items-center justify-center">
                   {userData.profile_picture ? (
                     <img 
-                      src={typeof userData.profile_picture === 'string' ? userData.profile_picture : URL.createObjectURL(userData.profile_picture)} 
+                      src={getProfileImageUrl(userData.profile_picture)} 
               alt="Profile"
                       className="w-full h-full object-cover" 
                     />
@@ -448,7 +479,7 @@ export default function Edit() {
                 )}
               </div>
             </div>
-            <input id="profile-upload" type="file" accept="image/*" onChange={(e) => { const file = e.target.files[0]; if (file) { setUserData({ ...userData, profile_picture: file }); } }} className="hidden" />
+            <input id="profile-upload" type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
           </div>
 
           {/* Personal Information Section */}
@@ -470,13 +501,13 @@ export default function Edit() {
                 <input 
                   type="text" 
                   value={userData.contact} 
-                  onChange={(e) => setUserData({ ...userData, contact: e.target.value })} 
-                  placeholder="Enter 10-digit phone number" 
-                  maxLength={10}
+                  onChange={(e) => setUserData({ ...userData, contact: e.target.value.replace(/[^\d+]/g, '').slice(0, 16) })} 
+                  placeholder="e.g. +919876543210" 
+                  maxLength={16}
                   className="w-full border border-purple-700 rounded-lg px-4 py-3 bg-[#24194a] text-white focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all" 
                 />
-                {userData.contact && userData.contact.length < 10 && (
-                  <span className="text-red-400 text-xs">Contact number must be exactly 10 characters long. Current: {userData.contact.length}/10</span>
+                {userData.contact && !isValidPhoneNumber(userData.contact) && (
+                  <span className="text-red-400 text-xs">Enter a valid phone number in international format (e.g. +919876543210).</span>
                 )}
               </div>
             </div>
@@ -503,108 +534,81 @@ export default function Edit() {
 
           {/* Languages Section */}
           <div className={cardClass + " animate-fadeInUp animate-popIn transition-all duration-500 hover:shadow-2xl hover:-translate-y-1"} style={{ animationDelay: '0.7s' }}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-purple-400 animate-popIn" style={{ animationDelay: '0.75s' }}>Languages</h2>
-              <button 
-                className={buttonClass + " py-2 px-4 text-sm flex items-center gap-2"} 
-                onClick={handleLanguageModal}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                </svg>
-                Add Language
-              </button>
+            <h2 className="text-xl font-bold text-purple-400 mb-4 animate-popIn" style={{ animationDelay: '0.75s' }}>Languages</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-purple-300 mb-2">Select Languages</label>
+                <Select
+                  isMulti
+                  options={languageOptions}
+                  value={selectedLanguageValues}
+                  onChange={handleLanguageChange}
+                  className="text-black"
+                  classNamePrefix="select"
+                  placeholder="Search or select languages..."
+                  menuPortalTarget={typeof window !== 'undefined' ? document.body : null}
+                  styles={{
+                    menuPortal: base => ({ ...base, zIndex: 9999 }),
+                    menu: base => ({ ...base, backgroundColor: '#24194a', color: 'white', zIndex: 9999 }),
+                    option: (base, state) => ({
+                      ...base,
+                      backgroundColor: state.isFocused ? '#6d28d9' : '#24194a',
+                      color: 'white',
+                      cursor: 'pointer',
+                    }),
+                    control: base => ({ ...base, backgroundColor: '#24194a', borderColor: '#a78bfa', color: 'white', boxShadow: 'none' }),
+                    singleValue: base => ({ ...base, color: 'white' }),
+                    multiValue: base => ({ ...base, backgroundColor: '#a78bfa', color: 'white' }),
+                    multiValueLabel: base => ({ ...base, color: 'white' }),
+                    input: base => ({ ...base, color: 'white' }),
+                    placeholder: base => ({ ...base, color: '#a78bfa' }),
+                  }}
+                />
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             {userData.languages.length > 0 ? (
-              userData.languages.map((language, key) => (
-                  <div key={key} className={cardInnerClass + " flex items-center justify-between p-4"}>
-                    <div className="flex-1">
+                  userData.languages.map((language, index) => (
+                    <div key={index} className={cardInnerClass + " flex items-center justify-between p-4 bg-[#2d1a4d]"}>
                       <div className="font-semibold text-purple-200">
-                        {availableLanguages.find(lang => lang.code === language.language)?.name || language.language}
-                      </div>
-                      <div className="text-sm text-purple-300">
-                        {proficiencyLevels.find(prof => prof.code === language.proficiency)?.name || language.proficiency}
+                        {language.name}
                       </div>
                     </div>
-                  <button
-                      className="text-red-400 hover:text-red-200 transition-colors p-2" 
-                    onClick={() => deleteLanguage(key)}
-                  >
-                    <FaTrash />
-                  </button>
+                  ))
+                ) : (
+                  <div className="col-span-full text-center py-6 text-gray-400 bg-[#24194a]/50 rounded-lg">
+                    No languages selected
                   </div>
-              ))
-            ) : (
-                <div className="col-span-full text-center py-8 text-gray-400">
-                  <svg className="w-12 h-12 mx-auto mb-4 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                  </svg>
-                  <p>No languages added yet.</p>
-                  <p className="text-sm">Click "Add Language" to get started</p>
+                )}
                 </div>
-              )}
             </div>
-
-            {/* Language Modal */}
-            {isLanguageModalOpen && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-purple-900/80 to-pink-900/80 backdrop-blur-md animate-fadeIn">
-                <div className="bg-gradient-to-br from-[#1a1333] to-[#24194a] rounded-2xl shadow-2xl p-8 relative animate-popIn max-w-md w-full mx-4 border border-purple-500/30">
-                  <button onClick={handleLanguageModal} className="absolute top-4 right-4 text-white text-2xl hover:text-purple-400 transition-colors bg-purple-600/20 hover:bg-purple-600/40 rounded-full w-8 h-8 flex items-center justify-center">&times;</button>
-                  <h3 className="text-xl font-bold text-purple-400 mb-6">Add New Language</h3>
-                  <form className="space-y-4" onSubmit={addLanguage}>
-                    <div>
-                      <label className="block text-sm font-semibold text-purple-300 mb-2">Language</label>
-                      <Select
-                  ref={languageRef}
-                        options={availableLanguages.map(lang => ({ value: lang.code, label: lang.name }))}
-                        classNamePrefix="rs"
-                        placeholder="Search or select language..."
-                        onChange={option => languageRef.current = { value: option.value, label: option.label }}
-                        styles={{
-                          control: (base) => ({ ...base, backgroundColor: '#24194a', borderColor: '#a78bfa', color: 'white', boxShadow: 'none' }),
-                          menu: (base) => ({ ...base, backgroundColor: '#24194a', color: 'white' }),
-                          option: (base, state) => ({ ...base, backgroundColor: state.isFocused ? '#6d28d9' : '#24194a', color: 'white', cursor: 'pointer' }),
-                          singleValue: (base) => ({ ...base, color: 'white' }),
-                          input: (base) => ({ ...base, color: 'white' }),
-                          placeholder: (base) => ({ ...base, color: '#a78bfa' }),
-                        }}
-                      />
                     </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-purple-300 mb-2">Proficiency Level</label>
-                <select
-                  ref={proficiencyRef}
-                        className="w-full border border-purple-700 rounded-lg px-4 py-3 bg-[#24194a] text-white focus:ring-2 focus:ring-purple-400 focus:border-transparent"
-                      >
-                        <option value="">Select Level</option>
-                        {proficiencyLevels.map((level) => (
-                          <option key={level.code} value={level.code} className="text-black">
-                            {level.name}
-                      </option>
-                        ))}
-                </select>
-              </div>
-                    <div className="flex gap-3 pt-4">
+
+          {/* Submit Buttons - Mobile Only */}
+          <div className="md:hidden mt-8 space-y-4">
                 <button
-                        type="button" 
-                        className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg transition-all duration-200 hover:scale-105" 
-                  onClick={handleLanguageModal}
-                >
-                  Cancel
+              onClick={handleSubmit}
+              disabled={loading}
+              className="w-full px-4 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-semibold transition-all duration-200 hover:scale-105 hover:shadow-lg flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <LuSave className="text-lg" /> Save Changes
+                </>
+              )}
                 </button>
                 <button
-                        type="submit" 
-                        className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-all duration-200 hover:scale-105"
+              type="button"
+              onClick={() => router.push(`/profile/${id}`)}
+              className="w-full px-4 py-3 bg-gray-600 hover:bg-gray-700 rounded-lg text-white font-semibold transition-all duration-200 hover:scale-105 hover:shadow-lg flex items-center justify-center gap-2"
                 >
-                        Add Language
+              <IoClose className="text-lg" /> Cancel
                 </button>
-              </div>
-            </form>
-                </div>
-              </div>
-            )}
           </div>
         </div>
     </div>

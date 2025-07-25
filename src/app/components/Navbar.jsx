@@ -151,10 +151,8 @@ const Navbar = () => {
 
           {user ? (
             <div className="text-white flex items-center gap-4">
-              <Link
-                href={`/profile/${user?.id}`}
-                className="flex items-center gap-2"
-              >
+              {user.is_freelancer ? (
+                <Link href={`/profile/${user?.id}`} className="flex items-center gap-2">
                 {profileImage ? (
                   <img
                     src={
@@ -171,6 +169,25 @@ const Navbar = () => {
                   </div>
                 )}
               </Link>
+              ) : (
+                <span className="flex items-center gap-2" style={{ cursor: 'not-allowed', pointerEvents: 'none', opacity: 0.5 }}>
+                  {profileImage ? (
+                    <img
+                      src={
+                        profileImage.startsWith("http")
+                          ? profileImage
+                          : `${process.env.NEXT_PUBLIC_API_URL}${profileImage}`
+                      }
+                      alt="Profile"
+                      className="w-10 h-10 rounded-full border border-white object-cover"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center font-semibold">
+                      {getInitials(user.first_name || user.username)}
+                    </div>
+                  )}
+                </span>
+              )}
               <button
                 onClick={handleLogout}
                 className="text-sm border px-3 py-1 rounded-full hover:bg-white hover:text-black transition"

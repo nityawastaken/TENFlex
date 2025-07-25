@@ -10,7 +10,7 @@ import { useParams } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { reviewService } from '@/utils/services';
 import { useUserContext } from '@/app/contexts/UserContext';
-import { FaPencilAlt, FaCheck, FaTimes } from 'react-icons/fa';
+import { FaPencilAlt, FaCheck, FaTimes, FaTrash } from 'react-icons/fa';
 
 const page = () => {
   const { id } = useParams();
@@ -55,15 +55,14 @@ const page = () => {
       setLoading(true);
       setError(null);
       try {
-        console.log('Fetching gig details for ID:', id);
         const apiHost = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        // Use correct endpoint for gig detail
         const url = `${apiHost}/base/gigs/${id}/`;
-        console.log('Fetching from URL:', url);
         const res = await fetch(url);
         if (!res.ok) throw new Error('Failed to fetch gig details');
         const data = await res.json();
         setGig(data);
-        setOrdersInQueue(data.orders_in_queue ?? 0);
+        setOrdersInQueue(data.order_inline_count ?? 0);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -79,7 +78,8 @@ const page = () => {
     const fetchReviews = async () => {
       try {
         const apiHost = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-        const res = await fetch(`${apiHost}/base/reviews/?gig=${id}`);
+        // Use correct endpoint for reviews
+        const res = await fetch(`${apiHost}/base/reviews/?gig_id=${id}`);
         if (!res.ok) throw new Error('Failed to fetch reviews');
         const data = await res.json();
         setReviews(data.results || data); // handle paginated or array response
@@ -109,7 +109,7 @@ const page = () => {
     setNewReviewRating(5);
       // Refresh reviews from backend
       const apiHost = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-      const res = await fetch(`${apiHost}/base/reviews/?gig=${gig.id}`);
+      const res = await fetch(`${apiHost}/base/reviews/?gig_id=${gig.id}`);
       if (res.ok) {
         const data = await res.json();
         setReviews(data.results || data);
@@ -148,7 +148,7 @@ const page = () => {
       setEditReviewRating(5);
       // Refresh reviews from backend
       const apiHost = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-      const res = await fetch(`${apiHost}/base/reviews/?gig=${gig.id}`);
+      const res = await fetch(`${apiHost}/base/reviews/?gig_id=${gig.id}`);
       if (res.ok) {
         const data = await res.json();
         setReviews(data.results || data);
@@ -197,6 +197,25 @@ const page = () => {
       (review.comment || "").toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredReviews(filtered);
+  };
+
+  // Add delete review handler
+  const handleDeleteReview = async (review) => {
+    if (!window.confirm('Are you sure you want to delete this review?')) return;
+    try {
+      await reviewService.deleteReview(review.id);
+      // Refresh reviews from backend
+      const apiHost = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const res = await fetch(`${apiHost}/base/reviews/?gig_id=${gig.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setReviews(data.results || data);
+        setFilteredReviews(data.results || data);
+      }
+    } catch (err) {
+      alert('Failed to delete review: ' + (err.message || 'Unknown error'));
+      console.error('Delete review error:', err);
+    }
   };
 
   // Helper function to get the correct image URL
@@ -486,12 +505,20 @@ const page = () => {
                         <p className="review-rating">★ {review.rating}</p>
                         <div className="review-comment">{review.comment}</div>
                         {isOwnReview && (
-                          <button
-                            onClick={() => handleEditReview(review)}
-                            className="mt-2 px-2 py-1 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded flex items-center gap-1 text-xs"
-                          >
-                            <FaPencilAlt /> Edit
-                          </button>
+                          <div className="flex gap-2 mt-2">
+                            <button
+                              onClick={() => handleEditReview(review)}
+                              className="px-2 py-1 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded flex items-center gap-1 text-xs"
+                            >
+                              <FaPencilAlt /> Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteReview(review)}
+                              className="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-800 rounded flex items-center gap-1 text-xs"
+                            >
+                              <FaTrash /> Delete
+                            </button>
+                          </div>
                         )}
                       </>
                     )}
