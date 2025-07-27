@@ -15,7 +15,7 @@ const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScroll, setIsScroll] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-
+  const [token, setToken] = useState("");
 
   const getLinks = (role) => {
     const base = [
@@ -48,8 +48,7 @@ const Navbar = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
+    localStorage.clear();
     setUser(null);
     router.push("/signin");
   };
@@ -60,19 +59,22 @@ const Navbar = () => {
     if (query) {
       router.push(`/gig-list?search=${encodeURIComponent(query)}`);
     } else {
-      router.push('/gig-list');
+      router.push("/gig-list");
     }
   };
 
   useEffect(() => {
     setIsMounted(true);
-    const storedUser = localStorage.getItem("user");
+    const storedUser = localStorage.getItem("userMin");
+    setToken(localStorage.getItem("token"));
 
     if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
       setUser(parsedUser);
       setProfileImage(parsedUser.profile_picture || null);
-      setNavLinks(getLinks(parsedUser.role));
+      setNavLinks(
+        getLinks(parsedUser.is_freelancer ? "freelancer" : "customer")
+      );
     } else {
       setNavLinks(getLinks(null));
     }
@@ -110,9 +112,9 @@ const Navbar = () => {
       >
         {/* Logo and Search */}
         <div className="flex items-center gap-4 md:gap-10">
-          <h1 className="font-bold tracking-wider text-2xl md:text-3xl text-white">
+          <Link href={"/"} className="font-bold tracking-wider text-2xl md:text-3xl text-white">
             TENFLE<span className="text-[#A020F0]">x</span>
-          </h1>
+          </Link>
 
           <form
             onSubmit={handleSearchSubmit}
@@ -148,11 +150,16 @@ const Navbar = () => {
             ))}
           </ul>
 
-
           {user ? (
             <div className="text-white flex items-center gap-4">
-              {user.is_freelancer ? (
-                <Link href={`/profile/${user?.id}`} className="flex items-center gap-2">
+              <Link
+                href={
+                  user?.is_freelancer
+                    ? `/profile/${user?.id}`
+                    : `client-profile`
+                }
+                className="flex items-center gap-2"
+              >
                 {profileImage ? (
                   <img
                     src={
@@ -169,28 +176,10 @@ const Navbar = () => {
                   </div>
                 )}
               </Link>
-              ) : (
-                <span className="flex items-center gap-2" style={{ cursor: 'not-allowed', pointerEvents: 'none', opacity: 0.5 }}>
-                  {profileImage ? (
-                    <img
-                      src={
-                        profileImage.startsWith("http")
-                          ? profileImage
-                          : `${process.env.NEXT_PUBLIC_API_URL}${profileImage}`
-                      }
-                      alt="Profile"
-                      className="w-10 h-10 rounded-full border border-white object-cover"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center font-semibold">
-                      {getInitials(user.first_name || user.username)}
-                    </div>
-                  )}
-                </span>
-              )}
+
               <button
                 onClick={handleLogout}
-                className="text-sm border px-3 py-1 rounded-full hover:bg-white hover:text-black transition"
+                className="text-sm border px-3 py-1 rounded-full hover:bg-white hover:text-black transition cursor-pointer"
               >
                 Logout
               </button>

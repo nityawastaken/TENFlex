@@ -1,0 +1,231 @@
+import useScreenWidth from "@/Hooks/useScreenWidth";
+import React from "react";
+
+
+const Updateform = ({
+  handleSave,
+  editFirstName,
+  setEditFirstName,
+  editLastName,
+  setEditLastName,
+  editBio,
+  setEditBio,
+  editContact,
+  setEditContact,
+  editLocation,
+  setEditLocation,
+  setEditMode,
+  file,
+  setFile,
+  setEditRole,
+  editRole,
+  setEditUsePurpose,
+  editUsePurpose,
+  handleLangChange,
+  setLanguages,
+  inputValue,
+  setInputValue,
+  languages,
+}) => {
+  const width = useScreenWidth();
+
+  // Language code-name mapping (should match page.jsx)
+  const LANGUAGE_CODE_TO_NAME = {
+    en: "English",
+    hi: "Hindi",
+    fr: "French",
+    es: "Spanish",
+    de: "German",
+    zh: "Chinese",
+    ru: "Russian",
+  };
+
+  return (
+    <form
+      className={`${
+        width <= 786 ? "relative top-6 px-2" : "fixed "
+      } w-full max-w-lg md:w-[500px] mx-auto z-30 left-0 right-0 bg-gradient-to-br from-[#24194a] via-[#1a0d2b] to-[#28163a] p-6 md:p-8 pt-2 rounded-xl shadow-2xl space-y-4 border border-purple-900 h-[79vh] overflow-y-scroll scrollbar-hide`}
+      onSubmit={(e) => {
+        e.preventDefault();
+        handleSave();
+      }}
+    >
+      <h2 className="text-2xl font-bold text-white text-center mb-2 tracking-wide">
+        Update Profile
+      </h2>
+
+      {/* first_name last_name */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm text-purple-200 mb-1 font-medium">
+            First Name
+          </label>
+          <input
+            className="w-full bg-[#2d2357] text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-400 transition"
+            value={editFirstName}
+            onChange={(e) => setEditFirstName(e.target.value)}
+            placeholder="First Name"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm text-purple-200 mb-1 font-medium">
+            Last Name
+          </label>
+          <input
+            className="w-full bg-[#2d2357] text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-400 transition"
+            value={editLastName}
+            onChange={(e) => setEditLastName(e.target.value)}
+            placeholder="Last Name"
+            required
+          />
+        </div>
+      </div>
+
+      {/* contact location */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm text-purple-200 mb-1 font-medium">
+            Contact Number
+          </label>
+          <input
+            className="w-full bg-[#2d2357] text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-400 transition"
+            value={editContact}
+            onChange={(e) => setEditContact(e.target.value)}
+            type="tel"
+            // pattern="[0-9]{10}"
+            // maxLength="10"
+            placeholder="With +91 Enter 10-digit number "
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm text-purple-200 mb-1 font-medium">
+            Location
+          </label>
+          <input
+            className="w-full bg-[#2d2357] text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-400 transition"
+            value={editLocation}
+            onChange={(e) => setEditLocation(e.target.value)}
+            placeholder="Your Location"
+            type="text"
+          />
+        </div>
+      </div>
+
+      {/* role use_purpose */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm text-purple-200 mb-1 font-medium">
+            Role
+          </label>
+          <select
+            name="Role"
+            id="role"
+            className="px-2 py-2 w-full rounded cursor-pointer bg-[#2d2357] text-white"
+            value={editRole}
+            onChange={(e) => setEditRole(e.target.value)}
+          >
+            <option value="student">Student</option>
+            <option value="organization">Organization</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm text-purple-200 mb-1 font-medium">
+            Use Purpose
+          </label>
+          <select
+            name="Use_purpose"
+            id="use_purpose"
+            className="px-2 py-2 w-full rounded cursor-pointer bg-[#2d2357] text-white"
+            value={editUsePurpose}
+            onChange={(e) => setEditUsePurpose(e.target.value)}
+          >
+            <option value="personal">Personal</option>
+            <option value="business">Business</option>
+            <option value="academic">Academic</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+
+      {/* bio */}
+      <div>
+        <label className="block text-sm text-purple-200 mb-1 font-medium">
+          Bio
+        </label>
+        <textarea
+          className="w-full bg-[#2d2357] text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-400 transition resize-none"
+          value={editBio}
+          onChange={(e) => setEditBio(e.target.value)}
+          maxLength="100"
+          placeholder="Max 100 characters..."
+          rows={3}
+        />
+      </div>
+
+      {/* languages & profile pic */}
+      <div className="flex flex-col md:flex-row gap-4">
+        {/* languages */}
+        <div className="flex-1 flex flex-col">
+          <label className="block text-sm text-purple-200 mb-1 font-medium">
+            Languages
+          </label>
+          <input
+            type="text"
+            value={inputValue}
+            onChange={handleLangChange}
+            placeholder="Enter languages separated by commas"
+            className="w-full bg-[#2d2357] rounded-lg px-2 py-2 h-12 focus:outline-none focus:ring-2 focus:ring-purple-400 text-white"
+            list="language-suggestions"
+          />
+          <datalist id="language-suggestions">
+            {Object.entries(LANGUAGE_CODE_TO_NAME).map(([code, name]) => (
+              <option key={code} value={name} />
+            ))}
+          </datalist>
+        </div>
+
+        {/* profile pic input */}
+        <div className="flex-1 flex flex-col items-center justify-end">
+          {file && (
+            <p className="text-xs text-gray-300 mb-1 truncate w-full text-center">
+              Selected: {file.name}
+            </p>
+          )}
+          <input
+            type="file"
+            id="fileUpload"
+            className="hidden"
+            onChange={(e) => setFile(e.target.files[0])}
+          />
+          <label
+            htmlFor="fileUpload"
+            className="px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-800 text-white font-semibold rounded-lg shadow cursor-pointer hover:scale-105 transition text-center w-full"
+          >
+            Upload Profile Picture
+          </label>
+        </div>
+      </div>
+
+      {/* buttons */}
+      <div className="flex flex-col sm:flex-row gap-4 justify-center mt-4">
+        <button
+          type="submit"
+          className="px-6 py-2 bg-gradient-to-r from-purple-600 to-purple-800 text-white font-semibold rounded-lg shadow hover:scale-105 transition w-full sm:w-auto cursor-pointer"
+        >
+          Save
+        </button>
+        <button
+          type="button"
+          className="px-6 py-2 cursor-pointer bg-gray-600 text-white font-semibold rounded-lg shadow hover:bg-gray-800 transition w-full sm:w-auto"
+          onClick={() => setEditMode(false)}
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+};
+
+export default Updateform;

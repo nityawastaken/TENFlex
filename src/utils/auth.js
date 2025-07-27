@@ -57,6 +57,7 @@ export const authService = {
         if (userData) {
           userData.token = response.token;
           localStorage.setItem('user', JSON.stringify(userData));
+          localStorage.setItem('userMin', JSON.stringify(userData));
         } else {
           // fallback: store only token, but this should not happen
           localStorage.setItem('user', JSON.stringify({ token: response.token }));

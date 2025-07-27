@@ -1,11 +1,22 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { ArrowUpRight, Users, Clock, X, CheckCircle, AlertCircle } from "lucide-react";
+import {
+  ArrowUpRight,
+  Users,
+  Clock,
+  X,
+  CheckCircle,
+  AlertCircle,
+} from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useUserContext } from "@/app/contexts/UserContext";
 import projectService from "@/services/projectService";
 import skillService from "@/services/skillService";
+import { FaPencilAlt } from "react-icons/fa";
+import { FaTrashCan } from "react-icons/fa6";
+import axios from "axios";
+import UpdateProject from "../components/UpdateProject";
 
 // Add CSS animations
 const projectPageStyles = `
@@ -72,10 +83,13 @@ const projectPageStyles = `
 const ProjectPage = () => {
   const [activeTab, setActiveTab] = useState("projects");
   const [showModal, setShowModal] = useState(false);
+  const [updateModal, setUpdateModal] = useState(false);
   const [showBidModal, setShowBidModal] = useState(false);
   const [showProjectPopup, setShowProjectPopup] = useState(false);
   const [currentBidProjectId, setCurrentBidProjectId] = useState(null);
   const [selectedProject, setSelectedProject] = useState(null);
+  const [selectedProjectId, setSelectedProjectId] = useState("");
+  const [projectDelete, setProjectDelete] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState([]);
@@ -91,28 +105,36 @@ const ProjectPage = () => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [token, setToken] = useState("");
+
+  const apiHost = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+  async function fetchProjects() {
+    setLoading(true);
+    setError(null);
+    try {
+      const backendProjects = await projectService.getAllProjects();
+      setProjects(backendProjects);
+    } catch (err) {
+      setError("An error occurred while fetching projects");
+      setProjects([]);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    async function fetchProjects() {
-      setLoading(true);
-      setError(null);
-      try {
-        const backendProjects = await projectService.getAllProjects();
-        setProjects(backendProjects);
-      } catch (err) {
-        setError("An error occurred while fetching projects");
-        setProjects([]);
-      } finally {
-        setLoading(false);
-      }
-    }
     fetchProjects();
   }, []);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
+    const storedUser = localStorage.getItem("userMin");
+    const Token = localStorage.getItem("token");
     if (storedUser) {
       setUser(JSON.parse(storedUser));
+    }
+    if (Token) {
+      setToken(Token);
     }
   }, []);
 
@@ -121,7 +143,9 @@ const ProjectPage = () => {
       try {
         const skillsData = await skillService.getAllSkills();
         const map = {};
-        skillsData.forEach(skill => { map[skill.id] = skill.name; });
+        skillsData.forEach((skill) => {
+          map[skill.id] = skill.name;
+        });
         setSkillsMap(map);
       } catch (error) {
         console.error("Error fetching skills:", error);
@@ -146,8 +170,12 @@ const ProjectPage = () => {
       description: form.description.value,
       deadline: form.deadline.value,
       budget: parseFloat(form.budget.value),
-      skill_ids: skills.map(skill => parseInt(skill, 10)).filter(id => !isNaN(id)),
-      category_ids: tags.map(tag => parseInt(tag, 10)).filter(id => !isNaN(id)),
+      skill_ids: skills
+        .map((skill) => parseInt(skill, 10))
+        .filter((id) => !isNaN(id)),
+      category_ids: tags
+        .map((tag) => parseInt(tag, 10))
+        .filter((id) => !isNaN(id)),
     };
 
     try {
@@ -155,11 +183,11 @@ const ProjectPage = () => {
       await projectService.createProject(newProject);
       toast.success("Project posted successfully!");
       setShowModal(false);
-      
+
       // Clear form fields
       setTags([]);
       setSkills([]);
-      
+
       // Refresh projects list
       const updatedProjects = await projectService.getAllProjects();
       setProjects(updatedProjects);
@@ -169,16 +197,55 @@ const ProjectPage = () => {
     }
   };
 
+  const updateProject = async (e) => {
+    e.preventDefault();
+    const form = e.target;
+
+    const updateProjectf = {
+      title: form.title.value,
+      description: form.description.value,
+      deadline: form.deadline.value,
+      budget: parseFloat(form.budget.value),
+      client: user.id,
+      // skill_ids: skills
+      //   .map((skill) => parseInt(skill, 10))
+      //   .filter((id) => !isNaN(id)),
+      // category_ids: tags
+      //   .map((tag) => parseInt(tag, 10))
+      //   .filter((id) => !isNaN(id)),
+    };
+
+    try {
+      const res = await axios.put(
+        `${apiHost}/base/projects/${selectedProjectId}/update/`,
+        updateProjectf,
+        {
+          headers: {
+            Authorization: `Token ${token}`,
+          },
+        }
+      );
+      if (res.status === 200) {
+        toast.success("Project updated successfully!");
+        setUpdateModal(false);
+        fetchProjects();
+      }
+    } catch (err) {
+      console.log(err);
+      toast.error("Failed to update project. Please try again.");
+    }
+  };
+
   // Function to accept a bid
   const handleAcceptBid = async (bidId) => {
     try {
       await projectService.acceptBid(bidId);
       toast.success("Bid accepted successfully!");
-      
+
       // Refresh projects after accepting bid
       const updatedProjects = await projectService.getAllProjects();
       setProjects(updatedProjects);
-      
+
       // Close project popup
       closeProjectPopup();
     } catch (error) {
@@ -190,7 +257,9 @@ const ProjectPage = () => {
   const handleBidSubmit = async (e) => {
     e.preventDefault();
     if (!user || !user.is_freelancer) {
-      toast.error("Only freelancers can place a bid. Please sign in as a freelancer.");
+      toast.error(
+        "Only freelancers can place a bid. Please sign in as a freelancer."
+      );
       return;
     }
     const amount = e.target.amount.value;
@@ -199,7 +268,7 @@ const ProjectPage = () => {
       await projectService.placeBid(currentBidProjectId, {
         bid_amount: amount,
         message,
-    });
+      });
       toast.success("Bid placed successfully!");
       setShowBidModal(false);
     } catch (error) {
@@ -207,10 +276,9 @@ const ProjectPage = () => {
     }
   };
 
-
-
   const openProjectPopup = (project) => {
     setSelectedProject(project);
+    setSelectedProjectId(project.id);
     setShowProjectPopup(true);
   };
 
@@ -227,78 +295,109 @@ const ProjectPage = () => {
     }
   };
 
-  const filteredProjects = projects.filter(project =>
+  const filteredProjects = projects.filter((project) =>
     project.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const { currentUser } = useUserContext();
-  const isFreelancer = currentUser?.is_freelancer;
+  const isFreelancer = user?.is_freelancer;
 
   // Debug currentUser changes
   useEffect(() => {
     console.log("Current user changed:", currentUser);
   }, [currentUser]);
 
-  // Dummy projects data
-  const dummyProjects = [
-    {
-      id: 1,
-      title: "New customer project 1",
-      description: "This is the first posting",
-      skills: ["css"],
-      deadline: "2025-06-30",
-      budget: 12000,
-      bids: [
-        { id: 1, amount: 200, date: "2025-06-16T22:53:01" },
-        { id: 2, amount: 150, date: "2025-06-16T22:58:06" },
-        { id: 3, amount: 150, date: "2025-06-16T22:59:24" },
-      ],
-    },
-    {
-      id: 2,
-      title: "New customer project 2",
-      description: "Second project for demo",
-      skills: ["react", "nodejs"],
-      deadline: "2025-07-10",
-      budget: 5000,
-      bids: [
-        { id: 1, amount: 1000, date: "2025-06-17T10:00:00" },
-      ],
-    },
-  ];
+  const handleDeleteProject = async () => {
+    try {
+      const res = await axios.delete(
+        `${apiHost}/base/projects/${selectedProject.id}/delete/`,
+        {
+          headers: {
+            Authorization: `Token ${token}`,
+          },
+        }
+      );
+      // console.log("project deleted : ", res);
+      if (res.status === 204) {
+        setProjectDelete(false);
+        toast.success("Project deleted successfully!");
+        fetchProjects();
+      }
+    } catch (err) {
+      console.log(err);
+      toast.error("Something went wrong!");
+    }
+  };
+
+  // console.log("selected project : ", selectedProject)
 
   return (
-    <div className="main mt-[87px]">
+    <div
+      className={`main ${
+        user?.isFreelancer !== null && user?.is_freelancer ? "mt-22" : "mt-28"
+      }`}
+    >
+      {console.log("user : ", user)}
       {/* Add CSS styles */}
       <style dangerouslySetInnerHTML={{ __html: projectPageStyles }} />
-      
+
       {/* Toast container at bottom right */}
       <ToastContainer position="bottom-right" autoClose={3000} />
       {/* Summary Cards */}
       {/* Remove the Active Projects and Freelancers cards from the top section */}
       {/* Ensure the Browse Projects and Categories toggle section is fully removed */}
 
+      {projectDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-[#2d1a4d] text-white w-[90%] max-w-md rounded-lg shadow-lg p-6 sm:p-8 flex flex-col items-center gap-4">
+            {/* Close Icon (optional - place in top-right if needed) */}
+            <h2 className="text-2xl font-bold text-center">Delete Project</h2>
+            <p className="text-center text-sm sm:text-base text-gray-300">
+              Are you sure you want to delete this project? This action cannot
+              be undone.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 w-full mt-4">
+              <button
+                className="w-full bg-gray-600 hover:bg-gray-700 transition-all text-white font-semibold py-2 px-4 rounded-lg"
+                onClick={() => setProjectDelete(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="w-full bg-red-600 hover:bg-red-700 transition-all text-white font-semibold py-2 px-4 rounded-lg"
+                onClick={handleDeleteProject}
+              >
+                Confirm Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Search and Filters */}
-      <div className="p-6 pt-4 space-y-4 animate-fadeInUp" style={{ animationDelay: '0.1s' }}>
+      <div
+        className="p-6 pt-4 space-y-4 animate-fadeInUp"
+        style={{ animationDelay: "0.1s" }}
+      >
         <div className="bg-white shadow-sm p-6 rounded-xl project-card">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
             <div className="relative w-full sm:w-[80%] group">
-            <input
-              type="text"
-              placeholder="Search projects..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              <input
+                type="text"
+                placeholder="Search projects..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full px-4 py-2 rounded-md border outline-none text-black placeholder-black transition-all duration-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-            />
+              />
               {searchQuery && (
-              <button
+                <button
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-              >
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+                >
                   <X size={16} />
-              </button>
+                </button>
               )}
-              
+
               {/* Search Hover Popup */}
               <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none group-hover:pointer-events-auto z-10">
                 <div className="bg-black text-white text-sm rounded-lg px-3 py-2 whitespace-nowrap shadow-lg">
@@ -312,31 +411,41 @@ const ProjectPage = () => {
       </div>
 
       {/* Project List */}
-      <div className="p-6 animate-fadeInUp" style={{ animationDelay: '0.2s' }}>
+      <div className="p-6 animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold animate-slideIn" style={{ animationDelay: '0.3s' }}>Latest Projects</h2>
-          <div className="relative group animate-scaleIn" style={{ animationDelay: '0.4s' }}>
+          <h2
+            className="text-2xl font-bold animate-slideIn"
+            style={{ animationDelay: "0.3s" }}
+          >
+            Latest Projects
+          </h2>
+          <div
+            className="relative group animate-scaleIn"
+            style={{ animationDelay: "0.4s" }}
+          >
             <button
               onClick={() => {
-                if (!currentUser) {
+                if (!user) {
                   toast.error("Please sign in to post a project.");
                 } else if (!isFreelancer) {
                   setShowModal(true);
                 } else {
-                  toast.info("Freelancers cannot post projects. Please switch to a client account.");
+                  toast.info(
+                    "Freelancers cannot post projects. Please switch to a client account."
+                  );
                 }
               }}
               className={`ml-auto px-5 py-2 rounded-md transition-all duration-300 font-semibold transform hover:scale-105 ${
-                !currentUser || isFreelancer
+                !user || isFreelancer
                   ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  : "bg-[#0f172a] text-white hover:bg-[#1e293b] hover:shadow-lg"
+                  : "bg-[#0f172a] text-white hover:bg-[#1e293b] hover:shadow-lg cursor-pointer"
               }`}
-              disabled={!currentUser || isFreelancer}
+              disabled={!user || isFreelancer}
             >
               Post Project
             </button>
-            {!currentUser && (
-              <span className="absolute top-full mt-1 left-0 bg-black text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-all duration-300 transform -translate-y-1 group-hover:translate-y-0">
+            {!user && (
+              <span className="absolute top-full mt-1 left-0 bg-black text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-all duration-300 transform -translate-y-1 group-hover:translate-y-0 cursor-pointer">
                 Login required to post
               </span>
             )}
@@ -357,17 +466,25 @@ const ProjectPage = () => {
         )}
         {!loading && !error && filteredProjects.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">No projects found. Try adjusting your search criteria.</p>
+            <p className="text-gray-500 text-lg">
+              No projects found. Try adjusting your search criteria.
+            </p>
           </div>
         )}
         {filteredProjects.map((project, index) => (
           <div
             key={project.id || index}
-            className={`border rounded-xl p-5 mb-6 shadow-sm bg-white project-card animate-fadeInUp${currentUser ? ' cursor-pointer' : ''}`}
+            className={`border rounded-xl p-5 mb-6 shadow-sm bg-white project-card animate-fadeInUp${
+              user ? " cursor-pointer" : ""
+            }`}
             style={{ animationDelay: `${0.5 + index * 0.1}s` }}
-            onClick={() => { if (currentUser) openProjectPopup(project); }}
+            onClick={() => {
+              if (user) openProjectPopup(project);
+            }}
           >
-            <h3 className="text-xl font-bold text-black mb-1">{project.title}</h3>
+            <h3 className="text-xl font-bold text-black mb-1">
+              {project.title}
+            </h3>
             <p className="text-black mb-2">{project.description}</p>
             <div className="flex flex-wrap gap-2 mb-2">
               {project.categories?.map((category, i) => (
@@ -382,8 +499,11 @@ const ProjectPage = () => {
             {project.skills_required && project.skills_required.length > 0 && (
               <div className="flex gap-2 mb-2">
                 {project.skills_required.map((skillId, idx) => (
-                  <span key={skillId || idx} className="bg-gray-100 text-black px-3 py-1 rounded-full text-sm font-semibold border border-gray-200">
-                    {skillsMap[skillId] ? skillsMap[skillId].toUpperCase() : ''}
+                  <span
+                    key={skillId || idx}
+                    className="bg-gray-100 text-black px-3 py-1 rounded-full text-sm font-semibold border border-gray-200"
+                  >
+                    {skillsMap[skillId] ? skillsMap[skillId].toUpperCase() : ""}
                   </span>
                 ))}
               </div>
@@ -391,7 +511,9 @@ const ProjectPage = () => {
             <div className="text-sm text-gray-600 mb-4 flex justify-between items-center">
               <span className="text-black">Deadline: {project.deadline}</span>
               <span className="text-black">Budget: ₹{project.budget}</span>
-              <span className="text-black">{project.bids ? project.bids.length : 0} bids</span>
+              <span className="text-black">
+                {project.bids ? project.bids.length : 0} bids
+              </span>
               {isFreelancer && project.is_open && (
                 <button
                   onClick={(e) => {
@@ -399,7 +521,7 @@ const ProjectPage = () => {
                     setCurrentBidProjectId(project.id);
                     setShowBidModal(true);
                   }}
-                  className="bg-black text-white px-4 py-1 rounded transition-all duration-300 hover:bg-gray-800 hover:scale-105 transform"
+                  className="bg-black text-white px-4 py-1 rounded transition-all duration-300 hover:bg-gray-800 hover:scale-105 transform cursor-pointer"
                 >
                   Place Bid
                 </button>
@@ -416,63 +538,85 @@ const ProjectPage = () => {
 
       {/* Post Modal */}
       {showModal && (
-        <div className="fixed inset-0 modal-overlay bg-black/50 flex items-center justify-center z-50">
-          <div className="modal-content bg-white p-6 rounded-xl w-[90%] sm:w-[500px] max-h-[90vh] overflow-y-auto relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 relative shadow-xl scrollbar-hide">
+            {/* Close Button */}
             <button
               onClick={() => setShowModal(false)}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
             >
               <X size={24} />
             </button>
-            <h2 className="text-xl font-bold mb-4 text-black">Post New Project</h2>
-            <form onSubmit={handleAddProject} className="space-y-4">
+
+            {/* Title */}
+            <h2 className="text-2xl font-bold mb-6 text-gray-900 text-center">
+              Post New Project
+            </h2>
+
+            <form
+              onSubmit={handleAddProject}
+              className="space-y-4 text-gray-800"
+            >
+              {/* Title Input */}
               <input
                 name="title"
                 required
-                placeholder="Title"
-                className="w-full p-2 border rounded"
+                placeholder="Project Title"
+                className="w-full p-3 border border-gray-300 rounded-lg placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
               />
+
+              {/* Description */}
               <textarea
                 name="description"
                 required
-                placeholder="Description"
-                className="w-full p-2 border rounded"
+                placeholder="Project Description"
+                rows={4}
+                className="w-full p-3 border border-gray-300 rounded-lg placeholder-gray-500 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500"
               />
-              <input
-                type="date"
-                name="postDate"
-                required
-                className="w-full p-2 border rounded"
-              />
-              <input
-                type="date"
-                name="deadline"
-                required
-                className="w-full p-2 border rounded"
-              />
+
+              {/* Dates */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <input
+                  type="date"
+                  name="postDate"
+                  required
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+                <input
+                  type="date"
+                  name="deadline"
+                  required
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              {/* Budget */}
               <input
                 type="number"
                 name="budget"
                 required
-                placeholder="Budget ₹"
-                className="w-full p-2 border rounded"
+                placeholder="Budget (₹)"
+                className="w-full p-3 border border-gray-300 rounded-lg placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
               />
 
               {/* Tags */}
               <div>
-                <div className="flex gap-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Tags
+                </label>
+                <div className="flex gap-2 mt-1">
                   <input
                     value={tagInput}
                     onChange={(e) => setTagInput(e.target.value)}
-                    placeholder="Tag"
-                    className="flex-grow p-2 border rounded"
+                    placeholder="Enter tag"
+                    className="flex-grow p-3 border border-gray-300 rounded-lg placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
                   <button
                     type="button"
                     onClick={() =>
                       tagInput && setTags([...tags, tagInput]) & setTagInput("")
                     }
-                    className="bg-black text-white px-3 py-1 rounded"
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition"
                   >
                     Add
                   </button>
@@ -481,7 +625,7 @@ const ProjectPage = () => {
                   {tags.map((tag, idx) => (
                     <span
                       key={idx}
-                      className="bg-purple-200 text-purple-800 px-3 py-1 rounded-full text-sm"
+                      className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm"
                     >
                       {tag}
                     </span>
@@ -491,12 +635,15 @@ const ProjectPage = () => {
 
               {/* Skills */}
               <div>
-                <div className="flex gap-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Skills
+                </label>
+                <div className="flex gap-2 mt-1">
                   <input
                     value={skillInput}
                     onChange={(e) => setSkillInput(e.target.value)}
-                    placeholder="Skill"
-                    className="flex-grow p-2 border rounded"
+                    placeholder="Enter skill"
+                    className="flex-grow p-3 border border-gray-300 rounded-lg placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
                   <button
                     type="button"
@@ -504,7 +651,7 @@ const ProjectPage = () => {
                       skillInput &&
                       setSkills([...skills, skillInput]) & setSkillInput("")
                     }
-                    className="bg-black text-white px-3 py-1 rounded"
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition"
                   >
                     Add
                   </button>
@@ -513,7 +660,7 @@ const ProjectPage = () => {
                   {skills.map((skill, idx) => (
                     <span
                       key={idx}
-                      className="bg-green-200 text-green-800 px-3 py-1 rounded-full text-sm"
+                      className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm"
                     >
                       {skill}
                     </span>
@@ -521,17 +668,18 @@ const ProjectPage = () => {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2">
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-3 mt-6">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 border rounded transition-all duration-300 hover:bg-gray-100 transform hover:scale-105"
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="bg-black text-white px-4 py-2 rounded transition-all duration-300 hover:bg-gray-800 transform hover:scale-105"
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition font-semibold"
                 >
                   Post
                 </button>
@@ -541,21 +689,36 @@ const ProjectPage = () => {
         </div>
       )}
 
+      {/* update form modal */}
+      {updateModal && (
+        <UpdateProject
+          updateProject={updateProject}
+          setUpdateModal={setUpdateModal}
+          tagInput={tagInput}
+          setTagInput={setTagInput}
+          setSkills={setSkills}
+          skillInput={skillInput}
+          setSkillInput={setSkillInput}
+          skills={skills}
+          setTags={setTags}
+          tags={tags}
+        />
+      )}
+
       {/* Bid Modal */}
       {showBidModal && (
         <div className="fixed inset-0 modal-overlay bg-black/50 flex items-center justify-center z-50">
           <div className="modal-content bg-white p-6 rounded-xl w-[90%] sm:w-[400px] relative">
             <button
               onClick={() => setShowBidModal(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
             >
               <X size={24} />
             </button>
-            <h2 className="text-xl font-bold mb-4 text-black">Place Your Bid</h2>
-            <form
-              onSubmit={(e) => handleBidSubmit(e)}
-              className="space-y-4"
-            >
+            <h2 className="text-xl font-bold mb-4 text-black">
+              Place Your Bid
+            </h2>
+            <form onSubmit={(e) => handleBidSubmit(e)} className="space-y-4">
               {/* Optional: show user name (readonly) */}
               <div className="text-sm text-gray-700">
                 Bidding as: <span className="font-semibold">{user?.name}</span>
@@ -581,13 +744,13 @@ const ProjectPage = () => {
                 <button
                   type="button"
                   onClick={() => setShowBidModal(false)}
-                  className="px-6 py-2 border border-black text-black rounded font-semibold mr-2 bg-white transition-all duration-300 hover:bg-gray-100 transform hover:scale-105"
+                  className="px-6 py-2 border border-black text-black rounded font-semibold mr-2 bg-white transition-all duration-300 hover:bg-gray-100 transform hover:scale-105 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="bg-black text-white px-4 py-2 rounded transition-all duration-300 hover:bg-gray-800 transform hover:scale-105"
+                  className="bg-black text-white px-4 py-2 rounded transition-all duration-300 hover:bg-gray-800 transform hover:scale-105 cursor-pointer"
                 >
                   Submit
                 </button>
@@ -603,73 +766,135 @@ const ProjectPage = () => {
           <div className="modal-content bg-white rounded-xl w-[95%] sm:w-[700px] max-h-[90vh] overflow-y-auto relative">
             <button
               onClick={closeProjectPopup}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10"
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10 cursor-pointer"
             >
               <X size={24} />
             </button>
-            
+
             <div className="p-6">
               {/* Project Header */}
-              <div className="mb-6">
-                <h2 className="text-2xl font-bold text-black mb-2">{selectedProject.title}</h2>
-                <p className="text-gray-600 text-lg leading-relaxed">{selectedProject.description}</p>
+              <div className="mb-6  flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-bold text-black mb-2">
+                    {selectedProject.title}
+                  </h2>
+                  <p className="text-gray-600 text-lg leading-relaxed">
+                    {selectedProject.description}
+                  </p>
+                </div>
+                {!isFreelancer &&
+                  selectedProject.client === user.id &&
+                  selectedProject.is_open && (
+                    <div className="flex gap-3">
+                      <button
+                        className="p-3 rounded-xl bg-purple-600 text-white shadow-md hover:bg-purple-500 hover:scale-105 transition-transform duration-200 focus:outline-none focus:ring-2 focus:ring-purple-400 cursor-pointer"
+                        aria-label="Edit"
+                        onClick={() => {
+                          setUpdateModal(true);
+                          closeProjectPopup();
+                        }}
+                      >
+                        <FaPencilAlt className="text-lg" />
+                      </button>
+                      <button
+                        className="p-3 rounded-xl bg-red-600 text-white shadow-md hover:bg-red-500 hover:scale-105 transition-transform duration-200 focus:outline-none focus:ring-2 focus:ring-red-400 cursor-pointer"
+                        aria-label="Delete"
+                        onClick={() => {
+                          setProjectDelete(true);
+                          setShowProjectPopup(false);
+                        }}
+                      >
+                        <FaTrashCan className="text-lg" />
+                      </button>
+                    </div>
+                  )}
               </div>
 
               {/* Project Details Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <h3 className="font-semibold text-black mb-2">Project Details</h3>
+                  <h3 className="font-semibold text-black mb-2">
+                    Project Details
+                  </h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Budget:</span>
-                      <span className="font-semibold text-black">₹{selectedProject.budget}</span>
+                      <span className="font-semibold text-black">
+                        ₹{selectedProject.budget}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Deadline:</span>
-                      <span className="font-semibold text-black">{selectedProject.deadline}</span>
+                      <span className="font-semibold text-black">
+                        {selectedProject.deadline}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Status:</span>
-                      <span className={`font-semibold ${selectedProject.is_open ? "text-green-600" : "text-red-600"}`}>
+                      <span
+                        className={`font-semibold ${
+                          selectedProject.is_open
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }`}
+                      >
                         {selectedProject.is_open ? "Open" : "Closed"}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Posted By:</span>
-                      <span className="font-semibold text-black">{selectedProject.client_name || 'Unknown'}</span>
+                      <span className="font-semibold text-black">
+                        {selectedProject.client_name || "Unknown"}
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <h3 className="font-semibold text-black mb-2">Skills Required</h3>
+                  <h3 className="font-semibold text-black mb-2">
+                    Skills Required
+                  </h3>
                   <div className="flex flex-wrap gap-2">
-                    {selectedProject.skills_required && selectedProject.skills_required.length > 0 ? (
+                    {selectedProject.skills_required &&
+                    selectedProject.skills_required.length > 0 ? (
                       selectedProject.skills_required.map((skillId, idx) => (
-                        <span key={skillId || idx} className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-semibold">
-                          {skillsMap[skillId] ? skillsMap[skillId].toUpperCase() : 'Unknown'}
+                        <span
+                          key={skillId || idx}
+                          className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-semibold"
+                        >
+                          {skillsMap[skillId]
+                            ? skillsMap[skillId].toUpperCase()
+                            : "Unknown"}
                         </span>
                       ))
                     ) : (
-                      <span className="text-gray-500 text-sm">No specific skills listed</span>
+                      <span className="text-gray-500 text-sm">
+                        No specific skills listed
+                      </span>
                     )}
                   </div>
                 </div>
               </div>
 
               {/* Categories */}
-              {selectedProject.categories && selectedProject.categories.length > 0 && (
-                <div className="mb-6">
-                  <h3 className="font-semibold text-black mb-2">Categories</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedProject.categories.map((category, idx) => (
-                      <span key={idx} className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm">
-                        {category.name}
-                      </span>
-                    ))}
+              {selectedProject.categories &&
+                selectedProject.categories.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="font-semibold text-black mb-2">
+                      Categories
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedProject.categories.map((category, idx) => (
+                        <span
+                          key={idx}
+                          className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm"
+                        >
+                          {category.name}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
               {/* Bids Section */}
               <div className="mb-6">
@@ -683,32 +908,48 @@ const ProjectPage = () => {
                 {/* For Freelancers - Show their bids */}
                 {isFreelancer && (
                   <div>
-                    {selectedProject.bids?.filter(bid => bid.freelancer_name === currentUser.username)?.length > 0 ? (
+                    {selectedProject.bids?.filter(
+                      (bid) => bid.freelancer_name === user.username
+                    )?.length > 0 ? (
                       <div className="space-y-3">
                         <h4 className="font-medium text-black">Your Bids:</h4>
                         {selectedProject.bids
-                          .filter(bid => bid.freelancer_name === currentUser.username)
+                          .filter(
+                            (bid) => bid.freelancer_name === user.username
+                          )
                           .map((bid, index) => (
-                            <div key={bid.id} className="bg-green-50 border border-green-200 rounded-lg p-4 bid-item animate-slideIn" style={{ animationDelay: `${index * 0.1}s` }}>
+                            <div
+                              key={bid.id}
+                              className="bg-green-50 border border-green-200 rounded-lg p-4 bid-item animate-slideIn"
+                              style={{ animationDelay: `${index * 0.1}s` }}
+                            >
                               <div className="flex justify-between items-start">
                                 <div>
-                                  <div className="font-semibold text-green-800">₹{bid.bid_amount}</div>
+                                  <div className="font-semibold text-green-800">
+                                    ₹{bid.bid_amount}
+                                  </div>
                                   {bid.message && (
-                                    <div className="text-sm text-green-700 mt-1">"{bid.message}"</div>
+                                    <div className="text-sm text-green-700 mt-1">
+                                      "{bid.message}"
+                                    </div>
                                   )}
                                 </div>
                                 <div className="text-xs text-green-600">
-                                  {bid.created_at ? new Date(bid.created_at).toLocaleString() : ''}
+                                  {bid.created_at
+                                    ? new Date(bid.created_at).toLocaleString()
+                                    : ""}
                                 </div>
                               </div>
                               {bid.is_accepted && (
                                 <div className="mt-2 flex items-center text-green-700">
                                   <CheckCircle size={16} className="mr-1" />
-                                  <span className="text-sm font-medium">Your bid was accepted!</span>
+                                  <span className="text-sm font-medium">
+                                    Your bid was accepted!
+                                  </span>
                                 </div>
                               )}
                             </div>
-                        ))}
+                          ))}
                       </div>
                     ) : (
                       <div className="text-center py-8 text-gray-500">
@@ -719,39 +960,59 @@ const ProjectPage = () => {
                 )}
 
                 {/* For Clients - Show all bids */}
-                {!isFreelancer && selectedProject.client === currentUser?.id && (
+                {!isFreelancer && selectedProject.client === user?.id && (
                   <div>
                     {selectedProject.bids?.length > 0 ? (
                       <div className="space-y-3">
                         {selectedProject.bids.map((bid, index) => (
-                          <div key={bid.id} className={`border rounded-lg p-4 bid-item animate-slideIn ${bid.is_accepted ? 'bg-green-50 border-green-300' : 'bg-white border-gray-200'}`} style={{ animationDelay: `${index * 0.1}s` }}>
+                          <div
+                            key={bid.id}
+                            className={`border rounded-lg p-4 bid-item animate-slideIn ${
+                              bid.is_accepted
+                                ? "bg-green-50 border-green-300"
+                                : "bg-white border-gray-200"
+                            }`}
+                            style={{ animationDelay: `${index * 0.1}s` }}
+                          >
                             <div className="flex justify-between items-start">
                               <div className="flex-1">
-                                <div className="font-semibold text-black">₹{bid.bid_amount}</div>
-                                <div className="text-sm text-gray-600 mt-1">Freelancer: {bid.freelancer_name || bid.freelancer}</div>
+                                <div className="font-semibold text-black">
+                                  ₹{bid.bid_amount}
+                                </div>
+                                <div className="text-sm text-gray-600 mt-1">
+                                  Freelancer:{" "}
+                                  {bid.freelancer_name || bid.freelancer}
+                                </div>
                                 {bid.message && (
-                                  <div className="text-sm text-gray-700 mt-1">"{bid.message}"</div>
+                                  <div className="text-sm text-gray-700 mt-1">
+                                    "{bid.message}"
+                                  </div>
                                 )}
                               </div>
                               <div className="flex flex-col items-end gap-2">
                                 <div className="text-xs text-gray-500">
-                                  {bid.created_at ? new Date(bid.created_at).toLocaleString() : ''}
+                                  {bid.created_at
+                                    ? new Date(bid.created_at).toLocaleString()
+                                    : ""}
                                 </div>
-                                {selectedProject.is_open && !bid.is_accepted && (
-                                  <button 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleAcceptBid(bid.id);
-                                    }}
-                                    className="px-4 py-1 bg-purple-600 text-white rounded font-semibold hover:bg-purple-700 transition-all duration-200 hover:scale-105 transform"
-                                  >
-                                    Accept
-                                  </button>
-                                )}
+                                {selectedProject.is_open &&
+                                  !bid.is_accepted && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleAcceptBid(bid.id);
+                                      }}
+                                      className="px-4 py-1 bg-purple-600 text-white rounded font-semibold hover:bg-purple-700 transition-all duration-200 hover:scale-105 transform cursor-pointer"
+                                    >
+                                      Accept
+                                    </button>
+                                  )}
                                 {bid.is_accepted && (
                                   <div className="flex items-center text-green-700">
                                     <CheckCircle size={16} className="mr-1" />
-                                    <span className="text-sm font-medium">Accepted</span>
+                                    <span className="text-sm font-medium">
+                                      Accepted
+                                    </span>
                                   </div>
                                 )}
                               </div>
@@ -766,7 +1027,7 @@ const ProjectPage = () => {
                     )}
                   </div>
                 )}
-                {!isFreelancer && selectedProject.client !== currentUser?.id && (
+                {!isFreelancer && selectedProject.client !== user?.id && (
                   <div className="text-center py-8 text-gray-500">
                     <p>You are not the owner of this project.</p>
                   </div>
@@ -777,7 +1038,7 @@ const ProjectPage = () => {
               <div className="flex justify-end gap-3 pt-4 border-t">
                 <button
                   onClick={closeProjectPopup}
-                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg transition-all duration-300 hover:bg-gray-50 transform hover:scale-105"
+                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg transition-all duration-300 hover:bg-gray-50 transform hover:scale-105 cursor-pointer"
                 >
                   Close
                 </button>
@@ -788,7 +1049,7 @@ const ProjectPage = () => {
                       setCurrentBidProjectId(selectedProject.id);
                       setShowBidModal(true);
                     }}
-                    className="px-6 py-2 bg-black text-white rounded-lg transition-all duration-300 hover:bg-gray-800 transform hover:scale-105"
+                    className="px-6 py-2 bg-black text-white rounded-lg transition-all duration-300 hover:bg-gray-800 transform hover:scale-105 cursor-pointer"
                   >
                     Place Bid
                   </button>

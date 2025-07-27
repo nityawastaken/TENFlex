@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { useUserContext } from "@/app/contexts/UserContext";
 import { authService } from "@/utils/auth";
 import { apiCall, endpoints } from "@/utils/api";
+import { useDispatch } from "react-redux";
+import { setReduxUser } from "@/utils/redux/slices/userSlice";
+import axios from "axios";
 
 export default function SignInForm() {
   const router = useRouter();
@@ -14,8 +17,10 @@ export default function SignInForm() {
 
   const { loginUser } = useUserContext();
 
+  const dispatch = useDispatch();
+
   useEffect(() => {
-    const token = localStorage.getItem("authToken");
+    const token = localStorage.getItem("token");
     if (token) {
       router.push("/");
     } else {
@@ -41,6 +46,31 @@ export default function SignInForm() {
           ...response.user,
           token: response.token,
         };
+        console.log("form.userName :", form.username)
+        // if (response.token) {
+        //   localStorage.setItem("authToken", response.data.token);
+        //   console.log("login response :", response);
+
+        //   const userData = await axios.get(
+        //     `${process.env.NEXT_PUBLIC_API_URL}/base/get_user_by_username/${form.username}`
+        //   );
+        //   console.log("response2 :", userData)
+        //   if (userData.data.id) {
+        //     const userToStoreRedux = {
+        //       id: userData.data.id,
+        //       username: userData.data.username,
+        //       first_name: userData.data.first_name,
+        //       profile_picture: userData.data.profile_picture,
+        //       role: userData.data.is_freelancer ? "freelancer" : "customer",
+        //     };
+
+        //     // setUId(userData.data.id)
+        //     // loginUser(userToStore);
+        //     // authService.updateUserData(userToStore);
+        //     console.log("userToStore: ",userToStoreRedux)
+        //     dispatch(setReduxUser(userToStoreRedux));
+        //   }
+        // }
         loginUser(userToStore);
         authService.updateUserData(userToStore);
         alert("Sign in successful!");
@@ -61,7 +91,7 @@ export default function SignInForm() {
     <div className="bg-gray-950 text-white font-sans min-h-screen flex flex-col items-center py-12 px-4 mt-20">
       <form
         onSubmit={handleSubmit}
-        className="bg-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-md mx-auto mt-35"
+        className="bg-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-md mx-auto mt-2"
       >
         <h2 className="text-3xl font-bold mb-6 text-center text-white">
           Sign In

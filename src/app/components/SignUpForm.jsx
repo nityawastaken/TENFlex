@@ -21,7 +21,7 @@ export default function SignUpForm() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("authToken");
+    const token = localStorage.getItem("token");
     if (token) {
       router.push("/");
     } else {
@@ -159,7 +159,7 @@ export default function SignUpForm() {
         <hr className="text-white/80 mb-10" />
 
         {/* Full Name */}
-        <label className="block mb-2 text-sm">Full Name</label>
+        <label className="block mb-2 text-sm">Username</label>
         <input
           name="name"
           type="text"
