@@ -33,11 +33,9 @@ export default function Edit() {
   const [loading, setLoading] = useState(true);
   const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false);
   const [selectedLanguages, setSelectedLanguages] = useState([]);
-  const [availableLanguages, setAvailableLanguages] = useState(Object.keys(LANGUAGE_CODE_TO_NAME).map(code => ({
-    code,
-    name: LANGUAGE_CODE_TO_NAME[code]
-  })));
-  const [languagesLoading, setLanguagesLoading] = useState(false);
+  // Remove availableLanguages and proficiencyLevels state
+  // Remove any fetch to /base/languages/ or /base/proficiency-levels/
+  // Remove all references to availableLanguages and proficiencyLevels in the UI
 
   const languageRef = useRef(null);
 
@@ -273,9 +271,9 @@ export default function Edit() {
   const buttonClass = "px-4 py-2 bg-purple-600 hover:bg-purple-800 rounded text-white font-semibold transition-transform duration-200 hover:scale-105 hover:shadow-lg";
 
   // Format language options for the Select component
-  const languageOptions = availableLanguages.map(lang => ({
-    value: lang.code,
-    label: lang.name
+  const languageOptions = Object.keys(LANGUAGE_CODE_TO_NAME).map(code => ({
+    value: code,
+    label: LANGUAGE_CODE_TO_NAME[code]
   }));
   
   // Get the currently selected language values
@@ -367,7 +365,7 @@ export default function Edit() {
               <>
               <div className="flex items-center gap-2 justify-between">
                 <span className="text-gray-400">Experience</span>
-                <span className="px-2 py-0.5 rounded bg-gray-800 text-gray-100 font-medium tracking-wide min-w-[60px] text-center">{userData?.experience || 'N/A'}</span>
+                <span className="px-2 py-0.5 rounded bg-gray-800 text-gray-100 font-medium tracking-wide min-w-[60px] text-center">{userData?.experience || userData?.experience_display || 'N/A'}</span>
               </div>
               <div className="flex items-center gap-2 justify-between">
                 <span className="text-gray-400">Avg. Rating</span>
@@ -388,28 +386,43 @@ export default function Edit() {
                 <span className="text-gray-400">Languages</span>
                 <div className="relative group">
                   <span className="px-2 py-0.5 rounded bg-gray-800 text-purple-300 font-medium text-center max-w-[120px] truncate">
-                    {userData.languages.length > 0 
-                      ? userData.languages.map(lang => lang.name).join(', ')
-                      : 'N/A'
-                    }
+                    {(() => {
+                      let languageNames = [];
+                      if (Array.isArray(userData?.languages) && userData.languages.length > 0) {
+                        languageNames = userData.languages.map(lang => lang.name);
+                      }
+                      if (languageNames.length === 0) return 'N/A';
+                      if (languageNames.length === 1) return languageNames[0];
+                      if (languageNames.length === 2) return languageNames.join(', ');
+                      return `${languageNames.slice(0, 2).join(', ')}...`;
+                    })()}
                   </span>
                   {/* Hover Popup for multiple languages */}
-                  {userData.languages.length > 1 && (
+                  {(() => {
+                    let languageNames = [];
+                    if (Array.isArray(userData?.languages) && userData.languages.length > 0) {
+                      languageNames = userData.languages.map(lang => lang.name);
+                    }
+                    if (languageNames.length > 1) {
+                      return (
                         <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto z-10">
                           <div className="bg-[#1a1333] border border-purple-500/30 rounded-lg shadow-2xl p-3 min-w-[200px] max-w-[300px] backdrop-blur-md">
                             <div className="text-xs font-semibold text-purple-300 mb-2 border-b border-purple-500/30 pb-1">All Languages:</div>
                             <div className="space-y-1">
-                          {userData.languages.map((lang, index) => (
+                              {languageNames.map((lang, index) => (
                                 <div key={index} className="text-xs text-gray-200 flex items-center gap-2">
                                   <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
-                              {lang.name}
+                                  {lang}
                                 </div>
                               ))}
                             </div>
                             <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-[#1a1333]"></div>
                           </div>
                         </div>
-                  )}
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
               </div>
             </div>

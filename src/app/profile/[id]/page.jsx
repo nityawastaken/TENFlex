@@ -143,15 +143,16 @@ export default function ProfilePage() {
   const [selectedOrderStatus, setSelectedOrderStatus] = useState("ongoing");
   const [selectedOrderType, setSelectedOrderType] = useState('gig');
   const [orders, setOrders] = useState([]);
-  const [availableLanguages, setAvailableLanguages] = useState([]);
-  const [proficiencyLevels, setProficiencyLevels] = useState([]);
-  const [completionPercent, setCompletionPercent] = useState(null);
+  // Remove availableLanguages and proficiencyLevels state
+  // Remove fetchLanguageData useEffect
+  // Remove all references to availableLanguages and proficiencyLevels in the UI
 
   // After fetching orders, set as_freelancer and as_buyer arrays
   const [freelancerOrders, setFreelancerOrders] = useState([]);
   const [buyerOrders, setBuyerOrders] = useState([]);
   // Add loading state for order status change
   const [orderStatusLoading, setOrderStatusLoading] = useState(false);
+  const [completionPercent, setCompletionPercent] = useState(null);
 
   // Copy contact info function
   const copyContactInfo = async (type, value) => {
@@ -192,34 +193,6 @@ export default function ProfilePage() {
       });
     }
   };
-
-  // Fetch available languages and proficiency levels
-  useEffect(() => {
-    async function fetchLanguageData() {
-      try {
-        const [languagesRes, proficiencyRes] = await Promise.all([
-          authFetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/base/languages/`),
-          authFetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/base/proficiency-levels/`)
-        ]);
-        if (languagesRes.ok) {
-          const languagesData = await languagesRes.json();
-          setAvailableLanguages(languagesData);
-        } else {
-          setAvailableLanguages([]);
-        }
-        if (proficiencyRes.ok) {
-          const proficiencyData = await proficiencyRes.json();
-          setProficiencyLevels(proficiencyData);
-        } else {
-          setProficiencyLevels([]);
-        }
-      } catch (error) {
-        setAvailableLanguages([]);
-        setProficiencyLevels([]);
-      }
-    }
-    fetchLanguageData();
-  }, []);
 
   // Fetch orders
   useEffect(() => {
@@ -307,20 +280,19 @@ useEffect(() => {
     ])
       .then(async ([profileData, reviewsData]) => {
         // Map backend fields to frontend fields
-        const gigIds = profileData.gig_ids || (profileData.debug_info && profileData.debug_info.gig_ids) || [];
         const getProfilePictureUrl = (picture) => {
           if (!picture) return null;
           if (picture.startsWith('http')) return picture;
           return `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}${picture}`;
         };
         const mappedProfile = {
-          name: (`${profileData.first_name || ""} ${profileData.last_name || ""}`.trim()) || profileData.username,
+          name: ((profileData.first_name || "") + " " + (profileData.last_name || "")).trim() || profileData.username,
           location: profileData.location,
           email: profileData.email,
           contact: profileData.contact_number || profileData.phone || profileData.contact,
           role: profileData.role_display,
           purpose: profileData.use_purpose_display,
-          experience: profileData.experience_display,
+          experience: profileData.experience,
           avgRating: profileData.avg_rating ?? "N/A",
           ongoingOrders: profileData.inline_orders ?? 0,
           completedOrders: profileData.completed_orders ?? 0,
@@ -332,18 +304,15 @@ useEffect(() => {
           bio: profileData.bio,
           skills: profileData.skills,
           category_tags: profileData.category_tags,
-          gig_ids: gigIds,
           last_updated: profileData.last_updated,
         };
         setProfileUser(mappedProfile);
         setReviews(reviewsData.results || reviewsData);
-        // Fetch gig details for each gig_id
-        if (gigIds.length > 0) {
-          const gigDetails = await Promise.all(
-            gigIds.map(id => gigService.getGigById(id).catch(() => null))
-          );
-          setGigs(gigDetails.filter(gig => gig && gig.id));
-        } else {
+        // Fetch all gigs for this freelancer using the correct endpoint
+        try {
+          const gigs = await gigService.getGigsByFreelancer(userIdFromURL);
+          setGigs(Array.isArray(gigs) ? gigs : []);
+        } catch (err) {
           setGigs([]);
         }
         setLoading(false);
@@ -666,7 +635,7 @@ useEffect(() => {
             <div className="w-full flex flex-col gap-3 text-xs">
               <div className="flex items-center gap-2 justify-between">
                 <span className="text-gray-400">Experience</span>
-                <span className="px-2 py-0.5 rounded bg-gray-800 text-gray-100 font-medium tracking-wide min-w-[60px] text-center">{profileUser?.experience || profileUser?.experience_display || 'N/A'}</span>
+                <span className="px-2 py-0.5 rounded bg-gray-800 text-gray-100 font-medium tracking-wide min-w-[60px] text-center">{profileUser?.experience || 'N/A'}</span>
               </div>
               <div className="flex items-center gap-2 justify-between">
                 <span className="text-gray-400">Avg. Rating</span>
@@ -685,18 +654,19 @@ useEffect(() => {
                 <div className="relative group">
                   <span className="px-2 py-0.5 rounded bg-gray-800 text-purple-300 font-medium text-center max-w-[120px] truncate">
                     {(() => {
+                      let languageNames = [];
                       if (Array.isArray(profileUser?.languages) && profileUser.languages.length > 0) {
-                        const languageNames = profileUser.languages.map(lang => {
-                          const languageName = availableLanguages.find(l => l.code === lang.language)?.name || lang.language;
+                        languageNames = profileUser.languages.map(lang => {
+                          const languageName = LANGUAGE_CODE_TO_NAME[lang.language] || lang.language;
                           return languageName;
                         });
-                        return languageNames.join(', ');
                       } else if (Array.isArray(profileUser?.lang_spoken) && profileUser.lang_spoken.length > 0) {
-                        const languageNames = profileUser.lang_spoken.map(code => LANGUAGE_CODE_TO_NAME[code] || code);
-                        return languageNames.join(', ');
-                      } else {
-                        return 'N/A';
+                        languageNames = profileUser.lang_spoken.map(code => LANGUAGE_CODE_TO_NAME[code] || code);
                       }
+                      if (languageNames.length === 0) return 'N/A';
+                      if (languageNames.length === 1) return languageNames[0];
+                      if (languageNames.length === 2) return languageNames.join(', ');
+                      return `${languageNames.slice(0, 2).join(', ')}...`;
                     })()}
                   </span>
                   {/* Hover Popup for multiple languages */}
@@ -704,13 +674,12 @@ useEffect(() => {
                     let languageNames = [];
                     if (Array.isArray(profileUser?.languages) && profileUser.languages.length > 0) {
                       languageNames = profileUser.languages.map(lang => {
-                        const languageName = availableLanguages.find(l => l.code === lang.language)?.name || lang.language;
+                        const languageName = LANGUAGE_CODE_TO_NAME[lang.language] || lang.language;
                         return languageName;
                       });
                     } else if (Array.isArray(profileUser?.lang_spoken) && profileUser.lang_spoken.length > 0) {
                       languageNames = profileUser.lang_spoken.map(code => LANGUAGE_CODE_TO_NAME[code] || code);
                     }
-                    
                     if (languageNames.length > 1) {
                       return (
                         <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto z-10">

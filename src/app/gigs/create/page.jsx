@@ -3,15 +3,30 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Select from 'react-select';
+import { AsyncPaginate } from 'react-select-async-paginate';
 import { toast } from "react-toastify";
 import { useEffect } from "react";
 import Link from "next/link";
 import { FaCopy, FaRegEdit } from "react-icons/fa";
 import { CiLocationOn } from "react-icons/ci";
 import { gigService } from "@/utils/services";
+import { useSkillsAPI } from "@/Hooks/useSkillsAPI";
+import dynamic from 'next/dynamic';
 
 // Use an environment variable or fallback to localhost
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+// Dynamically import Select to avoid hydration issues
+const DynamicSelect = dynamic(() => Promise.resolve(Select), {
+  ssr: false,
+  loading: () => <div className="w-full px-4 py-2 rounded bg-[#18112c] border border-purple-700 text-gray-400">Loading...</div>
+});
+
+// Dynamically import AsyncPaginate to avoid hydration issues
+const DynamicAsyncPaginate = dynamic(() => Promise.resolve(AsyncPaginate), {
+  ssr: false,
+  loading: () => <div className="w-full px-4 py-2 rounded bg-[#18112c] border border-purple-700 text-gray-400">Loading...</div>
+});
 
 const LANGUAGE_CODE_TO_NAME = {
   en: 'English',
@@ -25,6 +40,7 @@ const LANGUAGE_CODE_TO_NAME = {
 
 export default function CreateGig() {
   const router = useRouter();
+  const { loadOptions, loading: skillsAPILoading, error: skillsAPIError } = useSkillsAPI();
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -34,9 +50,6 @@ export default function CreateGig() {
     picture: null,
   });
   const [loading, setLoading] = useState(false);
-  const [availableSkills, setAvailableSkills] = useState([]);
-  const [skillsLoading, setSkillsLoading] = useState(true);
-  const [skillsError, setSkillsError] = useState(null);
   const [userData, setUserData] = useState(null);
   const [completionPercent, setCompletionPercent] = useState(null);
   const [availableLanguages, setAvailableLanguages] = useState([]);
@@ -112,24 +125,7 @@ export default function CreateGig() {
     }
     fetchCompletionPercent();
     
-    // Fetch skills from backend
-    async function fetchSkills() {
-      setSkillsLoading(true);
-      setSkillsError(null);
-      try {
-        const res = await fetch(`${API_URL}/base/skills/`);
-        if (!res.ok) throw new Error('Failed to fetch skills');
-        const data = await res.json();
-        setAvailableSkills(data.map(skill => ({ value: skill.id, label: skill.name })));
-      } catch (err) {
-        console.error("Failed to fetch skills:", err);
-        setSkillsError('Could not load skills');
-        setAvailableSkills([]);
-      } finally {
-        setSkillsLoading(false);
-      }
-    }
-    fetchSkills();
+    // Skills will be loaded dynamically via search
     
     // Fetch categories from backend
     async function fetchCategories() {
@@ -163,6 +159,8 @@ export default function CreateGig() {
   const handleSkillsChange = (selected) => {
     setForm((prev) => ({ ...prev, skills: selected }));
   };
+
+  // No need for a separate loadSkills function as we're using the one from useSkillsAPI
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -375,7 +373,7 @@ export default function CreateGig() {
             <div className="w-full flex flex-col gap-3 text-xs">
               <div className="flex items-center gap-2 justify-between">
                 <span className="text-gray-400">Experience</span>
-                <span className="px-2 py-0.5 rounded bg-gray-800 text-gray-100 font-medium tracking-wide min-w-[60px] text-center">{userData?.experience || 'N/A'}</span>
+                <span className="px-2 py-0.5 rounded bg-gray-800 text-gray-100 font-medium tracking-wide min-w-[60px] text-center">{userData?.experience || userData?.experience_display || 'N/A'}</span>
               </div>
               <div className="flex items-center gap-2 justify-between">
                 <span className="text-gray-400">Avg. Rating</span>
@@ -442,13 +440,6 @@ export default function CreateGig() {
                 </div>
               </div>
             </div>
-            {isOwnProfile && (
-              <div className="w-full mt-4">
-                <Link href={`/profile/${userData?.id}/edit`} className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-semibold transition-all duration-200 hover:scale-105 hover:shadow-lg flex items-center justify-center gap-2" style={{textDecoration: 'none'}}>
-                  <FaRegEdit className="text-base" /> Edit Profile
-                </Link>
-              </div>
-            )}
           </div>
         </aside>
         {/* Main Content - match edit profile page */}
@@ -498,21 +489,25 @@ export default function CreateGig() {
               <h2 className="text-xl font-bold text-purple-400 mb-4 animate-popIn" style={{ animationDelay: '0.55s' }}>Skills</h2>
               <div>
                 <label className="block mb-1">Skills</label>
-                {skillsLoading ? (
+                {skillsAPILoading ? (
                   <div className="text-purple-300 py-2">Loading skills...</div>
-                ) : skillsError ? (
-                  <div className="text-red-400 py-2">{skillsError}</div>
+                ) : skillsAPIError ? (
+                  <div className="text-red-400 py-2">{skillsAPIError}</div>
                 ) : (
-                  <Select
+                  <DynamicAsyncPaginate
                     isMulti
                     name="skills"
-                    options={availableSkills}
                     value={form.skills}
                     onChange={handleSkillsChange}
+                    loadOptions={loadOptions}
+                    placeholder="Type to search skills (min 2 characters)..."
+                    isLoading={skillsAPILoading}
                     className="text-black"
                     classNamePrefix="select"
-                    placeholder="Select or search skills..."
                     menuPortalTarget={typeof window !== 'undefined' ? document.body : null}
+                    onInputChange={(inputValue) => {
+                      console.log('Input changed:', inputValue);
+                    }}
                     styles={{
                       menuPortal: base => ({ ...base, zIndex: 9999 }),
                       menu: base => ({ ...base, backgroundColor: '#18112c', color: 'white', zIndex: 9999 }),
@@ -543,7 +538,7 @@ export default function CreateGig() {
                 ) : categoriesError ? (
                   <div className="text-red-400 py-2">{categoriesError}</div>
                 ) : (
-                  <Select
+                  <DynamicSelect
                     name="category"
                     options={availableCategories}
                     value={category}

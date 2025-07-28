@@ -1,8 +1,6 @@
 {
-  "/gig-list/page": "app/gig-list/page.js",
+  "/profile/[id]/page": "app/profile/[id]/page.js",
   "/page": "app/page.js",
-  "/gigDetails/[id]/page": "app/gigDetails/[id]/page.js",
-  "/gigs/create/page": "app/gigs/create/page.js",
-  "/projects/page": "app/projects/page.js",
-  "/profile/[id]/edit/page": "app/profile/[id]/edit/page.js"
+  "/gig-list/page": "app/gig-list/page.js",
+  "/gigDetails/[id]/page": "app/gigDetails/[id]/page.js"
 }
