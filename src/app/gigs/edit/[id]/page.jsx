@@ -3,13 +3,28 @@
 import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Select from 'react-select';
+import { AsyncPaginate } from 'react-select-async-paginate';
 import { toast } from "react-toastify";
 import Link from "next/link";
 import { FaCopy, FaRegEdit } from "react-icons/fa";
 import { CiLocationOn } from "react-icons/ci";
-import gigService from "@/services/gigService";
+import { gigService } from "@/utils/services";
+import { useSkillsAPI } from "@/Hooks/useSkillsAPI";
+import dynamic from 'next/dynamic';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+// Dynamically import Select to avoid hydration issues
+const DynamicSelect = dynamic(() => Promise.resolve(Select), {
+  ssr: false,
+  loading: () => <div className="w-full px-4 py-2 rounded bg-[#18112c] border border-purple-700 text-gray-400">Loading...</div>
+});
+
+// Dynamically import AsyncPaginate to avoid hydration issues
+const DynamicAsyncPaginate = dynamic(() => Promise.resolve(AsyncPaginate), {
+  ssr: false,
+  loading: () => <div className="w-full px-4 py-2 rounded bg-[#18112c] border border-purple-700 text-gray-400">Loading...</div>
+});
 
 const LANGUAGE_CODE_TO_NAME = {
   en: 'English',
@@ -25,6 +40,7 @@ export default function EditGig() {
   const router = useRouter();
   const params = useParams();
   const gigId = params?.id;
+  const { loadOptions, loading: skillsAPILoading, error: skillsAPIError } = useSkillsAPI();
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -34,9 +50,6 @@ export default function EditGig() {
     picture: null,
   });
   const [loading, setLoading] = useState(false);
-  const [availableSkills, setAvailableSkills] = useState([]);
-  const [skillsLoading, setSkillsLoading] = useState(true);
-  const [skillsError, setSkillsError] = useState(null);
   const [category, setCategory] = useState(null);
   const [availableCategories, setAvailableCategories] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
@@ -45,47 +58,21 @@ export default function EditGig() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [userData, setUserData] = useState(null);
   const [completionPercent, setCompletionPercent] = useState(null);
-  const [availableLanguages, setAvailableLanguages] = useState([]);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [originalForm, setOriginalForm] = useState(null);
   const [originalCategory, setOriginalCategory] = useState(null);
-  // Add a flag to ensure we only set originals once after mapping
   const [originalsSet, setOriginalsSet] = useState(false);
 
-  // Fetch skills and categories (same as Create Gig)
+  // Fetch categories from backend
   useEffect(() => {
-    async function fetchSkills() {
-      setSkillsLoading(true);
-      setSkillsError(null);
-      try {
-        const res = await fetch(`${API_URL}/base/skills-list/`);
-        if (!res.ok) throw new Error('Failed to fetch skills');
-        const data = await res.json();
-        if (Array.isArray(data.skills)) {
-          setAvailableSkills(data.skills.map(skill => ({ value: skill.id, label: skill.name })));
-        } else {
-          setAvailableSkills([]);
-        }
-      } catch (err) {
-        setSkillsError('Could not load skills');
-        setAvailableSkills([]);
-      } finally {
-        setSkillsLoading(false);
-      }
-    }
-    fetchSkills();
     async function fetchCategories() {
       setCategoriesLoading(true);
       setCategoriesError(null);
       try {
-        const res = await fetch(`${API_URL}/base/categories-list/`);
+        const res = await fetch(`${API_URL}/base/categories/`);
         if (!res.ok) throw new Error('Failed to fetch categories');
         const data = await res.json();
-        if (Array.isArray(data.categories)) {
-          setAvailableCategories(data.categories.map(cat => ({ value: cat.id, label: cat.name })));
-        } else {
-          setAvailableCategories([]);
-        }
+        setAvailableCategories(data.map(cat => ({ value: cat.id, label: cat.name })));
       } catch (err) {
         setCategoriesError('Could not load categories');
         setAvailableCategories([]);
@@ -176,7 +163,7 @@ export default function EditGig() {
           profile_picture: data.profile_picture || "",
           name: data.name || data.username || "",
           email: data.email || "",
-          contact: data.phone || data.contact || "",
+          contact: data.contact_number || data.phone || data.contact || "",
           location: data.location || "",
           experience: data.experience_display || data.experience || "",
           avgRating: data.avg_rating ?? "N/A",
@@ -191,23 +178,6 @@ export default function EditGig() {
       }
     }
     fetchUser();
-    // Fetch available languages for language display
-    async function fetchLanguageData() {
-      try {
-        const user = JSON.parse(localStorage.getItem('user'));
-        const token = user?.token;
-        const languagesRes = await fetch(`${API_URL}/base/languages/`, {
-          headers: token ? { Authorization: `Token ${token}` } : {},
-        });
-        if (languagesRes.ok) {
-          const languagesData = await languagesRes.json();
-          setAvailableLanguages(languagesData);
-        }
-      } catch (error) {
-        setAvailableLanguages([]);
-      }
-    }
-    fetchLanguageData();
     // Fetch profile completion percent
     async function fetchCompletionPercent() {
       try {
@@ -277,6 +247,8 @@ export default function EditGig() {
   const handleSkillsChange = (selected) => {
     setForm((prev) => ({ ...prev, skills: selected }));
   };
+
+  // No need for a separate loadSkills function as we're using the one from useSkillsAPI
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -425,7 +397,7 @@ export default function EditGig() {
             <div className="w-full flex flex-col gap-3 text-xs">
               <div className="flex items-center gap-2 justify-between">
                 <span className="text-gray-400">Experience</span>
-                <span className="px-2 py-0.5 rounded bg-gray-800 text-gray-100 font-medium tracking-wide min-w-[60px] text-center">{userData?.experience || 'N/A'}</span>
+                <span className="px-2 py-0.5 rounded bg-gray-800 text-gray-100 font-medium tracking-wide min-w-[60px] text-center">{userData?.experience || userData?.experience_display || 'N/A'}</span>
               </div>
               <div className="flex items-center gap-2 justify-between">
                 <span className="text-gray-400">Avg. Rating</span>
@@ -446,7 +418,7 @@ export default function EditGig() {
                     {(() => {
                       if (Array.isArray(userData?.languages) && userData.languages.length > 0) {
                         const languageNames = userData.languages.map(lang => {
-                          const languageName = availableLanguages.find(l => l.code === lang.language)?.name || lang.language;
+                          const languageName = LANGUAGE_CODE_TO_NAME[lang.language] || lang.language;
                           return languageName;
                         });
                         return languageNames.join(', ');
@@ -463,7 +435,7 @@ export default function EditGig() {
                     let languageNames = [];
                     if (Array.isArray(userData?.languages) && userData.languages.length > 0) {
                       languageNames = userData.languages.map(lang => {
-                        const languageName = availableLanguages.find(l => l.code === lang.language)?.name || lang.language;
+                        const languageName = LANGUAGE_CODE_TO_NAME[lang.language] || lang.language;
                         return languageName;
                       });
                     } else if (Array.isArray(userData?.lang_spoken) && userData.lang_spoken.length > 0) {
@@ -492,13 +464,6 @@ export default function EditGig() {
                 </div>
               </div>
             </div>
-            {isOwnProfile && (
-              <div className="w-full mt-4">
-                <Link href={`/profile/${userData?.id}/edit`} className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-semibold transition-all duration-200 hover:scale-105 hover:shadow-lg flex items-center justify-center gap-2" style={{textDecoration: 'none'}}>
-                  <FaRegEdit className="text-base" /> Edit Profile
-                </Link>
-              </div>
-            )}
           </div>
         </aside>
         <div className="flex-1 max-w-4xl w-full mx-auto">
@@ -547,20 +512,21 @@ export default function EditGig() {
               <h2 className="text-xl font-bold text-purple-400 mb-4 animate-popIn" style={{ animationDelay: '0.55s' }}>Skills</h2>
               <div>
                 <label className="block mb-1">Skills</label>
-                {skillsLoading ? (
+                {skillsAPILoading ? (
                   <div className="text-purple-300 py-2">Loading skills...</div>
-                ) : skillsError ? (
-                  <div className="text-red-400 py-2">{skillsError}</div>
+                ) : skillsAPIError ? (
+                  <div className="text-red-400 py-2">{skillsAPIError}</div>
                 ) : (
-                  <Select
+                  <DynamicAsyncPaginate
                     isMulti
                     name="skills"
-                    options={availableSkills}
                     value={form.skills}
                     onChange={handleSkillsChange}
+                    loadOptions={loadOptions}
+                    placeholder="Type to search skills (min 2 characters)..."
+                    isLoading={skillsAPILoading}
                     className="text-black"
                     classNamePrefix="select"
-                    placeholder="Select or search skills..."
                     menuPortalTarget={typeof window !== 'undefined' ? document.body : null}
                     styles={{
                       menuPortal: base => ({ ...base, zIndex: 9999 }),
@@ -592,7 +558,7 @@ export default function EditGig() {
                 ) : categoriesError ? (
                   <div className="text-red-400 py-2">{categoriesError}</div>
                 ) : (
-                  <Select
+                  <DynamicSelect
                     name="category"
                     options={availableCategories}
                     value={category}
