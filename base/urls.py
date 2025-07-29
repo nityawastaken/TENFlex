@@ -54,5 +54,7 @@ urlpatterns = [
     path('projects/<int:project_id>/reopen/', reopen_project_post, name='reopen-project'),
     path('freelancer/your-bids/projects/', freelancer_bid_projects, name='freelancer-bid-projects'),
 
+  
+    path('languages/', get_language_choices),
 
 ]

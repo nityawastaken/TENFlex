@@ -38,9 +38,7 @@ class CustomUser(AbstractUser):
         ('academic', 'Academic'),
         ('other', 'Other'),
     ]
-    LANGUAGE_CHOICES = sorted([
-    (lang.alpha_2, lang.name) for lang in pycountry.languages
-    if hasattr(lang, 'alpha_2')
+    LANGUAGE_CHOICES = sorted([(lang.alpha_2, lang.name) for lang in pycountry.languages if hasattr(lang, 'alpha_2')
     ])
     #common
     is_freelancer = models.BooleanField(default=False)

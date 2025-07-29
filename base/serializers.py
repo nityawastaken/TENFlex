@@ -147,14 +147,13 @@ class CustomUserSerializer(serializers.ModelSerializer):
     #     queryset=Skill.objects.all(), many=True, write_only=True, required=False
     # )
     category_tags = CategorySerializer(many=True, read_only=True)
-    category_ids = serializers.PrimaryKeyRelatedField(
-        queryset=Category.objects.all(), many=True, write_only=True, required=False
-    )
+    category_names = serializers.ListField(child=serializers.CharField(), write_only=True, required=False)    
+    lang_spoken = serializers.ListField(child=serializers.ChoiceField(choices=CustomUser.LANGUAGE_CHOICES),required=False)
     class Meta:
         model = CustomUser
         fields = ['id', 'username', 'email','contact_number', 'first_name', 'last_name', 'is_freelancer', 'bio', 'location',
                     'profile_picture','lang_spoken','role','use_purpose', 'experience', 'skills',
-                    'category_tags', 'skill_names', 'category_ids', 'avg_rating','inline_orders', 'completed_orders']
+                    'category_tags', 'skill_names', 'category_names', 'avg_rating','inline_orders', 'completed_orders']
         read_only_fields = ['id', 'username', 'email', 'avg_rating','inline_orders', 'completed_orders']
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -196,8 +195,14 @@ class CustomUserSerializer(serializers.ModelSerializer):
             instance.skills.set(skill_objs)
 
         # Handle categories
-        if 'category_ids' in validated_data:
-            instance.category_tags.set(validated_data.pop('category_ids'))
+        category_names = validated_data.pop('category_names', [])
+        if category_names:
+            category_objs = []
+            for name in category_names:
+                name = name.strip().title()
+                category, _ = Category.objects.get_or_create(name=name)
+                category_objs.append(category)
+            instance.category_tags.set(category_objs)
 
         return super().update(instance, validated_data)
 
@@ -215,8 +220,13 @@ class CustomUserSerializer(serializers.ModelSerializer):
                 skill_objs.append(skill)
             user.skills.set(skill_objs)
 
-        if category_ids:
-            user.category_tags.set(category_ids)
+        category_names = validated_data.pop('category_names', [])
+        category_objs = []
+        for name in category_names:
+            name = name.strip().title()
+            category, _ = Category.objects.get_or_create(name=name)
+            category_objs.append(category)
+        user.category_tags.set(category_objs)
 
         return user
     

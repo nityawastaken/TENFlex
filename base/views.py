@@ -398,12 +398,12 @@ def get_user_by_username(request, username):
             "is_freelancer": False,
         }
 
-        if hasattr(user, "profile"):
-            profile = user.profile
-            profile_data["profile_picture"] = (
-                profile.profile_picture.url if profile.profile_picture else None
-            )
-            profile_data["is_freelancer"] = profile.is_freelancer
+        # if hasattr(user, "profile"):
+            # profile = user.profile
+        profile_data["profile_picture"] = (
+            user.profile_picture.url if user.profile_picture else None
+        )
+        profile_data["is_freelancer"] = user.is_freelancer
 
         return Response({
             "id": user.id,
@@ -716,3 +716,20 @@ def freelancer_bid_projects(request):
         projects, many=True, context={'bids_override': True}
     )
     return Response(serializer.data, status=200)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_language_choices(request):
+    query = request.GET.get('search', '').lower()
+
+    languages = [
+        {"code": lang.alpha_2, "name": lang.name}
+        for lang in pycountry.languages
+        if hasattr(lang, 'alpha_2')
+    ]
+
+    if query:
+        languages = [lang for lang in languages if lang['name'].lower().startswith(query)]
+
+    return Response(languages)
