@@ -197,7 +197,7 @@ export function UserProvider({ children }) {
                       router.push(
                         userMin?.is_freelancer
                           ? `/profile/${currentUser.id}/edit`
-                          : `/client-profile/`
+                          : `/client-profile/${userMin.id}/`
                       );
                     }}
                   >

@@ -5,13 +5,13 @@ import axios from "axios";
 import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { setReduxUser } from "@/utils/redux/slices/userSlice";
-import ProfileDetails from "./ProfileDetails";
-import ProjectsSection from "./ProjectsSection";
-import OrdersSection from "./OrdersSection";
-import ReviewsSection from "./ReviewsSection";
-import GiglistsSection from "./GiglistsSection";
-import Sidebar from "./Sidebar";
-import Updateform from "./Updateform";
+import ProfileDetails from "../components/ProfileDetails";
+import ProjectsSection from "../components/ProjectsSection";
+import OrdersSection from "../components/OrdersSection";
+import ReviewsSection from "../components/ReviewsSection";
+import GiglistsSection from "../components/GiglistsSection";
+import Sidebar from "../components/Sidebar";
+import Updateform from "../components/Updateform";
 import useScreenWidth from "@/Hooks/useScreenWidth";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -43,9 +43,6 @@ const ClientProfilePage = () => {
   const [file, setFile] = useState(null);
   const [profileDelete, setProfileDelete] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState("ongoing");
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
-  const [isError, setIsError] = useState(false);
 
   const [projects, setProjects] = useState([]);
   const [orders, setOrders] = useState({});
@@ -91,10 +88,6 @@ const ClientProfilePage = () => {
 
   const completionPercent = Math.round((completedFields / totalFields) * 100);
 
-  // const userString = localStorage.getItem("user");
-  // const user = JSON.parse(userString);
-  // const id = user.id;
-
   const fetchUserData = async () => {
     try {
       const response = await axios.get(
@@ -117,7 +110,6 @@ const ClientProfilePage = () => {
       setEditRole(response.data.role || "");
       setEditUsePurpose(response.data.use_purpose || "");
 
-      // Language input initialization: codes to names for input
       const userLangs = response.data.lang_spoken || [];
       const langNames = userLangs.map(
         (code) => LANGUAGE_CODE_TO_NAME[code] || code
@@ -126,10 +118,6 @@ const ClientProfilePage = () => {
       setLanguages(userLangs);
     } catch (error) {
       console.error("Error fetching user data:", error);
-      setIsError(true);
-      setTimeout(() => {
-        setIsError(false);
-      }, 3000);
     }
   };
 
@@ -154,19 +142,6 @@ const ClientProfilePage = () => {
     }
   }, [token, id]);
 
-  // useEffect(() => {
-  //   if (isSuccess) {
-  //     const timer = setTimeout(() => {
-  //       setIsSuccess(false);
-  //       setSuccessMessage("");
-  //     }, 3000);
-  //     return () => clearTimeout(timer);
-  //   }
-  //   if (isError) {
-  //     const timer = setTimeout(() => setIsError(false), 3000);
-  //     return () => clearTimeout(timer);
-  //   }
-  // }, [isSuccess, isError]);
 
   const handleSave = async () => {
     try {
@@ -307,8 +282,7 @@ const ClientProfilePage = () => {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-[#1a1333] to-[#2d1a4d] text-white p-6 pt-32 flex flex-col md:flex-row gap-4 relative">
-      {/* {isSuccess && <SuccessAlert message={successMessage} />} */}
-      {/* {isError && <ErrorAlert error={"Someting went wrong"} />} */}
+      
       <ToastContainer position="bottom-right" autoClose={3000} />
 
       {/* delete the profile0 */}

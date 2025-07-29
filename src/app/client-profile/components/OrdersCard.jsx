@@ -27,14 +27,14 @@ const OrdersCard = ({ order }) => {
   };
 
   return (
-    <div className="sm:w-[26vw] rounded-lg bg-gradient-to-br from-[#24194a] via-[#1a0d2b] to-[#28163a] shadow-lg p-2 mb-4 transition hover:shadow-lg min-w-[26vw] max-w-[400px] relative hover:border-b hover:border-r   justify-between flex gap-2">
+    <div className="w-full max-w-xs sm:max-w-sm md:max-w-md rounded-lg bg-gradient-to-br from-[#24194a] via-[#1a0d2b] to-[#28163a] shadow-lg p-2 mb-4 transition hover:shadow-lg relative hover:border-b hover:border-r flex flex-col gap-2 overflow-hidden">
       <div className=" ">
         <div>
           {order.type === "project" ? (
             <div>
               <div className=" gap-2 flex flex-col">
                 <div className=" mb-2  mt-5 ">
-                  <h3 className="text-sm font-semibold break-words">
+                  <h3 className="text-sm font-semibold break-all overflow-hidden text-ellipsis whitespace-nowrap max-w-[180px] sm:max-w-[220px] md:max-w-[300px]" title={order.project_title || "Untitled Order"}>
                     Project: {order.project_title || "Untitled Order"}
                   </h3>
                 </div>
@@ -64,7 +64,7 @@ const OrdersCard = ({ order }) => {
             <div>
               <div className=" gap-2 flex flex-col">
                 <div className="mb-2 mt-5">
-                  <h3 className="text-sm font-semibold break-words">
+                  <h3 className="text-sm font-semibold break-all overflow-hidden text-ellipsis whitespace-nowrap max-w-[180px] sm:max-w-[220px] md:max-w-[300px]" title={order.gig_title || "Untitled Order"}>
                     Gig: {order.gig_title || "Untitled Order"}
                   </h3>
                 </div>

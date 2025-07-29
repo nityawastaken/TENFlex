@@ -4,6 +4,7 @@ import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { FaArrowRight } from "react-icons/fa6";
 import { useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
 
 const Navbar = () => {
   const sideMenuRef = useRef(null);
@@ -16,6 +17,9 @@ const Navbar = () => {
   const [isScroll, setIsScroll] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [token, setToken] = useState("");
+
+  // const userRedux = useSelector((store) => store.user)
+  // console.log("reduxUser = ",userRedux);
 
   const getLinks = (role) => {
     const base = [
@@ -156,7 +160,7 @@ const Navbar = () => {
                 href={
                   user?.is_freelancer
                     ? `/profile/${user?.id}`
-                    : `client-profile`
+                    : `/client-profile/${user?.id}`
                 }
                 className="flex items-center gap-2"
               >

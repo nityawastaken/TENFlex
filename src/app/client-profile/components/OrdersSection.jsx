@@ -53,7 +53,7 @@ const OrdersSection = ({
     [];
 
   return (
-    <Section ref={refProp} id="orders" title="Your Orders">
+    <Section ref={refProp} id="orders" title="Your Orders" className="w-full max-w-screen">
       <div className="mb-4 gap-4 flex flex-col md:flex-row items-center w-full">
         <select
           name="filter-orders"

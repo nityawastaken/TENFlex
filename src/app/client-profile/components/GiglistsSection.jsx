@@ -77,24 +77,6 @@ const GiglistsSection = ({ refProp }) => {
     fetchGigs();
   };
 
-  // Add gig to giglist
-  // const handleAddGig = async (giglistId) => {
-  //   // console.log("newgig :", newGig);
-  //   try {
-  //     await axios.post(
-  //       process.env.NEXT_PUBLIC_API_URL +
-  //         `/base/giglists/${giglistId}/gigs/add/`,
-  //       {name : newGig},
-  //       { headers: { Authorization: `Token ${token}` } }
-  //     );
-  //     setNewGig({ title: "", description: "", freelancer: "", price: "" });
-  //     setShowAddGigInput(null);
-  //     fetchGigs();
-  //   } catch (err) {
-  //     console.log(err);
-  //   }
-  // };
-
   // Remove gig from giglist
   const handleRemoveGig = async (listId, gigId) => {
     // console.log("gig id. ", gigId);
@@ -116,7 +98,7 @@ const GiglistsSection = ({ refProp }) => {
       ref={refProp}
       id="giglists"
       title="Your Giglists"
-      className="bg-[#1a1333] rounded-xl shadow-lg p-8"
+      className="bg-[#1a1333] rounded-xl shadow-lg p-4 sm:p-8 overflow-x-auto w-full max-w-screen"
     >
       {/* Create new giglist */}
       <div className="mb-6 w-full  justify-between flex gap-2 items-center">
@@ -148,7 +130,7 @@ const GiglistsSection = ({ refProp }) => {
               {/* Giglist Name Header */}
               <div
                 onClick={() => toggleSection(index)}
-                className="flex justify-between items-center px-6 py-4 cursor-pointer select-none rounded-t-lg"
+                className="flex justify-between items-center px-6 py-4 cursor-pointer select-none rounded-t-lg flex-nowrap "
                 style={{
                   background:
                     activeIndex === index
@@ -157,7 +139,9 @@ const GiglistsSection = ({ refProp }) => {
                 }}
               >
                 <span className="font-bold text-purple-200 tracking-wide">
-                  {list.name}
+                  <span className="block max-w-[180px] sm:max-w-[220px] md:max-w-[300px] truncate overflow-hidden whitespace-nowrap text-ellipsis" title={list.name}>
+                    {list.name}
+                  </span>
                 </span>
                 <span className="flex gap-2 items-center">
                   {/* Rename giglist */}
@@ -285,17 +269,17 @@ const GiglistsSection = ({ refProp }) => {
                       {list.gigs.map((gig) => (
                         <div
                           key={gig.id}
-                          className="min-w-[260px] bg-gradient-to-br from-[#2d2256] to-[#24194a] shadow-lg rounded-xl p-5 border border-purple-800 hover:scale-105 transition-transform relative"
+                          className="min-w-[260px] max-w-xs sm:max-w-sm md:max-w-md bg-gradient-to-br from-[#2d2256] to-[#24194a] shadow-lg rounded-xl p-5 border border-purple-800 hover:scale-105 transition-transform relative overflow-hidden flex flex-col"
                         >
-                          <h3 className="text-lg font-semibold text-purple-100 mb-2">
+                          <h3 className="text-lg font-semibold text-purple-100 mb-2 truncate" title={gig.title}>
                             {gig.title}
                           </h3>
-                          <p className="text-sm text-purple-300 mb-2">
+                          <p className="text-sm text-purple-300 mb-2 whitespace-normal break-words max-h-20 overflow-y-auto">
                             {gig.description}
                           </p>
-                          <p className="text-xs text-purple-400 italic mb-2">
-                            Freelancer:{" "}
-                            <span className="font-medium">
+                          <p className="text-xs text-purple-400 italic mb-2 truncate">
+                            Freelancer: {" "}
+                            <span className="font-medium" title={gig.freelancer}>
                               {gig.freelancer}
                             </span>
                           </p>
@@ -310,11 +294,18 @@ const GiglistsSection = ({ refProp }) => {
                           >
                             Remove
                           </button>
+                          {/* Remove gig button */}
+                          <button
+                            onClick={() => handleRemoveGig(list.id, gig.id)}
+                            className="absolute top-2 right-2 text-xs bg-red-700 text-white px-2 py-1 rounded hover:bg-red-800 cursor-pointer max-w-[70px] truncate"
+                          >
+                            Remove
+                          </button>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-purple-400 mt-2">
+                    <p className="text-sm text-purple-400 mt-2 break-words">
                       No gigs in this list.
                     </p>
                   )}

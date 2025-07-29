@@ -6,8 +6,6 @@ import ProjectCard from "./ProjectCard";
 import Link from "next/link";
 
 const ProjectsSection = ({ refProp, projects, setProjects }) => {
-  const [isAccepted, setIsAccepted] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [projectStatus, setProjectStatus] = useState("All");
   const [filteredProjects, setFilteredProjects] = useState([]);
   const token = localStorage.getItem("token");
@@ -22,31 +20,9 @@ const ProjectsSection = ({ refProp, projects, setProjects }) => {
         },
       }
     );
-    // console.log("projects ", response.data);
     setProjects(response.data);
   };
 
-  // const createNewPost = async () => {
-  //   setLoading(true);
-  //   try {
-  //     const response = await axios.post(
-  //       process.env.NEXT_PUBLIC_API_URL + "/base/projects/create",
-  //       {},
-  //       {
-  //         headers: {
-  //           Authorization: `Token ${token}`,
-  //         },
-  //       }
-  //     );
-  //     if (response.status === 200) {
-  //       fetchProjects(); // Refresh the list after creation
-  //     }
-  //   } catch (err) {
-  //     console.log(err);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
 
   useEffect(() => {
     if (!token) {
