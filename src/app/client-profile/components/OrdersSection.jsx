@@ -76,14 +76,18 @@ const OrdersSection = ({
         </select>
       </div>
       <div className="w-full">
-        <div className="w-full relative overflow-x-auto py-3 px-2 rounded-lg flex flex-nowrap left-0 scrollbar-hide gap-4">
-          {filteredOrders.length > 0 ? (
-            filteredOrders.map((order, ind) => (
-              <OrdersCard key={order.id || ind} order={order} token={token} />
-            ))
-          ) : (
-            <div className="text-gray-400 text-center w-full py-8">No {selectedStatus} orders.</div>
-          )}
+        <div className="w-full relative overflow-x-auto py-3 px-2 rounded-lg scrollbar-hide">
+          <div className="flex flex-row gap-4 min-w-full">
+            {filteredOrders.length > 0 ? (
+              filteredOrders.map((order, ind) => (
+                <div className="flex-shrink-0 w-[320px]" key={order.id || ind}>
+                  <OrdersCard order={order} token={token} />
+                </div>
+              ))
+            ) : (
+              <div className="text-gray-400 text-center w-full py-8">No {selectedStatus} orders.</div>
+            )}
+          </div>
         </div>
         {filteredOrders.length !== 0 && (
           <div className="w-full justify-center text-center flex mt-2">

@@ -98,20 +98,20 @@ const GiglistsSection = ({ refProp }) => {
       ref={refProp}
       id="giglists"
       title="Your Giglists"
-      className="bg-[#1a1333] rounded-xl shadow-lg p-4 sm:p-8 overflow-x-auto w-full max-w-screen"
+      className="bg-[#1a1333] rounded-xl shadow-lg p-4 sm:p-8 w-full max-w-screen"
     >
       {/* Create new giglist */}
-      <div className="mb-6 w-full  justify-between flex gap-2 items-center">
+      <div className="mb-6 w-full flex flex-col sm:flex-row gap-2 items-center">
         <input
           type="text"
           value={newGigListName}
           onChange={(e) => setNewGigListName(e.target.value)}
           placeholder="New giglist name"
-          className="px-3 py-2 rounded w-9/12 bg-[#24194a] text-purple-200 border border-purple-700"
+          className="px-3 py-2 rounded bg-[#24194a] text-purple-200 border border-purple-700 w-full sm:w-9/12"
         />
         <button
           onClick={handleCreateGigList}
-          className="bg-purple-700 w-3/12 cursor-pointer  text-white px-4 py-2 rounded hover:bg-purple-800"
+          className="bg-purple-700 cursor-pointer text-white px-4 py-2 rounded hover:bg-purple-800 w-full sm:w-3/12"
         >
           Create Giglist
         </button>
@@ -121,7 +121,7 @@ const GiglistsSection = ({ refProp }) => {
           No giglists created yet.
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="flex flex-col gap-6">
           {gigList.map((list, index) => (
             <div
               key={list.id}
@@ -130,7 +130,7 @@ const GiglistsSection = ({ refProp }) => {
               {/* Giglist Name Header */}
               <div
                 onClick={() => toggleSection(index)}
-                className="flex justify-between items-center px-6 py-4 cursor-pointer select-none rounded-t-lg flex-nowrap "
+                className="flex flex-col sm:flex-row justify-between items-center px-6 py-4 cursor-pointer select-none rounded-t-lg flex-wrap"
                 style={{
                   background:
                     activeIndex === index
@@ -138,12 +138,12 @@ const GiglistsSection = ({ refProp }) => {
                       : "transparent",
                 }}
               >
-                <span className="font-bold text-purple-200 tracking-wide">
-                  <span className="block max-w-[180px] sm:max-w-[220px] md:max-w-[300px] truncate overflow-hidden whitespace-nowrap text-ellipsis" title={list.name}>
+                <span className="font-bold text-purple-200 tracking-wide w-full sm:w-auto">
+                  <span className="block max-w-full sm:max-w-[220px] md:max-w-[300px] truncate overflow-hidden whitespace-nowrap text-ellipsis" title={list.name}>
                     {list.name}
                   </span>
                 </span>
-                <span className="flex gap-2 items-center">
+                <span className="flex gap-2 items-center mt-2 sm:mt-0">
                   {/* Rename giglist */}
                   <button
                     onClick={(e) => {
@@ -151,7 +151,7 @@ const GiglistsSection = ({ refProp }) => {
                       setShowRenameInput(index);
                       setRenameGigListName(list.name);
                     }}
-                    className="text-xs cursor-pointer  bg-purple-800 text-white px-2 py-1 rounded hover:bg-purple-900"
+                    className="text-xs cursor-pointer bg-purple-800 text-white px-2 py-1 rounded hover:bg-purple-900"
                   >
                     Rename
                   </button>
@@ -162,20 +162,10 @@ const GiglistsSection = ({ refProp }) => {
                       if (window.confirm("Delete this giglist?"))
                         handleDeleteGigList(list.id);
                     }}
-                    className="text-xs cursor-pointer  bg-red-700 text-white px-2 py-1 rounded hover:bg-red-800"
+                    className="text-xs cursor-pointer bg-red-700 text-white px-2 py-1 rounded hover:bg-red-800"
                   >
                     Delete
                   </button>
-                  {/* Add gig */}
-                  {/* <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowAddGigInput(index);
-                    }}
-                    className="text-xs bg-green-700 text-white px-2 py-1 rounded hover:bg-green-800"
-                  >
-                    Add Gig
-                  </button> */}
                   {activeIndex === index ? (
                     <IoIosArrowUp />
                   ) : (
@@ -185,22 +175,22 @@ const GiglistsSection = ({ refProp }) => {
               </div>
               {/* Rename giglist input */}
               {showRenameInput === index && (
-                <div className="px-6 py-2 flex gap-2 items-center">
+                <div className="px-6 py-2 flex gap-2 items-center flex-wrap">
                   <input
                     type="text"
                     value={renameGigListName}
                     onChange={(e) => setRenameGigListName(e.target.value)}
-                    className="px-3 py-2 rounded bg-[#2d2256] text-purple-200 border border-purple-700"
+                    className="px-3 py-2 rounded bg-[#2d2256] text-purple-200 border border-purple-700 w-full sm:w-auto"
                   />
                   <button
                     onClick={() => handleRenameGigList(list.id)}
-                    className="bg-purple-700 cursor-pointer  text-white px-3 py-1 rounded hover:bg-purple-800"
+                    className="bg-purple-700 cursor-pointer text-white px-3 py-1 rounded hover:bg-purple-800"
                   >
                     Save
                   </button>
                   <button
                     onClick={() => setShowRenameInput(null)}
-                    className="bg-gray-700 cursor-pointer  text-white px-3 py-1 rounded hover:bg-gray-800"
+                    className="bg-gray-700 cursor-pointer text-white px-3 py-1 rounded hover:bg-gray-800"
                   >
                     Cancel
                   </button>
@@ -216,7 +206,7 @@ const GiglistsSection = ({ refProp }) => {
                     onChange={(e) =>
                       setNewGig({ ...newGig, title: e.target.value })
                     }
-                    className="px-3 py-2 rounded bg-[#24194a] text-purple-200 border border-purple-700"
+                    className="px-3 py-2 rounded bg-[#24194a] text-purple-200 border border-purple-700 w-full"
                   />
                   <input
                     type="text"
@@ -225,7 +215,7 @@ const GiglistsSection = ({ refProp }) => {
                     onChange={(e) =>
                       setNewGig({ ...newGig, description: e.target.value })
                     }
-                    className="px-3 py-2 rounded bg-[#24194a] text-purple-200 border border-purple-700"
+                    className="px-3 py-2 rounded bg-[#24194a] text-purple-200 border border-purple-700 w-full"
                   />
                   <input
                     type="text"
@@ -234,7 +224,7 @@ const GiglistsSection = ({ refProp }) => {
                     onChange={(e) =>
                       setNewGig({ ...newGig, freelancer: e.target.value })
                     }
-                    className="px-3 py-2 rounded bg-[#24194a] text-purple-200 border border-purple-700"
+                    className="px-3 py-2 rounded bg-[#24194a] text-purple-200 border border-purple-700 w-full"
                   />
                   <input
                     type="number"
@@ -243,18 +233,18 @@ const GiglistsSection = ({ refProp }) => {
                     onChange={(e) =>
                       setNewGig({ ...newGig, price: e.target.value })
                     }
-                    className="px-3 py-2 rounded bg-[#24194a] text-purple-200 border border-purple-700"
+                    className="px-3 py-2 rounded bg-[#24194a] text-purple-200 border border-purple-700 w-full"
                   />
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     <button
                       onClick={() => handleAddGig(list.id)}
-                      className="bg-green-700 cursor-pointer  text-white px-3 py-1 rounded hover:bg-green-800"
+                      className="bg-green-700 cursor-pointer text-white px-3 py-1 rounded hover:bg-green-800 w-full sm:w-auto"
                     >
                       Add
                     </button>
                     <button
                       onClick={() => setShowAddGigInput(null)}
-                      className="bg-gray-700 cursor-pointer  text-white px-3 py-1 rounded hover:bg-gray-800"
+                      className="bg-gray-700 cursor-pointer text-white px-3 py-1 rounded hover:bg-gray-800 w-full sm:w-auto"
                     >
                       Cancel
                     </button>
@@ -265,11 +255,11 @@ const GiglistsSection = ({ refProp }) => {
               {activeIndex === index && (
                 <div className="px-6 pb-6 pt-2">
                   {list.gigs.length > 0 ? (
-                    <div className="flex gap-6 overflow-x-auto scrollbar-hide py-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                       {list.gigs.map((gig) => (
                         <div
                           key={gig.id}
-                          className="min-w-[260px] max-w-xs sm:max-w-sm md:max-w-md bg-gradient-to-br from-[#2d2256] to-[#24194a] shadow-lg rounded-xl p-5 border border-purple-800 hover:scale-105 transition-transform relative overflow-hidden flex flex-col"
+                          className="w-full bg-gradient-to-br from-[#2d2256] to-[#24194a] shadow-lg rounded-xl p-5 border border-purple-800 hover:scale-105 transition-transform relative overflow-hidden flex flex-col"
                         >
                           <h3 className="text-lg font-semibold text-purple-100 mb-2 truncate" title={gig.title}>
                             {gig.title}
@@ -287,13 +277,6 @@ const GiglistsSection = ({ refProp }) => {
                             ₹ {gig.price}
                           </p>
 
-                          {/* Remove gig button */}
-                          <button
-                            onClick={() => handleRemoveGig(list.id, gig.id)}
-                            className="absolute top-2 right-2 text-xs bg-red-700 text-white px-2 py-1 rounded hover:bg-red-800 cursor-pointer "
-                          >
-                            Remove
-                          </button>
                           {/* Remove gig button */}
                           <button
                             onClick={() => handleRemoveGig(list.id, gig.id)}

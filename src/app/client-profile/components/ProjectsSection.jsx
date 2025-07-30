@@ -57,8 +57,8 @@ const ProjectsSection = ({ refProp, projects, setProjects }) => {
             <option value="closed">Closed</option>
           </select>
         </div>
-        <div className="overflow-x-auto overflow-y-hidden scrollbar-hide w-full ">
-          <div className="flex flex-col md:flex-row gap-6 justify-start min-w-full">
+        <div className="overflow-x-auto overflow-y-hidden scrollbar-hide w-full">
+          <div className="flex flex-row gap-6 justify-start min-w-full">
             {filteredProjects.length === 0 ? (
               <div className="text-gray-400 text-lg py-8 w-full text-center">
                 No projects found for selected status.

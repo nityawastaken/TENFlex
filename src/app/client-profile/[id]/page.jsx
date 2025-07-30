@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
-import { useRouter } from "next/navigation";
+import {  useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { setReduxUser } from "@/utils/redux/slices/userSlice";
 import ProfileDetails from "../components/ProfileDetails";
@@ -16,7 +16,7 @@ import useScreenWidth from "@/Hooks/useScreenWidth";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const ClientProfilePage = () => {
+const ClientProfilePage = ({params}) => {
   const userData = useSelector((state) => state.user);
   const dispatch = useDispatch();
   const router = useRouter();
@@ -67,7 +67,9 @@ const ClientProfilePage = () => {
       code,
     ])
   );
-  const [id, setId] = useState(null);
+  // const [id, setId] = useState(null);
+  const paramsObj = React.use(params);
+  const id = paramsObj.id;
 
   const width = useScreenWidth();
 
@@ -88,10 +90,11 @@ const ClientProfilePage = () => {
 
   const completionPercent = Math.round((completedFields / totalFields) * 100);
 
+
   const fetchUserData = async () => {
     try {
       const response = await axios.get(
-        `http://127.0.0.1:8000/base/users/${id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/base/users/${id}/`,
         {
           headers: {
             Authorization: `Token ${token}`,
@@ -126,7 +129,7 @@ const ClientProfilePage = () => {
       const userString = localStorage.getItem("userMin");
       const user = userString ? JSON.parse(userString) : null;
       if (user?.id) {
-        setId(user.id);
+        // setId(user.id);
       }
     }
   }, []);
@@ -277,67 +280,60 @@ const ClientProfilePage = () => {
   };
 
   if (!userData?.currentUser) {
-    return <div className="text-center mt-24 text-purple-300">Loading...</div>;
+    return <div className="text-center items-center mt-64 font-semibold text-2xl text-purple-300">Loading...</div>;
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-[#1a1333] to-[#2d1a4d] text-white p-6 pt-32 flex flex-col md:flex-row gap-4 relative">
-      
+    <main className="min-h-screen bg-gradient-to-br from-[#1a1333] to-[#2d1a4d] text-white px-2 sm:px-4 pt-32 flex flex-col md:flex-row gap-4 relative w-full">
       <ToastContainer position="bottom-right" autoClose={3000} />
 
-      {/* delete the profile0 */}
+      {/* Delete Profile Modal - Responsive */}
       {profileDelete && (
-        <div className="fixed flex flex-col justify-center items-center w-[35vw] rounded-xl h-[40vh] z-50 border left-0 right-0 mt-30 mx-auto bg-[#2d1a4d] gap-3 px-8 py-4">
-          {/* x svg */}
-          <h2 className="text-2xl font-medium text-gray-200">Are you sure?</h2>
-          <p>
-            Deleting your account will remove all of your information from our
-            database. This cannot be undone.
-          </p>
-          <div className="flex justify-between w-1/2  gap-4">
-            <button
-              className="bg-gray-500 px-3 py-2 rounded-xl cursor-pointer  text-semibold"
-              onClick={() => setProfileDelete(false)}
-            >
-              Cancel
-            </button>
-            <button
-              className="bg-red-600 px-3 py-2 rounded-xl cursor-pointer  text-semibold"
-              onClick={handleDeleteProfile}
-            >
-              Delete
-            </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="w-full max-w-md mx-auto bg-[#2d1a4d] rounded-xl border p-6 flex flex-col gap-4">
+            <h2 className="text-2xl font-medium text-gray-200 text-center">Are you sure?</h2>
+            <p className="text-center text-sm">
+              Deleting your account will remove all of your information from our database. This cannot be undone.
+            </p>
+            <div className="flex justify-center gap-4">
+              <button
+                className="bg-gray-500 px-4 py-2 rounded-xl cursor-pointer font-semibold"
+                onClick={() => setProfileDelete(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="bg-red-600 px-4 py-2 rounded-xl cursor-pointer font-semibold"
+                onClick={handleDeleteProfile}
+              >
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       )}
 
+      {/* Sidebar and Profile Details - Responsive */}
       <div
-        className={`top-28 ${
-          width < 768
-            ? "h-auto space-y-4" // mobile view: allow normal flow and spacing
-            : "h-screen sticky space-y- overflow-y-auto" // desktop view: sticky and scrollable
-        }`}
+        className={`top-24 ${width < 768 ? "w-full mb-4" : "h-screen sticky top-24 flex flex-col space-y-4 overflow-y-auto min-w-[280px] max-w-xs"}`}
       >
-        {/* Sticky Basic Details */}
-        <div className="">
-          <ProfileDetails
-            editMode={editMode}
-            setEditMode={setEditMode}
-            editFirstName={editFirstName}
-            editLastName={editLastName}
-            editEmail={editEmail}
-            editContact={editContact}
-            editLocation={editLocation}
-            editBio={editBio}
-            handleSave={handleSave}
-            file={file}
-            editRole={editRole}
-            editUsePurpose={editUsePurpose}
-            languages={languages}
-          />
-        </div>
-        {/* Sidebar Below Profile */}
-        <div className={width <= 786 ? `hidden` : `w-full`}>
+        <ProfileDetails
+          editMode={editMode}
+          setEditMode={setEditMode}
+          editFirstName={editFirstName}
+          editLastName={editLastName}
+          editEmail={editEmail}
+          editContact={editContact}
+          editLocation={editLocation}
+          editBio={editBio}
+          handleSave={handleSave}
+          file={file}
+          editRole={editRole}
+          editUsePurpose={editUsePurpose}
+          languages={languages}
+        />
+        {/* Sidebar: show below profile on desktop, above on mobile */}
+        {width >= 768 && (
           <Sidebar
             handleNav={handleNav}
             refs={{
@@ -348,10 +344,12 @@ const ClientProfilePage = () => {
               freelancersRef,
             }}
           />
-        </div>
+        )}
       </div>
-      <div>
-        {editMode && (
+
+      {/* Update Form - Responsive */}
+      {editMode && (
+        <div className="w-full max-w-2xl mx-auto mb-4">
           <Updateform
             handleSave={handleSave}
             editFirstName={editFirstName}
@@ -377,13 +375,14 @@ const ClientProfilePage = () => {
             setInputValue={setInputValue}
             inputValue={inputValue}
           />
-        )}
-      </div>
+        </div>
+      )}
 
-      <div className="flex-1 max-w-4xl mx-auto ">
-        <div className="w-[85%]   py-1 flex justify-center mx-auto">
+      {/* Main Content - Responsive */}
+      <div className="flex-1 w-full max-w-4xl mx-auto">
+        <div className="w-full py-1 flex justify-center mx-auto">
           {/* progress bar */}
-          <div className="w-full  mx-auto mt-3 ">
+          <div className="w-full mx-auto mt-3">
             <div className="mb-2 text-sm font-semibold text-purple-700 flex items-center justify-between">
               <span>Profile Completion</span>
             </div>
@@ -399,9 +398,9 @@ const ClientProfilePage = () => {
             </div>
           </div>
         </div>
-        <div className="w-[85%] mt-5 mb-5  flex-col p-4 pl-5 bg-[#1a1333] flex rounded-lg mx-auto">
+        <div className="w-full mt-5 mb-5 flex-col p-4 pl-5 bg-[#1a1333] flex rounded-lg mx-auto">
           <h3 className="text-purple-400 font-semibold text-lg">About</h3>
-          <p className="text-sm">
+          <p className="text-sm break-words">
             {editBio.length !== 0 ? editBio : "No bio yet."}
           </p>
         </div>
@@ -428,13 +427,28 @@ const ClientProfilePage = () => {
           refProp={freelancersRef}
           freelancers={freelancers}
         /> */}
+        {/* Delete Profile Button for mobile: below giglists */}
+        {width < 768 && (
+          <div className="w-full flex justify-end mt-4">
+            <button
+              className="px-4 py-2 bg-red-600 rounded-xl cursor-pointer z-40"
+              onClick={() => setProfileDelete(true)}
+            >
+              Delete Profile
+            </button>
+          </div>
+        )}
       </div>
-      <button
-        className="absolute cursor-pointer bottom-5 px-3 py-1 right-10 bg-red-600 rounded-xl"
-        onClick={() => setProfileDelete(true)}
-      >
-        Delete Profile
-      </button>
+
+      {/* Delete Profile Button for desktop: fixed to bottom right */}
+      {width >= 768 && (
+        <button
+          className="md:absolute bottom-5 right-5 md:right-10 px-4 py-2 bg-red-600 rounded-xl cursor-pointer z-40"
+          onClick={() => setProfileDelete(true)}
+        >
+          Delete Profile
+        </button>
+      )}
     </main>
   );
 };

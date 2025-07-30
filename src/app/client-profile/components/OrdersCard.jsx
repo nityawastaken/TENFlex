@@ -27,61 +27,61 @@ const OrdersCard = ({ order }) => {
   };
 
   return (
-    <div className="w-full max-w-xs sm:max-w-sm md:max-w-md rounded-lg bg-gradient-to-br from-[#24194a] via-[#1a0d2b] to-[#28163a] shadow-lg p-2 mb-4 transition hover:shadow-lg relative hover:border-b hover:border-r flex flex-col gap-2 overflow-hidden">
-      <div className=" ">
+    <div className="w-[320px] rounded-lg bg-gradient-to-br from-[#24194a] via-[#1a0d2b] to-[#28163a] shadow-lg p-3 sm:p-4 mb-4 transition hover:shadow-lg relative hover:border-b hover:border-r flex flex-col gap-2 overflow-hidden">
+      <div>
         <div>
           {order.type === "project" ? (
             <div>
-              <div className=" gap-2 flex flex-col">
-                <div className=" mb-2  mt-5 ">
-                  <h3 className="text-sm font-semibold break-all overflow-hidden text-ellipsis whitespace-nowrap max-w-[180px] sm:max-w-[220px] md:max-w-[300px]" title={order.project_title || "Untitled Order"}>
+              <div className="gap-2 flex flex-col">
+                <div className="mb-2 mt-5">
+                  <h3 className="text-sm font-semibold break-all overflow-hidden text-ellipsis whitespace-nowrap max-w-full sm:max-w-[220px] md:max-w-[300px]" title={order.project_title || "Untitled Order"}>
                     Project: {order.project_title || "Untitled Order"}
                   </h3>
                 </div>
-                <div>
-                  <h6 className="text-sm">Order Placed: </h6>
+                <div className="flex flex-wrap gap-2">
+                  <h6 className="text-sm">Order Placed:</h6>
                   <h6 className="text-sm">
                     {order.created_at
                       ? new Date(order.created_at).toLocaleDateString()
                       : "-"}
                   </h6>
                 </div>
-                <div>
-                  <h6 className="text-sm">Freelancer: </h6>
+                <div className="flex flex-wrap gap-2">
+                  <h6 className="text-sm">Freelancer:</h6>
                   <h6 className="text-sm">{order.freelancer_name}</h6>
                 </div>
-                <div>
-                  <h6 className="text-sm ">Price</h6>
+                <div className="flex flex-wrap gap-2">
+                  <h6 className="text-sm">Price</h6>
                   <h6 className="text-sm text-green-500">${order?.price || "N/A"}</h6>
                 </div>
-                <div>
-                  <h6 className="text-sm ">Deadline</h6>
-                  <h6 className="text-sm ">${order?.deadline || "N/A"}</h6>
+                <div className="flex flex-wrap gap-2">
+                  <h6 className="text-sm">Deadline</h6>
+                  <h6 className="text-sm">{order?.deadline || "N/A"}</h6>
                 </div>
               </div>
             </div>
           ) : (
             <div>
-              <div className=" gap-2 flex flex-col">
+              <div className="gap-2 flex flex-col">
                 <div className="mb-2 mt-5">
-                  <h3 className="text-sm font-semibold break-all overflow-hidden text-ellipsis whitespace-nowrap max-w-[180px] sm:max-w-[220px] md:max-w-[300px]" title={order.gig_title || "Untitled Order"}>
+                  <h3 className="text-sm font-semibold break-all overflow-hidden text-ellipsis whitespace-nowrap max-w-full sm:max-w-[220px] md:max-w-[300px]" title={order.gig_title || "Untitled Order"}>
                     Gig: {order.gig_title || "Untitled Order"}
                   </h3>
                 </div>
-                <div>
-                  <h6 className="text-sm">Order Placed: </h6>
+                <div className="flex flex-wrap gap-2">
+                  <h6 className="text-sm">Order Placed:</h6>
                   <h6 className="text-sm">
                     {order.created_at
                       ? new Date(order.created_at).toLocaleDateString()
                       : "-"}
                   </h6>
                 </div>
-                <div>
-                  <h6 className="text-sm">Freelancer: </h6>
+                <div className="flex flex-wrap gap-2">
+                  <h6 className="text-sm">Freelancer:</h6>
                   <h6 className="text-sm">{order.freelancer_name}</h6>
                 </div>
-                <div>
-                  <h6 className="text-sm ">Price</h6>
+                <div className="flex flex-wrap gap-2">
+                  <h6 className="text-sm">Price</h6>
                   <h6 className="text-sm text-green-500">${order?.price || "N/A"}</h6>
                 </div>
               </div>
@@ -89,23 +89,22 @@ const OrdersCard = ({ order }) => {
           )}
         </div>
       </div>
-      <div className=" px-1 py-1 ">
-        <div className="  top-1 right-1 flex gap-3 flex-col">
+      <div className="px-1 py-1">
+        <div className="top-1 right-1 flex gap-2 flex-wrap">
           {order.status === "completed" && (
             <button
-              className="text-sm font-semibold text-white px-2 py-1 rounded-xl bg-purple-700 cursor-pointer hover:-translate-y-0.5 duration-150  "
+              className="text-sm font-semibold text-white px-2 py-1 rounded-xl bg-purple-700 cursor-pointer hover:-translate-y-0.5 duration-150 w-full sm:w-auto"
               onClick={handleRepeat}
             >
               Repeat
             </button>
           )}
           {order.type === "project" ? (
-            <button className="text-sm font-semibold cursor-pointer  text-white px-2 py-1 rounded-xl bg-pink-400">
-              {" "}
+            <button className="text-sm font-semibold cursor-pointer text-white px-2 py-1 rounded-xl bg-pink-400 w-full sm:w-auto">
               Project
             </button>
           ) : (
-            <button className="text-sm font-semibold cursor-pointer  text-white px-2 py-1 rounded-xl bg-purple-400 top-1 right-1 flex">
+            <button className="text-sm font-semibold cursor-pointer text-white px-2 py-1 rounded-xl bg-purple-400 w-full sm:w-auto">
               Gig
             </button>
           )}
