@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import ProjectCard from "./ProjectCard";
 import Link from "next/link";
 
-const ProjectsSection = ({ refProp, projects, setProjects }) => {
+const ProjectsSection = ({ refProp, projects, setProjects, id }) => {
   const [projectStatus, setProjectStatus] = useState("All");
   const [filteredProjects, setFilteredProjects] = useState([]);
   const token = localStorage.getItem("token");
@@ -40,8 +40,16 @@ const ProjectsSection = ({ refProp, projects, setProjects }) => {
     } else if (projectStatus === "closed") {
       filtered = projects.filter((project) => project.is_open === false);
     }
+    // Filter by project.client === id
+    if (id) {
+      filtered = filtered.filter((project) => project.client === +id);
+
+    }
+
     setFilteredProjects(filtered);
   }, [projectStatus, projects]);
+
+  
 
   return (
     <Section ref={refProp} id="projects" title="Your Projects">

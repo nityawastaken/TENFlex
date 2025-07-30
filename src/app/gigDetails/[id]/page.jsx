@@ -11,8 +11,11 @@ import { formatDistanceToNow } from 'date-fns';
 import { reviewService } from '@/utils/services';
 import { useUserContext } from '@/app/contexts/UserContext';
 import { FaPencilAlt, FaCheck, FaTimes, FaTrash } from 'react-icons/fa';
+import axios from 'axios';
+import "react-toastify/dist/ReactToastify.css";
+import AddToGigList from '@/app/components/AddToGigList';
 
-const page = () => {
+const page = ({ params }) => {
   const { id } = useParams();
   const { currentUser } = useUserContext();
   const [gig, setGig] = useState(null);
@@ -31,13 +34,22 @@ const page = () => {
   const [editReviewId, setEditReviewId] = useState(null);
   const [editReviewText, setEditReviewText] = useState("");
   const [editReviewRating, setEditReviewRating] = useState(5);
+  const [user, setUser] = useState("")
+  const [addToGiglist, setAddToGiglist] = useState(false)
 
   // Theme state and persistence
   const [theme, setTheme] = useState("dark");
 
+  const paramsObj = React.use(params);
+    const gigId = paramsObj.id;
+
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem("theme", theme);
+    if (typeof window !== "undefined") {
+      const userString = localStorage.getItem("userMin");
+      const userr = userString ? JSON.parse(userString) : null;
+      setUser(userr);
+    }
     
   }, [theme]);
 
@@ -226,7 +238,7 @@ const page = () => {
   }
 
   return (
-    <div className="gig-profile-page mt-20">
+    <div className="gig-profile-page mt-24">
       {/* <SubNavigationBar /> */}
       <Breadcrumbs />
 
@@ -242,11 +254,43 @@ const page = () => {
         </div>
       </div>
 
-      <div className="content-wrapper gig-content">
+      <div className="content-wrapper gig-content ">
         {" "}
         {/* gig-content itself is wrapped by content-wrapper */}
-        <div className="gig-details">
+        <div className="gig-details relative">
           <GigImage image={getImageUrl(gig.picture)} />
+
+          {/* Add to giglist button */}
+          { !user?.is_freelancer && <div className='absolute right-2 top-2 z-500'>
+            <div>
+              <button
+                onClick={() => setAddToGiglist(true)}
+                className="flex items-center gap-2 transition-transform duration-200 transform hover:-translate-y-1 bg-gradient-to-r from-[#3a2176] to-[#6d28d9] text-white font-semibold px-5 py-2 rounded-lg cursor-pointer shadow-lg hover:shadow-xl border border-purple-700/40"
+                style={{
+                  boxShadow: "0 2px 12px 0 #6d28d988",
+                  border: "1px solid #6d28d9",
+                  background: "linear-gradient(90deg, #3a2176 0%, #6d28d9 100%)",
+                }}
+              >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                    stroke="currentColor"
+                    className="w-5 h-5"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 4v16m8-8H4"
+                    />
+                  </svg>
+                  Add To Your GigList
+                </button>
+              </div>
+            {addToGiglist && <AddToGigList setAddToGiglist={setAddToGiglist} gigId={gigId}/>}
+          </div>}
 
           {/* About this gig section - Now uses real gig data */}
           <div className="about-gig">

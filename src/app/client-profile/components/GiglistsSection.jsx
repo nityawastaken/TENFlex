@@ -29,6 +29,7 @@ const GiglistsSection = ({ refProp }) => {
       }
     );
     setGigList(response.data);
+    // console.log("gigList ; ", response.data);
   };
 
   useEffect(() => {

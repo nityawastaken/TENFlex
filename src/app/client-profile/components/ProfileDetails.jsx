@@ -26,8 +26,10 @@ const ProfileDetails = ({
   editUsePurpose,
   editContact,
   languages,
+  id
 }) => {
-  const screen = useScreenWidth();
+  const userObj = localStorage.getItem("userMin");
+  const user = userObj ? JSON.parse(userObj) : ""
 
   // console.log("file ", file)
   return (
@@ -44,7 +46,7 @@ const ProfileDetails = ({
             {editFirstName?.[0]?.toUpperCase() || "U"}
           </span>
         )}
-        {!editMode && (
+        {!editMode && user.id === +id && (
           <button
             className="cursor-pointer fixed right-1 top-1 bg-purple-600 hover:bg-purple-800 text-white rounded-xl p-2 shadow-md transition"
             onClick={() => setEditMode(true)}

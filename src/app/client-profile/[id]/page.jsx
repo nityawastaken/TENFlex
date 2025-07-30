@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
-import {  useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { setReduxUser } from "@/utils/redux/slices/userSlice";
 import ProfileDetails from "../components/ProfileDetails";
@@ -16,7 +16,7 @@ import useScreenWidth from "@/Hooks/useScreenWidth";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const ClientProfilePage = ({params}) => {
+const ClientProfilePage = ({ params }) => {
   const userData = useSelector((state) => state.user);
   const dispatch = useDispatch();
   const router = useRouter();
@@ -47,7 +47,7 @@ const ClientProfilePage = ({params}) => {
   const [projects, setProjects] = useState([]);
   const [orders, setOrders] = useState({});
   const [reviews, setReviews] = useState([]);
-  // const [freelancers, setFreelancers] = useState([]);
+  const [user, setUser] = useState([]);
   const [inputValue, setInputValue] = useState("");
   const [languages, setLanguages] = useState([]);
 
@@ -90,7 +90,6 @@ const ClientProfilePage = ({params}) => {
 
   const completionPercent = Math.round((completedFields / totalFields) * 100);
 
-
   const fetchUserData = async () => {
     try {
       const response = await axios.get(
@@ -127,10 +126,8 @@ const ClientProfilePage = ({params}) => {
   useEffect(() => {
     if (typeof window !== "undefined") {
       const userString = localStorage.getItem("userMin");
-      const user = userString ? JSON.parse(userString) : null;
-      if (user?.id) {
-        // setId(user.id);
-      }
+      const userr = userString ? JSON.parse(userString) : null;
+      setUser(userr);
     }
   }, []);
 
@@ -144,7 +141,6 @@ const ClientProfilePage = ({params}) => {
       fetchUserData();
     }
   }, [token, id]);
-
 
   const handleSave = async () => {
     try {
@@ -186,7 +182,7 @@ const ClientProfilePage = ({params}) => {
           }
         );
         if (response.data.id) {
-          toast.success("Profile update succcess!")
+          toast.success("Profile update succcess!");
           fetchUserData();
         }
       } else {
@@ -224,13 +220,13 @@ const ClientProfilePage = ({params}) => {
           }
         );
         if (response.data.id) {
-          toast.success("Profile update succcess!")
+          toast.success("Profile update succcess!");
           fetchUserData();
         }
       }
     } catch (err) {
       console.error("Error saving profile data:", err);
-      toast.error("Error saving profile data!")
+      toast.error("Error saving profile data!");
     }
 
     setEditMode(false);
@@ -247,16 +243,15 @@ const ClientProfilePage = ({params}) => {
         }
       );
       if (res.status === 204) {
-        toast.success("Profile deleted successfully!")
+        toast.success("Profile deleted successfully!");
         localStorage.clear();
         router.push("/");
-      }
-      else{
-        toast.error("Something went wrong!")
+      } else {
+        toast.error("Something went wrong!");
       }
     } catch (err) {
       console.log(err);
-      toast.error("Something went wrong!")
+      toast.error("Something went wrong!");
     }
   };
 
@@ -280,7 +275,11 @@ const ClientProfilePage = ({params}) => {
   };
 
   if (!userData?.currentUser) {
-    return <div className="text-center items-center mt-64 font-semibold text-2xl text-purple-300">Loading...</div>;
+    return (
+      <div className="text-center items-center mt-64 font-semibold text-2xl text-purple-300">
+        Loading...
+      </div>
+    );
   }
 
   return (
@@ -291,9 +290,12 @@ const ClientProfilePage = ({params}) => {
       {profileDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
           <div className="w-full max-w-md mx-auto bg-[#2d1a4d] rounded-xl border p-6 flex flex-col gap-4">
-            <h2 className="text-2xl font-medium text-gray-200 text-center">Are you sure?</h2>
+            <h2 className="text-2xl font-medium text-gray-200 text-center">
+              Are you sure?
+            </h2>
             <p className="text-center text-sm">
-              Deleting your account will remove all of your information from our database. This cannot be undone.
+              Deleting your account will remove all of your information from our
+              database. This cannot be undone.
             </p>
             <div className="flex justify-center gap-4">
               <button
@@ -315,7 +317,11 @@ const ClientProfilePage = ({params}) => {
 
       {/* Sidebar and Profile Details - Responsive */}
       <div
-        className={`top-24 ${width < 768 ? "w-full mb-4" : "h-screen sticky top-24 flex flex-col space-y-4 overflow-y-auto min-w-[280px] max-w-xs"}`}
+        className={`top-24 ${
+          width < 768
+            ? "w-full mb-4"
+            : "h-screen sticky top-24 flex flex-col space-y-4 overflow-y-auto min-w-[280px] max-w-xs"
+        }`}
       >
         <ProfileDetails
           editMode={editMode}
@@ -331,6 +337,7 @@ const ClientProfilePage = ({params}) => {
           editRole={editRole}
           editUsePurpose={editUsePurpose}
           languages={languages}
+          id={id}
         />
         {/* Sidebar: show below profile on desktop, above on mobile */}
         {width >= 768 && (
@@ -409,6 +416,7 @@ const ClientProfilePage = ({params}) => {
           refProp={projectsRef}
           projects={projects}
           setProjects={setProjects}
+          id={id}
         />
         <OrdersSection
           orders={orders}
@@ -428,8 +436,8 @@ const ClientProfilePage = ({params}) => {
           freelancers={freelancers}
         /> */}
         {/* Delete Profile Button for mobile: below giglists */}
-        {width < 768 && (
-          <div className="w-full flex justify-end mt-4">
+        {width < 768 && user?.id === +id && (
+          <div className="w-full flex justify-end  mb-3">
             <button
               className="px-4 py-2 bg-red-600 rounded-xl cursor-pointer z-40"
               onClick={() => setProfileDelete(true)}
@@ -439,11 +447,10 @@ const ClientProfilePage = ({params}) => {
           </div>
         )}
       </div>
-
       {/* Delete Profile Button for desktop: fixed to bottom right */}
-      {width >= 768 && (
+      {width >= 768 &&  user?.id === +id && (
         <button
-          className="md:absolute bottom-5 right-5 md:right-10 px-4 py-2 bg-red-600 rounded-xl cursor-pointer z-40"
+          className="md:absolute bottom-1 right-2 md:right-10 px-4 py-2 bg-red-600 rounded-xl cursor-pointer z-40"
           onClick={() => setProfileDelete(true)}
         >
           Delete Profile
