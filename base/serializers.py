@@ -153,7 +153,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = ['id', 'username', 'email','contact_number', 'first_name', 'last_name', 'is_freelancer', 'bio', 'location',
                     'profile_picture','lang_spoken','role','use_purpose', 'experience', 'skills',
-                    'category_tags', 'skill_names', 'category_names', 'avg_rating','inline_orders', 'completed_orders']
+                    'category_tags', 'skill_names', 'category_names', 'avg_rating','inline_orders', 'completed_orders','created_at']
         read_only_fields = ['id', 'username', 'email', 'avg_rating','inline_orders', 'completed_orders']
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -251,6 +251,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
     
 class GigSerializer(serializers.ModelSerializer):
     freelancer = serializers.ReadOnlyField(source='freelancer.username')
+    freelancer_id = serializers.ReadOnlyField(source='freelancer.id')
     # avg_rating = serializers.SerializerMethodField()
     review_count = serializers.SerializerMethodField()
     order_inline_count = serializers.SerializerMethodField()
@@ -265,7 +266,7 @@ class GigSerializer(serializers.ModelSerializer):
     class Meta:
         model = Gig
         fields = [
-            'id', 'freelancer', 'title', 'description',
+            'id', 'freelancer_id','freelancer', 'title', 'description',
             'price', 'delivery_time', 'created_at', 'picture',
             'avg_rating', 'review_count',
             'categories', 'category_ids',
