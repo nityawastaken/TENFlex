@@ -29,6 +29,7 @@ const ReviewsSection = ({ refProp, reviews, setReviews }) => {
   }, []);
 
   return (
+    <div className="hover:scale-105 duration-300">
     <Section ref={refProp} id="reviews" title="Your Reviews">
       {reviews.length === 0 ? (
         <div className="text-gray-400 text-center py-8">
@@ -45,6 +46,7 @@ const ReviewsSection = ({ refProp, reviews, setReviews }) => {
         </div>
       )}
     </Section>
+    </div>
   );
 };
 

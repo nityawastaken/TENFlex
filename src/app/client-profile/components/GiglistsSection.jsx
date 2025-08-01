@@ -3,6 +3,7 @@ import Section from "./Section";
 import axios from "axios";
 import { IoIosArrowDown, IoIosArrowUp } from "react-icons/io";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const GiglistsSection = ({ refProp }) => {
   const [gigList, setGigList] = useState([]);
@@ -19,6 +20,7 @@ const GiglistsSection = ({ refProp }) => {
   const [showAddGigInput, setShowAddGigInput] = useState(null);
 
   const token = localStorage.getItem("token");
+  const router = useRouter();
 
   const fetchGigs = async () => {
     const response = await axios.get(
@@ -95,7 +97,22 @@ const GiglistsSection = ({ refProp }) => {
     }
   };
 
+  const handleOpenProfile = async (freelancer) => {
+    try{
+      const userData = await axios.get(
+            `${process.env.NEXT_PUBLIC_API_URL}/base/get_user_by_username/${freelancer}`
+          );
+          if(userData.status === 200){
+            router.push(`/profile/${userData?.data?.id}`)
+          }
+    }
+    catch (err){
+      console.log(err)
+    }
+  }
+
   return (
+    <div className="hover:scale-105 duration-300">
     <Section
       ref={refProp}
       id="giglists"
@@ -198,61 +215,6 @@ const GiglistsSection = ({ refProp }) => {
                   </button>
                 </div>
               )}
-              {/* Add gig input */}
-              {/* {showAddGigInput === index && (
-                <div className="px-6 py-2 flex flex-col gap-2 bg-[#2d2256] rounded-b">
-                  <input
-                    type="text"
-                    placeholder="Title"
-                    value={newGig.title}
-                    onChange={(e) =>
-                      setNewGig({ ...newGig, title: e.target.value })
-                    }
-                    className="px-3 py-2 rounded bg-[#24194a] text-purple-200 border border-purple-700 w-full"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Description"
-                    value={newGig.description}
-                    onChange={(e) =>
-                      setNewGig({ ...newGig, description: e.target.value })
-                    }
-                    className="px-3 py-2 rounded bg-[#24194a] text-purple-200 border border-purple-700 w-full"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Freelancer"
-                    value={newGig.freelancer}
-                    onChange={(e) =>
-                      setNewGig({ ...newGig, freelancer: e.target.value })
-                    }
-                    className="px-3 py-2 rounded bg-[#24194a] text-purple-200 border border-purple-700 w-full"
-                  />
-                  <input
-                    type="number"
-                    placeholder="Price"
-                    value={newGig.price}
-                    onChange={(e) =>
-                      setNewGig({ ...newGig, price: e.target.value })
-                    }
-                    className="px-3 py-2 rounded bg-[#24194a] text-purple-200 border border-purple-700 w-full"
-                  />
-                  <div className="flex gap-2 flex-wrap">
-                    <button
-                      onClick={() => handleAddGig(list.id)}
-                      className="bg-green-700 cursor-pointer text-white px-3 py-1 rounded hover:bg-green-800 w-full sm:w-auto"
-                    >
-                      Add
-                    </button>
-                    <button
-                      onClick={() => setShowAddGigInput(null)}
-                      className="bg-gray-700 cursor-pointer text-white px-3 py-1 rounded hover:bg-gray-800 w-full sm:w-auto"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              )} */}
               {/* Expandable Gig Cards */}
               {activeIndex === index && (
                 <div className="px-6 pb-6 pt-2">
@@ -272,7 +234,7 @@ const GiglistsSection = ({ refProp }) => {
                           {/* {console.log("gig : ", gig)} */}
                           <p className="text-xs text-purple-400 italic mb-2 truncate">
                             Freelancer: {" "}
-                            <Link href={`/profile/${gig.id}`} className="font-medium" title={gig.freelancer}>
+                            <Link href={`/profile/${gig.id}/`} className="font-medium hover:underline" title={gig.freelancer}>
                               {gig.freelancer}
                             </Link>
                           </p>
@@ -302,6 +264,7 @@ const GiglistsSection = ({ refProp }) => {
         </div>
       )}
     </Section>
+    </div>
   );
 };
 

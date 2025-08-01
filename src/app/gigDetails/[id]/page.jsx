@@ -6,7 +6,7 @@ import GigImage from '../../components/GigImage';
 import GigPackage from '../../components/GigPackage';
 import Breadcrumbs from '../../components/Breadcrumbs';
 import "@/app/gigDetails/GigProfilePage.css"
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { reviewService } from '@/utils/services';
 import { useUserContext } from '@/app/contexts/UserContext';
@@ -42,6 +42,8 @@ const page = ({ params }) => {
 
   const paramsObj = React.use(params);
     const gigId = paramsObj.id;
+
+    const router = useRouter()
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -235,6 +237,20 @@ const page = ({ params }) => {
     if (!picture) return undefined;
     if (picture.startsWith('http')) return picture;
     return `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}${picture}`;
+  }
+
+  const handleOpenProfile = async (freelancer) => {
+    try{
+      const userData = await axios.get(
+            `${process.env.NEXT_PUBLIC_API_URL}/base/get_user_by_username/${freelancer}`
+          );
+          if(userData.status === 200){
+            router.push(`/profile/${userData?.data?.id}`)
+          }
+    }
+    catch (err){
+      console.log(err)
+    }
   }
 
   return (

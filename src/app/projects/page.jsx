@@ -17,6 +17,7 @@ import { FaPencilAlt } from "react-icons/fa";
 import { FaTrashCan } from "react-icons/fa6";
 import axios from "axios";
 import UpdateProject from "../components/UpdateProject";
+import { useRouter } from "next/navigation";
 
 // Add CSS animations
 const projectPageStyles = `
@@ -108,6 +109,8 @@ const ProjectPage = () => {
   const [token, setToken] = useState("");
 
   const apiHost = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+  const router = useRouter();
 
   async function fetchProjects() {
     setLoading(true);
@@ -286,6 +289,25 @@ const ProjectPage = () => {
     setShowProjectPopup(false);
     // setSelectedProject(null);
   };
+
+  //onClick go to userProfile
+  const handleOpenProfile = async (freelancer) => {
+    try{
+      const userData = await axios.get(
+            `${process.env.NEXT_PUBLIC_API_URL}/base/get_user_by_username/${freelancer}`
+          );
+          if(userData.status === 200){
+            if(userData.data.is_freelancer){
+            router.push(`/profile/${userData?.data?.id}/`)
+            }else{
+              router.push(`/client-profile/${userData?.data?.id}/`)
+            }
+          }
+    }
+    catch (err){
+      console.log(err)
+    }
+  }
 
   const toggleFilter = (value, setState, state) => {
     if (state.includes(value)) {
@@ -843,7 +865,7 @@ const ProjectPage = () => {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Posted By:</span>
-                      <span className="font-semibold text-black">
+                      <span onClick={() => handleOpenProfile(selectedProject?.client_name)} className="font-semibold text-black  cursor-pointer hover:underline hover:-translate-y-0.5 hover:text-purple-500 duration-300">
                         {selectedProject.client_name || "Unknown"}
                       </span>
                     </div>
@@ -981,7 +1003,7 @@ const ProjectPage = () => {
                                 </div>
                                 <div className="text-sm text-gray-600 mt-1">
                                   Freelancer:{" "}
-                                  {bid.freelancer_name || bid.freelancer}
+                                  <span onClick={() => handleOpenProfile(bid.freelancer_name || bid.freelancer)} className="cursor-pointer hover:underline hover:-translate-y-0.5 hover:text-purple-500 duration-300">{bid.freelancer_name || bid.freelancer}</span>
                                 </div>
                                 {bid.message && (
                                   <div className="text-sm text-gray-700 mt-1">

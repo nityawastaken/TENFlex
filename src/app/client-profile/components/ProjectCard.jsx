@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { useRouter } from "next/navigation";
 
 const ProjectCard = ({ p }) => {
   let isClosed = !p.is_open; // or check if p.accepted_bid exists
   let acceptedBid = null;
+  const router = useRouter();
 
   if (p.accepted_bid && p.bids.length > 0) {
     acceptedBid = p.bids.find((bid) => bid.id === p.accepted_bid);
@@ -34,6 +36,19 @@ const ProjectCard = ({ p }) => {
     setLoading(false);
   };
 
+  const handleOpenProfile = async (freelancer) => {
+    try {
+      const userData = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL}/base/get_user_by_username/${freelancer}`
+      );
+      if (userData.status === 200) {
+        router.push(`/profile/${userData?.data?.id}`);
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
   return (
     <div
       key={p.id}
@@ -41,7 +56,10 @@ const ProjectCard = ({ p }) => {
     >
       <div>
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-xl text-white font-bold truncate overflow-hidden text-ellipsis whitespace-nowrap max-w-[180px] sm:max-w-[220px] md:max-w-[300px]" title={p.title}>
+          <h3
+            className="text-xl text-white font-bold truncate overflow-hidden text-ellipsis whitespace-nowrap max-w-[180px] sm:max-w-[220px] md:max-w-[300px]"
+            title={p.title}
+          >
             {p.title}
           </h3>
           <span
@@ -90,7 +108,12 @@ const ProjectCard = ({ p }) => {
                 <div className="mt-4 gap-2">
                   <p className="text-sm text-gray-300 ">
                     Accepted by:{" "}
-                    <span className="underline cursor-pointer">
+                    <span
+                      onClick={() =>
+                        handleOpenProfile(acceptedBid?.freelancer_name)
+                      }
+                      className=" cursor-pointer underline hover:-translate-y-0.5 hover:text-purple-500 duration-300"
+                    >
                       {acceptedBid?.freelancer_name}
                     </span>
                   </p>

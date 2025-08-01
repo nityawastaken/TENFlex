@@ -1,16 +1,34 @@
 import axios from "axios";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { FaRegStar } from "react-icons/fa6";
 
 const ReviewCard = ({ r }) => {
   const [gigDetails, setGigDetails] = useState(null);
+  const router = useRouter()
+
   const fetchDetals = async () => {
     const res = await axios.get(
       process.env.NEXT_PUBLIC_API_URL + "/base/gigs/" + r.gig_id
     );
     setGigDetails(res.data);
   };
+
+  const handleOpenProfile = async (freelancer) => {
+    try{
+      const userData = await axios.get(
+            `${process.env.NEXT_PUBLIC_API_URL}/base/get_user_by_username/${freelancer}`
+          );
+          if(userData.status === 200){
+            router.push(`/profile/${userData?.data?.id}`)
+          }
+    }
+    catch (err){
+      console.log(err)
+    }
+  }
+
   useEffect(() => {
     fetchDetals();
   }, []);
@@ -30,12 +48,12 @@ const ReviewCard = ({ r }) => {
         <div className="flex flex-col md:flex-row md:justify-between gap-2">
           <p>
             <span className="text-sm ">Freelancer:</span>{" "}
-            <Link
-              href={`/freelancerProfile`}
-              className="cursor-pointer text-purple-200 text-sm hover:underline"
+            <h2
+              onClick={() => handleOpenProfile(gigDetails?.freelancer)}
+              className="cursor-pointer text-purple-200 text-sm hover:underline underline hover:-translate-y-0.5 hover:text-purple-500 duration-300"
             >
               {gigDetails?.freelancer}
-            </Link>
+            </h2>
           </p>
           <p>
             <span className="text-sm ">Gig : </span>

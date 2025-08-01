@@ -52,9 +52,10 @@ const ProjectsSection = ({ refProp, projects, setProjects, id }) => {
   
 
   return (
-    <Section ref={refProp} id="projects" title="Your Projects">
-      <div>
-        <div className="flex flex-col md:flex-row gap-4 items-center mb-4">
+    <div className="hover:scale-105 duration-300"> 
+    <Section ref={refProp} id="projects" title="Your Projects" className="">
+      <div className="">
+        <div className="flex flex-col md:flex-row gap-4 items-center mb-4 ">
           <select
             name="project-status"
             onChange={(e) => setProjectStatus(e.target.value)}
@@ -85,6 +86,7 @@ const ProjectsSection = ({ refProp, projects, setProjects, id }) => {
         )}
       </div>
     </Section>
+    </div>
   );
 };
 

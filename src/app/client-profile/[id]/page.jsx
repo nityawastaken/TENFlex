@@ -329,7 +329,7 @@ const ClientProfilePage = ({ params }) => {
 
       {/* Main Content - Responsive */}
       <div className="flex-1 w-full max-w-4xl mx-auto">
-        <div className="w-full py-1 flex justify-center mx-auto">
+        {user?.id === +id && <div className="w-full py-1 flex justify-center mx-auto">
           {/* progress bar */}
           <div className="w-full mx-auto mt-3">
             <div className="mb-2 text-sm font-semibold text-purple-700 flex items-center justify-between">
@@ -346,8 +346,8 @@ const ClientProfilePage = ({ params }) => {
               </div>
             </div>
           </div>
-        </div>
-        <div className="w-full mt-5 mb-5 flex-col p-4 pl-5 bg-[#1a1333] flex rounded-lg mx-auto">
+        </div>}
+        <div className="w-full mt-5 mb-5 flex-col p-4 pl-5 bg-[#1a1333] flex rounded-lg mx-auto hover:scale-105 duration-300 hover:shadow-lg">
           <h3 className="text-purple-400 font-semibold text-lg">About</h3>
           <p className="text-sm break-words">
             {editBio.length !== 0 ? editBio : "No bio yet."}

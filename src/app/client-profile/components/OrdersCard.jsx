@@ -1,4 +1,5 @@
 import axios from "axios";
+import { useRouter } from "next/navigation";
 import React from "react";
 // import SuccessAlert from "../components/SuccessAlert";
 
@@ -11,15 +12,31 @@ const statusColors = {
 
 const OrdersCard = ({ order }) => {
   const token = localStorage.getItem("token");
+  const router = useRouter();
+
   const handleRepeat = async () => {
     try {
       const res = await axios.post(
-        process.env.NEXT_PUBLIC_API_URL + `/base/orders/${order.id}/repeat/`,{},
+        process.env.NEXT_PUBLIC_API_URL + `/base/orders/${order.id}/repeat/`,
+        {},
         { headers: { Authorization: `Token ${token}` } }
       );
       // console.log("order repeat : ", res.data);
-      if(res.status === 200){
+      if (res.status === 200) {
         // <SuccessAlert />
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const handleOpenProfile = async (freelancer) => {
+    try {
+      const userData = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL}/base/get_user_by_username/${freelancer}`
+      );
+      if (userData.status === 200) {
+        router.push(`/profile/${userData?.data?.id}`);
       }
     } catch (err) {
       console.log(err);
@@ -34,7 +51,10 @@ const OrdersCard = ({ order }) => {
             <div>
               <div className="gap-2 flex flex-col">
                 <div className="mb-2 mt-5">
-                  <h3 className="text-sm font-semibold break-all overflow-hidden text-ellipsis whitespace-nowrap max-w-full sm:max-w-[220px] md:max-w-[300px]" title={order.project_title || "Untitled Order"}>
+                  <h3
+                    className="text-sm font-semibold break-all overflow-hidden text-ellipsis whitespace-nowrap max-w-full sm:max-w-[220px] md:max-w-[300px]"
+                    title={order.project_title || "Untitled Order"}
+                  >
                     Project: {order.project_title || "Untitled Order"}
                   </h3>
                 </div>
@@ -48,11 +68,18 @@ const OrdersCard = ({ order }) => {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <h6 className="text-sm">Freelancer:</h6>
-                  <h6 className="text-sm">{order.freelancer_name}</h6>
+                  <h6
+                    onClick={() => handleOpenProfile(order?.freelancer_name)}
+                    className="text-sm cursor-pointer underline hover:-translate-y-0.5 hover:text-purple-500 duration-300"
+                  >
+                    {order.freelancer_name}
+                  </h6>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <h6 className="text-sm">Price</h6>
-                  <h6 className="text-sm text-green-500">${order?.price || "N/A"}</h6>
+                  <h6 className="text-sm text-green-500">
+                    ${order?.price || "N/A"}
+                  </h6>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <h6 className="text-sm">Deadline</h6>
@@ -64,7 +91,10 @@ const OrdersCard = ({ order }) => {
             <div>
               <div className="gap-2 flex flex-col">
                 <div className="mb-2 mt-5">
-                  <h3 className="text-sm font-semibold break-all overflow-hidden text-ellipsis whitespace-nowrap max-w-full sm:max-w-[220px] md:max-w-[300px]" title={order.gig_title || "Untitled Order"}>
+                  <h3
+                    className="text-sm font-semibold break-all overflow-hidden text-ellipsis whitespace-nowrap max-w-full sm:max-w-[220px] md:max-w-[300px]"
+                    title={order.gig_title || "Untitled Order"}
+                  >
                     Gig: {order.gig_title || "Untitled Order"}
                   </h3>
                 </div>
@@ -78,11 +108,18 @@ const OrdersCard = ({ order }) => {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <h6 className="text-sm">Freelancer:</h6>
-                  <h6 className="text-sm">{order.freelancer_name}</h6>
+                  <h6
+                    onClick={() => handleOpenProfile(order?.freelancer_name)}
+                    className="text-sm cursor-pointer underline hover:-translate-y-0.5 hover:text-purple-500 duration-300"
+                  >
+                    {order.freelancer_name}
+                  </h6>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <h6 className="text-sm">Price</h6>
-                  <h6 className="text-sm text-green-500">${order?.price || "N/A"}</h6>
+                  <h6 className="text-sm text-green-500">
+                    ${order?.price || "N/A"}
+                  </h6>
                 </div>
               </div>
             </div>
