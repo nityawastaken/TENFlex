@@ -56,5 +56,6 @@ urlpatterns = [
 
   
     path('languages/', get_language_choices),
+    path('popular-gigs/', get_popular_gigs),
 
 ]

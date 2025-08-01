@@ -3,6 +3,7 @@ from django.contrib.auth.models import AbstractUser
 from multiselectfield import MultiSelectField
 import pycountry
 from phonenumber_field.modelfields import PhoneNumberField
+from  django.db.models import Avg
 # User profile model
 # class User_profile(models.Model):
 #     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
@@ -54,6 +55,7 @@ class CustomUser(AbstractUser):
     experience = models.CharField(choices=[('beginner', 'Beginner'), ('intermediate', 'Intermediate'), ('expert', 'Expert')], default='beginner')
     skills = models.ManyToManyField(Skill, blank=True, related_name='freelancers')
     category_tags = models.ManyToManyField(Category, blank=True, related_name='freelancers')
+    created_at = models.DateTimeField(auto_now_add=True)
     def __str__(self):
         return self.username
 
@@ -107,7 +109,22 @@ class Review(models.Model):
 
     def __str__(self):
         return f"Review by {self.reviewer.username} for {self.reviewee.username}"
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.update_gig_rating()
 
+    def delete(self, *args, **kwargs):
+        gig = self.gig  # store before deletion
+        super().delete(*args, **kwargs)
+        self.update_gig_rating(gig)
+
+    def update_gig_rating(self,gig=None):
+        if gig is None:
+            gig = self.gig
+        avg = Review.objects.filter(gig=self.gig).aggregate(Avg('rating'))['rating__avg']
+        gig.avg_rating = round(avg or 0.0, 2)
+        gig.save()
 
 class GigList(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='giglists')

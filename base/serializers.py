@@ -251,7 +251,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
     
 class GigSerializer(serializers.ModelSerializer):
     freelancer = serializers.ReadOnlyField(source='freelancer.username')
-    avg_rating = serializers.SerializerMethodField()
+    # avg_rating = serializers.SerializerMethodField()
     review_count = serializers.SerializerMethodField()
     order_inline_count = serializers.SerializerMethodField()
     order_completed_count = serializers.SerializerMethodField()
@@ -275,12 +275,12 @@ class GigSerializer(serializers.ModelSerializer):
             'id', 'created_at', 'freelancer',
             'avg_rating', 'review_count','order_inline_count', 'order_completed_count'
         ]
-    def get_avg_rating(self, obj):
-        reviews = Review.objects.filter(gig=obj)
-        if reviews.exists():
-            avg = reviews.aggregate(models.Avg('rating'))['rating__avg']
-            return round(avg, 2)
-        return 0.0
+    # def get_avg_rating(self, obj):
+    #     reviews = Review.objects.filter(gig=obj)
+    #     if reviews.exists():
+    #         avg = reviews.aggregate(models.Avg('rating'))['rating__avg']
+    #         return round(avg, 2)
+    #     return 0.0
     def get_review_count(self, obj):
         return Review.objects.filter(gig=obj).count()
     def get_order_inline_count(self, obj):

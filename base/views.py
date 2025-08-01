@@ -1,3 +1,4 @@
+import random
 from rest_framework.response import Response
 from rest_framework import viewsets, status, filters, permissions
 from rest_framework.permissions import IsAuthenticated,IsAuthenticatedOrReadOnly,AllowAny
@@ -14,6 +15,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import get_user_model
+from django.db.models import Avg, Count
 
 
 User = get_user_model()
@@ -733,3 +735,15 @@ def get_language_choices(request):
         languages = [lang for lang in languages if lang['name'].lower().startswith(query)]
 
     return Response(languages)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_popular_gigs(request):
+    # Filter gigs with avg_rating ≥ 3
+    gigs = Gig.objects.filter(avg_rating__gte=3)    # Shuffle and return any 10 gigs
+    gigs = list(gigs)
+    random.shuffle(gigs)
+    gigs = gigs[:8]
+
+    serializer = GigSerializer(gigs, many=True)
+    return Response(serializer.data)
