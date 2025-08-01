@@ -284,7 +284,7 @@ const ProjectPage = () => {
 
   const closeProjectPopup = () => {
     setShowProjectPopup(false);
-    setSelectedProject(null);
+    // setSelectedProject(null);
   };
 
   const toggleFilter = (value, setState, state) => {
@@ -329,15 +329,14 @@ const ProjectPage = () => {
     }
   };
 
-  // console.log("selected project : ", selectedProject)
+  console.log("selected project : ", selectedProject)
 
   return (
     <div
       className={`main ${
-        user?.isFreelancer !== null && user?.is_freelancer ? "mt-22" : "mt-28"
+        user?.isFreelancer !== null && user?.is_freelancer ? "mt-22" : "mt-22"
       }`}
     >
-      {console.log("user : ", user)}
       {/* Add CSS styles */}
       <style dangerouslySetInnerHTML={{ __html: projectPageStyles }} />
 
@@ -702,6 +701,7 @@ const ProjectPage = () => {
           skills={skills}
           setTags={setTags}
           tags={tags}
+          selectedProject={selectedProject}
         />
       )}
 

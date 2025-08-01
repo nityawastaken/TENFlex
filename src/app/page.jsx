@@ -18,9 +18,9 @@ export default function HomePage() {
       </div>
       
       <Hero />
-      <Recommendation />
+      {/* <Recommendation /> */}
       <PopularServices />
-      <MadeonTenflex />
+      {/* <MadeonTenflex /> */}
     </div>
   );
 }

@@ -240,6 +240,7 @@ const page = ({ params }) => {
   return (
     <div className="gig-profile-page mt-24">
       {/* <SubNavigationBar /> */}
+      {addToGiglist && <AddToGigList setAddToGiglist={setAddToGiglist} gigId={gigId}/>}
       <Breadcrumbs />
 
       <div className="gig-header">
@@ -289,7 +290,7 @@ const page = ({ params }) => {
                   Add To Your GigList
                 </button>
               </div>
-            {addToGiglist && <AddToGigList setAddToGiglist={setAddToGiglist} gigId={gigId}/>}
+            
           </div>}
 
           {/* About this gig section - Now uses real gig data */}

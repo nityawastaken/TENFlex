@@ -15,6 +15,8 @@ import Updateform from "../components/Updateform";
 import useScreenWidth from "@/Hooks/useScreenWidth";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import ISO6391 from "iso-639-1";
+
 
 const ClientProfilePage = ({ params }) => {
   const userData = useSelector((state) => state.user);
@@ -51,22 +53,6 @@ const ClientProfilePage = ({ params }) => {
   const [inputValue, setInputValue] = useState("");
   const [languages, setLanguages] = useState([]);
 
-  // Language code-name mapping
-  const LANGUAGE_CODE_TO_NAME = {
-    en: "English",
-    hi: "Hindi",
-    fr: "French",
-    es: "Spanish",
-    de: "German",
-    zh: "Chinese",
-    ru: "Russian",
-  };
-  const LANGUAGE_NAME_TO_CODE = Object.fromEntries(
-    Object.entries(LANGUAGE_CODE_TO_NAME).map(([code, name]) => [
-      name.toLowerCase(),
-      code,
-    ])
-  );
   // const [id, setId] = useState(null);
   const paramsObj = React.use(params);
   const id = paramsObj.id;
@@ -113,10 +99,6 @@ const ClientProfilePage = ({ params }) => {
       setEditUsePurpose(response.data.use_purpose || "");
 
       const userLangs = response.data.lang_spoken || [];
-      const langNames = userLangs.map(
-        (code) => LANGUAGE_CODE_TO_NAME[code] || code
-      );
-      setInputValue(langNames.join(", "));
       setLanguages(userLangs);
     } catch (error) {
       console.error("Error fetching user data:", error);
@@ -144,34 +126,20 @@ const ClientProfilePage = ({ params }) => {
 
   const handleSave = async () => {
     try {
-      // Convert inputValue (names) to codes for backend
-      const langNames = inputValue
-        .split(",")
-        .map((name) => name.trim().toLowerCase())
-        .filter((name) => name.length > 0);
-      const langCodes = langNames.map(
-        (name) => LANGUAGE_NAME_TO_CODE[name] || name
-      );
-      setLanguages(langCodes); // keep state in sync
-
+      console.log("languages : ", languages);
       if (file instanceof File) {
         const formData = new FormData();
         formData.append("first_name", editFirstName);
         formData.append("last_name", editLastName);
         formData.append("email", editEmail);
-        // formData.append("contact_number", `+91${editContact}`); // optional
         formData.append("location", editLocation);
         formData.append("bio", editBio);
         formData.append("role", editRole);
         formData.append("use_purpose", editUsePurpose);
-        // if (Array.isArray(langCodes) && langCodes.length > 0) {
-        //   langCodes.forEach((lang) => {
-        //     formData.append("lang_spoken", lang);
-        //   });
-        // }
-        formData.append("lang_spoken", langCodes.toString());
+        languages.forEach((lang) => {
+          formData.append("lang_spoken", lang);
+        });
         formData.append("profile_picture", file);
-        // ...existing code...
         const response = await axios.patch(
           `http://127.0.0.1:8000/base/users/${userData.currentUser.id}/`,
           formData,
@@ -186,32 +154,19 @@ const ClientProfilePage = ({ params }) => {
           fetchUserData();
         }
       } else {
-        // Defensive: filter out any accidental stringified arrays
-        const cleanLangCodes = Array.isArray(langCodes)
-          ? langCodes.filter(
-              (code) =>
-                typeof code === "string" &&
-                !code.startsWith("[") &&
-                !code.endsWith("]")
-            )
-          : [];
         const updatedData = {
           first_name: editFirstName,
           last_name: editLastName,
           email: editEmail,
-          // contact_number: `${
-          //   editContact.length !== 0 ? "+91" + editContact : ""
-          // }`,
           contact_number: editContact,
           location: editLocation,
           bio: editBio,
           role: editRole,
           use_purpose: editUsePurpose,
-          lang_spoken: langCodes.toString(),
+          lang_spoken: languages,
         };
-        // ...existing code...
         const response = await axios.patch(
-          `http://127.0.0.1:8000/base/users/${userData.currentUser.id}/`,
+          `${process.env.NEXT_PUBLIC_API_URL}/base/users/${userData.currentUser.id}/`,
           updatedData,
           {
             headers: {
@@ -219,6 +174,7 @@ const ClientProfilePage = ({ params }) => {
             },
           }
         );
+        console.log("response : ", response);
         if (response.data.id) {
           toast.success("Profile update succcess!");
           fetchUserData();
@@ -255,19 +211,6 @@ const ClientProfilePage = ({ params }) => {
     }
   };
 
-  const handleLangChange = (e) => {
-    setInputValue(e.target.value);
-    // Live update: convert names to codes for state
-    const langNames = e.target.value
-      .split(",")
-      .map((name) => name.trim().toLowerCase())
-      .filter((name) => name.length > 0);
-    const langCodes = langNames.map(
-      (name) => LANGUAGE_NAME_TO_CODE[name] || name
-    );
-    setLanguages(langCodes);
-  };
-
   const handleNav = (ref) => {
     if (ref?.current) {
       ref.current.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -283,7 +226,9 @@ const ClientProfilePage = ({ params }) => {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-[#1a1333] to-[#2d1a4d] text-white px-2 sm:px-4 pt-32 flex flex-col md:flex-row gap-4 relative w-full">
+    <main
+      className={`"min-h-screen bg-gradient-to-br from-[#1a1333] to-[#2d1a4d] text-white px-2 sm:px-4 pt-28 flex flex-col md:flex-row gap-4 relative w-full" `}
+    >
       <ToastContainer position="bottom-right" autoClose={3000} />
 
       {/* Delete Profile Modal - Responsive */}
@@ -376,11 +321,8 @@ const ClientProfilePage = ({ params }) => {
             editUsePurpose={editUsePurpose}
             editRole={editRole}
             setEditRole={setEditRole}
-            handleLangChange={handleLangChange}
             setLanguages={setLanguages}
             languages={languages}
-            setInputValue={setInputValue}
-            inputValue={inputValue}
           />
         </div>
       )}
@@ -448,7 +390,7 @@ const ClientProfilePage = ({ params }) => {
         )}
       </div>
       {/* Delete Profile Button for desktop: fixed to bottom right */}
-      {width >= 768 &&  user?.id === +id && (
+      {width >= 768 && user?.id === +id && (
         <button
           className="md:absolute bottom-1 right-2 md:right-10 px-4 py-2 bg-red-600 rounded-xl cursor-pointer z-40"
           onClick={() => setProfileDelete(true)}

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import Section from "./Section";
 import axios from "axios";
 import { IoIosArrowDown, IoIosArrowUp } from "react-icons/io";
+import Link from "next/link";
 
 const GiglistsSection = ({ refProp }) => {
   const [gigList, setGigList] = useState([]);
@@ -198,7 +199,7 @@ const GiglistsSection = ({ refProp }) => {
                 </div>
               )}
               {/* Add gig input */}
-              {showAddGigInput === index && (
+              {/* {showAddGigInput === index && (
                 <div className="px-6 py-2 flex flex-col gap-2 bg-[#2d2256] rounded-b">
                   <input
                     type="text"
@@ -251,7 +252,7 @@ const GiglistsSection = ({ refProp }) => {
                     </button>
                   </div>
                 </div>
-              )}
+              )} */}
               {/* Expandable Gig Cards */}
               {activeIndex === index && (
                 <div className="px-6 pb-6 pt-2">
@@ -268,11 +269,12 @@ const GiglistsSection = ({ refProp }) => {
                           <p className="text-sm text-purple-300 mb-2 whitespace-normal break-words max-h-20 overflow-y-auto">
                             {gig.description}
                           </p>
+                          {/* {console.log("gig : ", gig)} */}
                           <p className="text-xs text-purple-400 italic mb-2 truncate">
                             Freelancer: {" "}
-                            <span className="font-medium" title={gig.freelancer}>
+                            <Link href={`/profile/${gig.id}`} className="font-medium" title={gig.freelancer}>
                               {gig.freelancer}
-                            </span>
+                            </Link>
                           </p>
                           <p className="text-lg font-bold text-green-400 mt-2">
                             ₹ {gig.price}

@@ -1,6 +1,7 @@
 import useScreenWidth from "@/Hooks/useScreenWidth";
 import { FaLocationDot } from "react-icons/fa6";
 import { MdContactPhone } from "react-icons/md";
+import ISO6391 from "iso-639-1";
 
 // Language code-name mapping (should match page.jsx)
 const LANGUAGE_CODE_TO_NAME = {
@@ -26,10 +27,10 @@ const ProfileDetails = ({
   editUsePurpose,
   editContact,
   languages,
-  id
+  id,
 }) => {
   const userObj = localStorage.getItem("userMin");
-  const user = userObj ? JSON.parse(userObj) : ""
+  const user = userObj ? JSON.parse(userObj) : "";
 
   // console.log("file ", file)
   return (
@@ -92,7 +93,7 @@ const ProfileDetails = ({
             {(() => {
               if (Array.isArray(languages) && languages.length > 0) {
                 const languageNames = languages.map(
-                  (code) => LANGUAGE_CODE_TO_NAME[code] || code
+                  (code) => ISO6391.getName(code) || code
                 );
                 return languageNames.join(", ");
               } else {

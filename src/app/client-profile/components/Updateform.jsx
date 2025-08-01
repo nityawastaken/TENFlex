@@ -1,6 +1,6 @@
 import useScreenWidth from "@/Hooks/useScreenWidth";
-import React from "react";
-
+import React, { useState } from "react";
+import ISO6391 from "iso-639-1";
 
 const Updateform = ({
   handleSave,
@@ -21,23 +21,20 @@ const Updateform = ({
   editRole,
   setEditUsePurpose,
   editUsePurpose,
-  handleLangChange,
   setLanguages,
-  inputValue,
-  setInputValue,
   languages,
 }) => {
   const width = useScreenWidth();
+  const [langInput, setLangInput] = useState("");
 
-  // Language code-name mapping (should match page.jsx)
-  const LANGUAGE_CODE_TO_NAME = {
-    en: "English",
-    hi: "Hindi",
-    fr: "French",
-    es: "Spanish",
-    de: "German",
-    zh: "Chinese",
-    ru: "Russian",
+  const handleAddLanguage = (e) => {
+    e.preventDefault();
+    const trimmed = langInput.trim().toLowerCase();
+    const langCode = ISO6391.getCode(trimmed);
+    if (langCode && !languages.includes(langCode)) {
+      setLanguages([...languages, langCode]);
+    }
+    setLangInput("");
   };
 
   return (
@@ -171,17 +168,27 @@ const Updateform = ({
           <label className="block text-sm text-purple-200 mb-1 font-medium">
             Languages
           </label>
-          <input
-            type="text"
-            value={inputValue}
-            onChange={handleLangChange}
-            placeholder="Enter languages separated by commas"
-            className="w-full bg-[#2d2357] rounded-lg px-2 py-2 h-12 focus:outline-none focus:ring-2 focus:ring-purple-400 text-white"
-            list="language-suggestions"
-          />
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={langInput}
+              onChange={(e) => setLangInput(e.target.value)}
+              placeholder="Enter a language (e.g., French)"
+              className="w-full bg-[#2d2357] rounded-lg px-2 py-2 h-12 focus:outline-none focus:ring-2 focus:ring-purple-400 text-white"
+              list="language-suggestions"
+            />
+            <button
+              onClick={(e) => {
+                handleAddLanguage(e);
+              }}
+              className="bg-purple-600 hover:bg-purple-500 text-white rounded-lg px-4 py-2 text-lg font-bold"
+            >
+              +
+            </button>
+          </div>
           <datalist id="language-suggestions">
-            {Object.entries(LANGUAGE_CODE_TO_NAME).map(([code, name]) => (
-              <option key={code} value={name} />
+            {ISO6391.getAllNames().map((name) => (
+              <option key={name} value={name} />
             ))}
           </datalist>
         </div>

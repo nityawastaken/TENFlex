@@ -23,22 +23,22 @@ const Navbar = () => {
 
   const getLinks = (role) => {
     const base = [
-      { name: "Business", href: "/business" },
-      { name: "Explore", href: "/#explore" },
+      { name: "Home", href: "/" },
+      { name: "Explore Gigs", href: "/gig-list/" },
       { name: "Projects", href: "/projects" },
     ];
 
-    if (role === "freelancer") {
-      base.push(
-        { name: "My Gigs", href: "/my-gigs" },
-        { name: "Orders", href: "/orders" }
-      );
-    } else if (role === "customer") {
-      base.push(
-        { name: "Browse Services", href: "/services" },
-        { name: "Hire a Freelancer", href: "/hire" }
-      );
-    }
+    // if (1) {
+    //   base.push(
+    //     { name: "My Gigs", href: "/my-gigs" },
+    //     { name: "Orders", href: "/orders" }
+    //   );
+    // } else if (role === "customer") {
+    //   base.push(
+    //     { name: "Browse Services", href: "/services" },
+    //     { name: "Hire a Freelancer", href: "/hire" }
+    //   );
+    // }
 
     return base;
   };
@@ -110,7 +110,7 @@ const Navbar = () => {
   return (
     <>
       <nav
-        className={`w-full flex justify-between items-center px-4 md:px-10 py-5 fixed top-0 z-50 border-b border-white transition duration-300 ${
+        className={`w-full flex justify-between items-center px-4 md:px-10 py-5 fixed top-0 z-50 border-b border-gray-600 transition duration-300 ${
           isScroll ? "bg-black/70 backdrop-blur-md shadow-md" : "bg-black"
         }`}
       >

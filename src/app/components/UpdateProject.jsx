@@ -14,6 +14,7 @@ const UpdateProject = ({
   skills,
   setTags,
   tags,
+  selectedProject
 }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
@@ -42,6 +43,8 @@ const UpdateProject = ({
           {/* Title */}
           <input
             name="title"
+            value={selectedProject?.title}
+            onChange={(e) => e.target.value}
             required
             placeholder="Project Title"
             className="w-full p-3 border border-gray-300 rounded-lg placeholder-gray-500 text-black focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -50,6 +53,8 @@ const UpdateProject = ({
           {/* Description */}
           <textarea
             name="description"
+            value={selectedProject?.description}
+            onChange={(e) => e.target.value}
             required
             placeholder="Project Description"
             rows={4}
@@ -61,12 +66,16 @@ const UpdateProject = ({
             <input
               type="date"
               name="postDate"
+              value={selectedProject?.start_date}
+              onChange={(e) => e.target.value}
               required
               className="w-full p-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
             <input
               type="date"
               name="deadline"
+              value={selectedProject?.deadline}
+              onChange={(e) => e.target.value}
               required
               className="w-full p-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
@@ -76,6 +85,8 @@ const UpdateProject = ({
           <input
             type="number"
             name="budget"
+            value={selectedProject?.budget}
+            onChange={(e) => e.target.value}
             required
             placeholder="Budget (₹)"
             className="w-full p-3 border border-gray-300 rounded-lg placeholder-gray-500 text-black focus:outline-none focus:ring-2 focus:ring-purple-500"

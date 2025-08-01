@@ -29,7 +29,8 @@ const AddToGigList = ({ setAddToGiglist, gigId }) => {
     fetchGigList();
   }, []);
 
-  const handleAddToGiglist = async (id) => {
+  const handleAddToGiglist = async (id, e) => {
+    e.preventDefault();
     try {
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/base/giglists/${id}/gigs/add/`,
@@ -40,19 +41,23 @@ const AddToGigList = ({ setAddToGiglist, gigId }) => {
           },
         }
       );
-      if (res.status === 200) {
-        setAddToGiglist(false);
-        toast.success("Added to your GigList!");
+      if (res.statusText === "OK") {
+        toast.success("Added to your GigList.");
+        setTimeout(() => setAddToGiglist(false), 3000);
       } else {
         toast.error("Something went wrong!");
       }
     } catch (err) {
-      toast.error("Something went wrong!");
+      if (err.status === 400) {
+        toast.error("Already added to your GigList!");
+      } else {
+        toast.error("Something went wrong!");
+      }
     }
   };
 
   return (
-    <div className="fixed inset-0 top-0 left-0 right-0 w-full h-full backdrop-blur-sm bg-opacity-60 flex justify-center items-start pt-6 z-50">
+    <div className="fixed inset-0 top-0 pt-[35vh] left-0 right-0 w-full h-full backdrop-blur-sm bg-opacity-60 flex justify-center items-start  z-50">
       <ToastContainer position="bottom-right" autoClose={3000} />
       <div className="bg-gradient-to-br from-[#24194a] via-[#1a1333] to-[#2d1a4d] p-4 sm:p-6 rounded-2xl w-full max-w-md relative shadow-2xl border border-purple-900 mx-2 sm:mx-auto">
         {/* Close button */}
@@ -79,7 +84,7 @@ const AddToGigList = ({ setAddToGiglist, gigId }) => {
                 {gig.name || "Unnamed"}
               </span>
               <button
-                onClick={() => handleAddToGiglist(gig.id)}
+                onClick={(e) => handleAddToGiglist(gig.id, e)}
                 className="flex items-center gap-1 bg-gradient-to-r from-purple-700 to-purple-500 text-white px-4 py-1.5 rounded-lg font-semibold shadow hover:scale-105 hover:from-purple-800 hover:to-purple-600 transition cursor-pointer"
               >
                 <svg
