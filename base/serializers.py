@@ -382,7 +382,6 @@ class ProjectPostSerializer(serializers.ModelSerializer):
                 skill_objs.append(skill)
             projectpost.skills.set(skill_objs)
 
-        category_names = validated_data.pop('category_names', [])
         category_objs = []
         for name in category_names:
             name = name.strip().title()
