@@ -370,7 +370,7 @@ class ProjectPostSerializer(serializers.ModelSerializer):
         ]
     def create(self, validated_data):
         skill_names = validated_data.pop('skill_names', [])
-        category_names = validated_data.pop('category_ids', [])
+        category_names = validated_data.pop('category_names', [])
 
         projectpost = ProjectPost.objects.create(**validated_data)
 
