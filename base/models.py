@@ -144,7 +144,7 @@ class ProjectPost(models.Model):
     start_date = models.DateField(null=True, blank=True)  # Optional field
     deadline = models.DateField()
     budget = models.DecimalField(max_digits=10, decimal_places=2)
-    skills_required = models.ManyToManyField(Skill, blank=True, related_name='project_posts')
+    skills = models.ManyToManyField(Skill, blank=True, related_name='project_posts')
     categories = models.ManyToManyField(Category, blank=True, related_name='project_posts')
     is_open = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)

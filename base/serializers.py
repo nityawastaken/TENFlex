@@ -441,7 +441,7 @@ class ProjectPostWithBidsSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'client', 'client_name', 'title', 'description',
             'start_date', 'deadline', 'budget',
-            'skills_required', 'categories', 'is_open', 'accepted_bid',
+            'skills', 'categories', 'is_open', 'accepted_bid',
             'created_at', 'bids'
         ]
     def get_bids(self, obj):
