@@ -233,22 +233,13 @@ def repeat_order(request, order_id):
     return Response(serializer.data, status=201)
 
 
-# View to update order status
 @api_view(['PATCH'])
 @permission_classes([IsAuthenticated])
 def update_order_status(request, order_id):
     try:
         order = Order.objects.get(id=order_id)
-        # ✅ Check if current user is the freelancer assigned to this order
-        if order.type == 'gig':
-            gig = Gig.objects.get(id=order.item_id)
-            freelancer = gig.freelancer
-        elif order.type == 'project':
-            bid = Bid.objects.get(project__id=order.item_id, is_accepted=True)
-            freelancer = bid.freelancer
-        else:
-            return Response({"error": "Unknown order type."}, status=400)
-        if request.user != freelancer:
+        # ✅ Just check the freelancer directly
+        if request.user != order.freelancer:
             return Response({"error": "Only the assigned freelancer can update the order status."}, status=403)
         # ✅ Validate status
         new_status = request.data.get("status")
@@ -259,10 +250,9 @@ def update_order_status(request, order_id):
         return Response({"message": "Order status updated successfully"}, status=200)
     except Order.DoesNotExist:
         return Response({"error": "Order not found"}, status=404)
-    except (Gig.DoesNotExist, Bid.DoesNotExist):
-        return Response({"error": "Associated object not found."}, status=404)
     except Exception as e:
         return Response({"error": str(e)}, status=500)
+
 
 #View to add an order
 @api_view(['POST'])
