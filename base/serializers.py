@@ -208,7 +208,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         skill_names = validated_data.pop('skill_names', [])
-        category_ids = validated_data.pop('category_ids', [])
+        category_names = validated_data.pop('category_ids', [])
 
         user = CustomUser.objects.create(**validated_data)
 
@@ -260,8 +260,7 @@ class GigSerializer(serializers.ModelSerializer):
     categories = CategorySerializer(many=True, read_only=True)
     skills = SkillSerializer(many=True, read_only=True)
     # Write-only for POST/PUT
-    category_ids = serializers.PrimaryKeyRelatedField(
-        queryset=Category.objects.all(), many=True, write_only=True, required=False)
+    category_names = serializers.ListField(child=serializers.CharField(), write_only=True, required=False)
     skill_names = serializers.ListField(child=serializers.CharField(), write_only=True, required=False)
     class Meta:
         model = Gig
@@ -269,7 +268,7 @@ class GigSerializer(serializers.ModelSerializer):
             'id', 'freelancer_id','freelancer', 'title', 'description',
             'price', 'delivery_time', 'created_at', 'picture',
             'avg_rating', 'review_count',
-            'categories', 'category_ids',
+            'categories', 'category_names',
             'skills', 'skill_names','order_inline_count','order_completed_count'
         ]
         read_only_fields = [
@@ -289,12 +288,17 @@ class GigSerializer(serializers.ModelSerializer):
     def get_order_completed_count(self, obj):
         return Order.objects.filter(type='gig', item_id=obj.id, status='completed').count()
     def create(self, validated_data):
-        category_ids = validated_data.pop('category_ids', [])
         skill_names = validated_data.pop('skill_names', [])
+        category_names = validated_data.pop('category_names', [])
 
         gig = Gig.objects.create(**validated_data)
 
-        gig.categories.set(category_ids)
+        category_objs = []
+        for name in category_names:
+            name = name.strip().title()
+            category, _ = Category.objects.get_or_create(name=name)
+            category_objs.append(category)
+        gig.categories.set(category_objs)
 
         # Handle skill name-based assignment
         skill_objs = []
@@ -306,8 +310,14 @@ class GigSerializer(serializers.ModelSerializer):
         return gig
 
     def update(self, instance, validated_data):
-        if 'category_ids' in validated_data:
-            instance.categories.set(validated_data.pop('category_ids'))
+        category_names = validated_data.pop('category_names', [])
+        if category_names:
+            category_objs = []
+            for name in category_names:
+                name = name.strip().title()
+                category, _ = Category.objects.get_or_create(name=name)
+                category_objs.append(category)
+            instance.categories.set(category_objs)
 
         if 'skill_names' in validated_data:
             skill_objs = []
@@ -341,39 +351,63 @@ class ProjectPostSerializer(serializers.ModelSerializer):
     client_name = serializers.CharField(source='client.username', read_only=True)
     accepted_bid_id = serializers.IntegerField(read_only=True)
     # For GET: show list of skill/category objects
-    skills_required = SkillSerializer(many=True, read_only=True)
+    skills = SkillSerializer(many=True, read_only=True)
     categories = CategorySerializer(many=True, read_only=True)
     # For POST/PUT: accept just the IDs
-    skill_ids = serializers.PrimaryKeyRelatedField(
-        queryset=Skill.objects.all(), many=True, write_only=True, required=False
-    )
-    category_ids = serializers.PrimaryKeyRelatedField(
-        queryset=Category.objects.all(), many=True, write_only=True, required=False
-    )
+    skill_names = serializers.ListField(child=serializers.CharField(), write_only=True, required=False)
+    category_names = serializers.ListField(child=serializers.CharField(), write_only=True, required=False)
     class Meta:
         model = ProjectPost
         fields = [
             'id', 'client', 'client_name',
             'title', 'description', 'start_date', 'deadline', 'budget',
-            'skills_required', 'categories',  # For GET
-            'skill_ids', 'category_ids',      # For POST/PUT
+            'skills', 'categories',  # For GET
+            'skill_names', 'category_names',      # For POST/PUT
             'is_open', 'accepted_bid_id', 'created_at'
         ]
         read_only_fields = [
             'id', 'client_name', 'accepted_bid_id', 'created_at', 'is_open'
         ]
     def create(self, validated_data):
-        skill_ids = validated_data.pop('skill_ids', [])
-        category_ids = validated_data.pop('category_ids', [])
-        project = ProjectPost.objects.create(**validated_data)
-        project.skills_required.set(skill_ids)
-        project.categories.set(category_ids)
-        return project
+        skill_names = validated_data.pop('skill_names', [])
+        category_names = validated_data.pop('category_ids', [])
+
+        projectpost = ProjectPost.objects.create(**validated_data)
+
+        if skill_names:
+            skill_objs = []
+            for name in skill_names:
+                name = name.strip().title()
+                skill, _ = Skill.objects.get_or_create(name=name)
+                skill_objs.append(skill)
+            projectpost.skills.set(skill_objs)
+
+        category_names = validated_data.pop('category_names', [])
+        category_objs = []
+        for name in category_names:
+            name = name.strip().title()
+            category, _ = Category.objects.get_or_create(name=name)
+            category_objs.append(category)
+        projectpost.categories.set(category_objs)
+
+        return projectpost
     def update(self, instance, validated_data):
-        if 'skill_ids' in validated_data:
-            instance.skills_required.set(validated_data.pop('skill_ids'))
-        if 'category_ids' in validated_data:
-            instance.categories.set(validated_data.pop('category_ids'))
+        category_names = validated_data.pop('category_names', [])
+        if category_names:
+            category_objs = []
+            for name in category_names:
+                name = name.strip().title()
+                category, _ = Category.objects.get_or_create(name=name)
+                category_objs.append(category)
+            instance.categories.set(category_objs)
+
+        if 'skill_names' in validated_data:
+            skill_objs = []
+            for name in validated_data.pop('skill_names'):
+                skill_obj, _ = Skill.objects.get_or_create(name__iexact=name.strip(), defaults={'name': name.strip()})
+                skill_objs.append(skill_obj)
+            instance.skills.set(skill_objs)
+
         return super().update(instance, validated_data)
 
 class BidSerializer(serializers.ModelSerializer):
