@@ -303,8 +303,9 @@ class GigSerializer(serializers.ModelSerializer):
         # Handle skill name-based assignment
         skill_objs = []
         for name in skill_names:
-            skill_obj, _ = Skill.objects.get_or_create(name__iexact=name.strip(), defaults={'name': name.strip()})
-            skill_objs.append(skill_obj)
+            name = name.strip().title()
+            skill, _ = Skill.objects.get_or_create(name=name)
+            skill_objs.append(skill)
         gig.skills.set(skill_objs)
 
         return gig
@@ -322,8 +323,9 @@ class GigSerializer(serializers.ModelSerializer):
         if 'skill_names' in validated_data:
             skill_objs = []
             for name in validated_data.pop('skill_names'):
-                skill_obj, _ = Skill.objects.get_or_create(name__iexact=name.strip(), defaults={'name': name.strip()})
-                skill_objs.append(skill_obj)
+                name = name.strip().title()
+                skill, _ = Skill.objects.get_or_create(name=name)
+                skill_objs.append(skill)
             instance.skills.set(skill_objs)
 
         return super().update(instance, validated_data)
@@ -403,8 +405,9 @@ class ProjectPostSerializer(serializers.ModelSerializer):
         if 'skill_names' in validated_data:
             skill_objs = []
             for name in validated_data.pop('skill_names'):
-                skill_obj, _ = Skill.objects.get_or_create(name__iexact=name.strip(), defaults={'name': name.strip()})
-                skill_objs.append(skill_obj)
+                name = name.strip().title()
+                skill, _ = Skill.objects.get_or_create(name=name)
+                skill_objs.append(skill)
             instance.skills.set(skill_objs)
 
         return super().update(instance, validated_data)
