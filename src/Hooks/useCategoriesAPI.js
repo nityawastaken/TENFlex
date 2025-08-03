@@ -3,15 +3,15 @@ import { useState, useCallback, useEffect } from 'react';
 const API_KEY = '2LcsGseCB3331noCWvHsftZUrKitKdVb';
 const API_URL = 'https://api.apilayer.com/skills';
 
-export const useSkillsAPI = () => {
+export const useCategoriesAPI = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [inputValue, setInputValue] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  const searchSkills = useCallback(async (query) => {
-    console.log('searchSkills called with query:', query);
+  const searchCategories = useCallback(async (query) => {
+    console.log('searchCategories called with query:', query);
     // If input is empty, return empty array
     if (!query || query.trim().length === 0) {
       console.log('Empty query, returning empty array');
@@ -35,18 +35,18 @@ export const useSkillsAPI = () => {
         throw new Error(`API request failed: ${response.status}`);
       }
 
-      const skills = await response.json();
-      console.log('API response:', skills);
+      const categories = await response.json();
+      console.log('API response:', categories);
       
       // Format API results
-      const formattedSkills = skills.map(skill => ({ value: skill, label: skill }));
-      console.log('Formatted skills:', formattedSkills);
+      const formattedCategories = categories.map(category => ({ value: category, label: category }));
+      console.log('Formatted categories:', formattedCategories);
 
-      setSearchResults(formattedSkills);
-      return formattedSkills;
+      setSearchResults(formattedCategories);
+      return formattedCategories;
     } catch (err) {
       setError(err.message);
-      console.error('Skills API error:', err);
+      console.error('Categories API error:', err);
       setSearchResults([]);
       return [];
     } finally {
@@ -54,10 +54,10 @@ export const useSkillsAPI = () => {
     }
   }, []);
 
-  // Load initial skills with default keyword "A"
+  // Load initial categories with default keyword "A"
   useEffect(() => {
-    const loadInitialSkills = async () => {
-      console.log('Loading initial skills with keyword "A"');
+    const loadInitialCategories = async () => {
+      console.log('Loading initial categories with keyword "A"');
       setLoading(true);
       try {
         const response = await fetch(`${API_URL}?q=A&&count=10`, {
@@ -71,16 +71,16 @@ export const useSkillsAPI = () => {
           throw new Error(`API request failed: ${response.status}`);
         }
 
-        const skills = await response.json();
-        console.log('Initial API response:', skills);
+        const categories = await response.json();
+        console.log('Initial API response:', categories);
         
-        const formattedSkills = skills.map(skill => ({ value: skill, label: skill }));
-        console.log('Initial formatted skills:', formattedSkills);
+        const formattedCategories = categories.map(category => ({ value: category, label: category }));
+        console.log('Initial formatted categories:', formattedCategories);
         
-        setSearchResults(formattedSkills);
+        setSearchResults(formattedCategories);
         setIsInitialized(true);
       } catch (err) {
-        console.error('Failed to load initial skills:', err);
+        console.error('Failed to load initial categories:', err);
         setError(err.message);
         setSearchResults([]);
         setIsInitialized(true);
@@ -89,7 +89,7 @@ export const useSkillsAPI = () => {
       }
     };
 
-    loadInitialSkills();
+    loadInitialCategories();
   }, []);
 
   // Handle input change without triggering API call
@@ -105,9 +105,9 @@ export const useSkillsAPI = () => {
     if (event.key === 'Enter' && inputValue.trim().length > 0) {
       console.log('Enter pressed, searching for:', inputValue);
       event.preventDefault();
-      searchSkills(inputValue);
+      searchCategories(inputValue);
     }
-  }, [inputValue, searchSkills]);
+  }, [inputValue, searchCategories]);
 
   // Function to use with AsyncPaginate component
   const loadOptions = useCallback(async (inputValue, { page }) => {
@@ -124,7 +124,7 @@ export const useSkillsAPI = () => {
   }, [searchResults]);
 
   return {
-    searchSkills,
+    searchCategories,
     loadOptions,
     loading,
     error,

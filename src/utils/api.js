@@ -57,12 +57,31 @@ export const apiCall = async (endpoint, options = {}) => {
 
   // Get token from localStorage if available
   let headers = { ...options.headers };
+  
+  // Try to get token from different possible locations
+  let token = null;
+  
+  // First, try to get from 'user' object
   const user = localStorage.getItem('user');
   if (user) {
-    const userData = JSON.parse(user);
-    if (userData && userData.token) {
-      headers['Authorization'] = `Token ${userData.token}`;
+    try {
+      const userData = JSON.parse(user);
+      if (userData && userData.token) {
+        token = userData.token;
+      }
+    } catch (e) {
+      console.warn('Failed to parse user data from localStorage');
     }
+  }
+  
+  // If no token found, try to get from separate 'token' key
+  if (!token) {
+    token = localStorage.getItem('token');
+  }
+  
+  // Add authorization header if token is available
+  if (token) {
+    headers['Authorization'] = `Token ${token}`;
   }
 
   // Only set Content-Type if body is a string (JSON), not FormData
@@ -80,7 +99,9 @@ export const apiCall = async (endpoint, options = {}) => {
     const response = await fetch(url, config);
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: response.statusText }));
-      throw new Error(errorData.message || 'Something went wrong');
+      // Prefer 'detail', then 'message', then statusText, then fallback
+      const errorMsg = errorData.detail || errorData.message || response.statusText || 'Something went wrong';
+      throw new Error(errorMsg);
     }
     // For DELETE requests, response might not have a body
     if (response.status === 204) {

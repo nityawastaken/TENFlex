@@ -14,6 +14,7 @@ import { FaPencilAlt, FaCheck, FaTimes, FaTrash } from 'react-icons/fa';
 import axios from 'axios';
 import "react-toastify/dist/ReactToastify.css";
 import AddToGigList from '@/app/components/AddToGigList';
+import { getLanguageNames } from '@/utils/languageUtils';
 
 const page = ({ params }) => {
   const { id } = useParams();
@@ -30,12 +31,15 @@ const page = ({ params }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredReviews, setFilteredReviews] = useState(reviews);
   const [expandedReviewId, setExpandedReviewId] = useState(null);
-  const options = ["None", "Most relevant", "Most recent"];
+  const options = ["None", "Most relevant", "Most recent", "Highest Rating"];
   const [editReviewId, setEditReviewId] = useState(null);
   const [editReviewText, setEditReviewText] = useState("");
   const [editReviewRating, setEditReviewRating] = useState(5);
   const [user, setUser] = useState("")
   const [addToGiglist, setAddToGiglist] = useState(false)
+  const [addReviewError, setAddReviewError] = useState("");
+  const [freelancerProfile, setFreelancerProfile] = useState(null);
+  const [showContactTooltip, setShowContactTooltip] = useState(false);
 
   // Theme state and persistence
   const [theme, setTheme] = useState("dark");
@@ -57,6 +61,51 @@ const page = ({ params }) => {
     setTheme((prevTheme) => (prevTheme === "dark" ? "light" : "dark"));
   };
 
+  // Fetch freelancer profile data using username
+  const fetchFreelancerProfile = async (username) => {
+    try {
+      const apiHost = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      
+      console.log('Fetching profile for username:', username);
+      
+      // Get auth token from localStorage
+      const token = localStorage.getItem('token');
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      
+      // Add auth header if token exists
+      if (token) {
+        headers['Authorization'] = `Token ${token}`;
+      }
+      
+      // First, get the user ID from username
+      const userResponse = await fetch(`${apiHost}/base/get_user_by_username/${username}/`, {
+        headers
+      });
+      if (userResponse.ok) {
+        const userData = await userResponse.json();
+        console.log('User data from username:', userData);
+        
+        // Then, get the full profile data using the user ID
+        const profileResponse = await fetch(`${apiHost}/base/users/${userData.id}/`, {
+          headers
+        });
+        if (profileResponse.ok) {
+          const profileData = await profileResponse.json();
+          console.log('Full profile data:', profileData);
+          setFreelancerProfile(profileData);
+        } else {
+          console.error('Failed to fetch profile data:', profileResponse.status);
+        }
+      } else {
+        console.error('Failed to fetch user data:', userResponse.status);
+      }
+    } catch (err) {
+      console.error('Failed to fetch freelancer profile:', err);
+    }
+  };
+
   useEffect(() => {
     if (!id) {
       setError('No gig ID provided');
@@ -75,6 +124,11 @@ const page = ({ params }) => {
         const data = await res.json();
         setGig(data);
         setOrdersInQueue(data.order_inline_count ?? 0);
+        
+        // Fetch freelancer profile data using the username
+        if (data.freelancer) {
+          await fetchFreelancerProfile(data.freelancer);
+        }
       } catch (err) {
         setError(err.message);
       } finally {
@@ -111,14 +165,33 @@ const page = ({ params }) => {
   // Adding new review
   const handleAddReview = async () => {
     if (!newReviewText.trim() || !gig?.id) return;
+    setAddReviewError("");
+    
+    // Debug: Log user and gig info to see what we're comparing
+    console.log('Current user:', currentUser);
+    console.log('Gig data:', gig);
+    console.log('Comparing:', currentUser?.id, 'with', gig?.user_id);
+    
+    // Check if current user is the gig owner - prevent API call entirely
+    if (currentUser && gig.user_id && currentUser.id === gig.user_id) {
+      setAddReviewError('You cannot add a review on your own gig.');
+      return;
+    }
+    
+    // Also check if user is not logged in
+    if (!currentUser) {
+      setAddReviewError('You must be logged in to add a review.');
+      return;
+    }
+    
     try {
       await reviewService.createReview({
         gig_id: gig.id,
         rating: newReviewRating,
         comment: newReviewText,
       });
-    setNewReviewText("");
-    setNewReviewRating(5);
+      setNewReviewText("");
+      setNewReviewRating(5);
       // Refresh reviews from backend
       const apiHost = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       const res = await fetch(`${apiHost}/base/reviews/?gig_id=${gig.id}`);
@@ -128,7 +201,8 @@ const page = ({ params }) => {
         setFilteredReviews(data.results || data);
       }
     } catch (err) {
-      alert('Failed to add review: ' + (err.message || 'Unknown error'));
+      let msg = err?.response?.data?.detail || err?.message || 'Unknown error';
+      setAddReviewError(msg);
       console.error('Add review error:', err);
     }
   };
@@ -198,15 +272,18 @@ const page = ({ params }) => {
         const dateB = b.created_at ? new Date(b.created_at) : (b.timestamp ? new Date(b.timestamp) : 0);
         return dateB - dateA;
       });
+    } else if (option === "Highest Rating") {
+      // Sort by rating (highest to lowest)
+      sortedReviews.sort((a, b) => b.rating - a.rating);
     }
 
     setFilteredReviews(sortedReviews);
   };
 
   //searching reviews
-  const handleSearch = () => {
+  const handleSearch = (term) => {
     const filtered = reviews.filter((review) =>
-      (review.comment || "").toLowerCase().includes(searchTerm.toLowerCase())
+      (review.comment || "").toLowerCase().includes((term || "").toLowerCase())
     );
     setFilteredReviews(filtered);
   };
@@ -240,7 +317,7 @@ const page = ({ params }) => {
   return (
     <div className="gig-profile-page mt-24">
       {/* <SubNavigationBar /> */}
-      <Breadcrumbs />
+      {/* <Breadcrumbs /> */}
 
       <div className="gig-header">
         <div className="content-wrapper">
@@ -302,12 +379,7 @@ const page = ({ params }) => {
                 <li key={skill.id}>{skill.name}</li>
               ))}
             </ul>
-            <h3>Services I Provide:</h3>
-            <ul>
-              {gig.skills && gig.skills.map(skill => (
-                <li key={skill.id}>{`I will provide services related to ${skill.name}`}</li>
-              ))}
-            </ul>
+            {/* Removed 'Services I Provide' section */}
           </div>
 
           {/* About this agency section - replaced with freelancer info */}
@@ -315,30 +387,104 @@ const page = ({ params }) => {
             <h2>Get to know {gig.freelancer}</h2>
             <div className="agency-info">
               <img
-                src={gig.freelancer_profile_picture || "https://via.placeholder.com/80"}
+                src={freelancerProfile?.profile_picture 
+                  ? (freelancerProfile.profile_picture.startsWith('http') 
+                    ? freelancerProfile.profile_picture 
+                    : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}${freelancerProfile.profile_picture}`)
+                  : "https://via.placeholder.com/80"}
                 alt={gig.freelancer}
                 className="agency-logo"
               />
               <div className="agency-details">
                 <h3>{gig.freelancer}</h3>
-                <span className="freelancer-status online">● Online</span>
-                <button className="contact-us-agency-button">Contact me</button>
+                <div className="freelancer-status-contact">
+                  <span className="freelancer-status online">● Online</span>
+                  <div className="contact-button-container">
+                    <button 
+                      className="contact-us-agency-button"
+                      onClick={() => setShowContactTooltip(!showContactTooltip)}
+                    >
+                      Contact me
+                    </button>
+                    {showContactTooltip && (
+                      <div className="contact-tooltip">
+                        <div className="tooltip-item">
+                          <strong>Email:</strong> {freelancerProfile?.email || "Email not available"}
+                        </div>
+                        <div className="tooltip-item">
+                          <strong>Phone:</strong> {freelancerProfile?.contact_number || "Contact number not available"}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
             <div className="agency-stats">
-              <p>From: {gig.freelancer_country || "India"}</p>
-              <p>Member since: {gig.freelancer_member_since
-                ? new Date(gig.freelancer_member_since).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+              <p>From: {freelancerProfile?.location || "India"}</p>
+              <p>Member since: {freelancerProfile?.date_joined
+                ? new Date(freelancerProfile.date_joined).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
                 : gig.created_at
                 ? new Date(gig.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
                 : "May 2025"}</p>
-              <p>Avg. response time: {gig.freelancer_response_time || "1 hour"}</p>
-              <p>Languages: {gig.freelancer_languages ? gig.freelancer_languages.join(', ') : "Hindi, English"}</p>
+              <p>Languages: {freelancerProfile?.lang_spoken 
+                ? (() => {
+                    const languageMap = {
+                      'en': 'English', 'hi': 'Hindi', 'fr': 'French', 'es': 'Spanish', 
+                      'de': 'German', 'zh': 'Chinese', 'ru': 'Russian', 'ja': 'Japanese',
+                      'ko': 'Korean', 'ar': 'Arabic', 'pt': 'Portuguese', 'it': 'Italian',
+                      'nl': 'Dutch', 'sv': 'Swedish', 'no': 'Norwegian', 'da': 'Danish',
+                      'fi': 'Finnish', 'pl': 'Polish', 'tr': 'Turkish', 'he': 'Hebrew',
+                      'th': 'Thai', 'vi': 'Vietnamese', 'id': 'Indonesian', 'ms': 'Malay',
+                      'tl': 'Tagalog', 'bn': 'Bengali', 'ta': 'Tamil', 'te': 'Telugu',
+                      'mr': 'Marathi', 'gu': 'Gujarati', 'kn': 'Kannada', 'ml': 'Malayalam',
+                      'pa': 'Punjabi', 'or': 'Odia', 'as': 'Assamese', 'ne': 'Nepali',
+                      'si': 'Sinhala', 'my': 'Burmese', 'km': 'Khmer', 'lo': 'Lao',
+                      'mn': 'Mongolian', 'ka': 'Georgian', 'hy': 'Armenian', 'az': 'Azerbaijani',
+                      'kk': 'Kazakh', 'ky': 'Kyrgyz', 'uz': 'Uzbek', 'tg': 'Tajik',
+                      'tk': 'Turkmen', 'af': 'Afrikaans', 'zu': 'Zulu', 'xh': 'Xhosa',
+                      'sw': 'Swahili', 'am': 'Amharic', 'ha': 'Hausa', 'yo': 'Yoruba',
+                      'ig': 'Igbo', 'rw': 'Kinyarwanda', 'sn': 'Shona', 'st': 'Sesotho',
+                      'tn': 'Tswana', 'ts': 'Tsonga', 've': 'Venda', 'ss': 'Swati',
+                      'nd': 'Northern Ndebele', 'nr': 'Southern Ndebele', 'ny': 'Chichewa',
+                      'mg': 'Malagasy', 'so': 'Somali', 'om': 'Oromo', 'ti': 'Tigrinya',
+                      'aa': 'Afar', 'ab': 'Abkhazian', 'ak': 'Akan', 'an': 'Aragonese',
+                      'av': 'Avaric', 'ay': 'Aymara', 'ba': 'Bashkir', 'be': 'Belarusian',
+                      'bg': 'Bulgarian', 'bh': 'Bihari', 'bi': 'Bislama', 'bm': 'Bambara',
+                      'bo': 'Tibetan', 'br': 'Breton', 'bs': 'Bosnian', 'ca': 'Catalan',
+                      'ce': 'Chechen', 'ch': 'Chamorro', 'co': 'Corsican', 'cr': 'Cree',
+                      'cs': 'Czech', 'cv': 'Chuvash', 'cy': 'Welsh', 'dv': 'Divehi',
+                      'dz': 'Dzongkha', 'ee': 'Ewe', 'eo': 'Esperanto', 'et': 'Estonian',
+                      'eu': 'Basque', 'fa': 'Persian', 'ff': 'Fulah', 'fo': 'Faroese',
+                      'fy': 'Western Frisian', 'ga': 'Irish', 'gd': 'Scottish Gaelic',
+                      'gl': 'Galician', 'gn': 'Guarani', 'gv': 'Manx', 'ht': 'Haitian',
+                      'hu': 'Hungarian', 'ia': 'Interlingua', 'ie': 'Interlingue',
+                      'ik': 'Inupiaq', 'io': 'Ido', 'is': 'Icelandic', 'iu': 'Inuktitut',
+                      'jv': 'Javanese', 'ki': 'Kikuyu', 'kj': 'Kuanyama', 'ku': 'Kurdish',
+                      'kv': 'Komi', 'kw': 'Cornish', 'lb': 'Luxembourgish', 'lg': 'Ganda',
+                      'li': 'Limburgan', 'ln': 'Lingala', 'lt': 'Lithuanian', 'lu': 'Luba-Katanga',
+                      'lv': 'Latvian', 'mh': 'Marshallese', 'mi': 'Maori', 'mk': 'Macedonian',
+                      'mo': 'Moldavian', 'mt': 'Maltese', 'na': 'Nauru', 'nb': 'Norwegian Bokmål',
+                      'nd': 'Northern Ndebele', 'ng': 'Ndonga', 'nn': 'Norwegian Nynorsk',
+                      'nr': 'Southern Ndebele', 'nv': 'Navajo', 'oc': 'Occitan', 'oj': 'Ojibwa',
+                      'os': 'Ossetian', 'pi': 'Pali', 'ps': 'Pushto', 'qu': 'Quechua',
+                      'rm': 'Romansh', 'rn': 'Rundi', 'ro': 'Romanian', 'sa': 'Sanskrit',
+                      'sc': 'Sardinian', 'sd': 'Sindhi', 'se': 'Northern Sami', 'sg': 'Sango',
+                      'sk': 'Slovak', 'sl': 'Slovenian', 'sm': 'Samoan', 'sq': 'Albanian',
+                      'sr': 'Serbian', 'su': 'Sundanese', 'wa': 'Walloon', 'wo': 'Wolof',
+                      'yi': 'Yiddish', 'za': 'Zhuang'
+                    };
+                    return freelancerProfile.lang_spoken.map(lang => languageMap[lang] || lang).join(', ');
+                  })()
+                : "Hindi, English"}</p>
             </div>
             <p>
-              {gig.freelancer_bio || `Hey there! I'm ${gig.freelancer}, a passionate Front-End Developer and B.Tech CSE student at Maharaja Agrasen College. I specialize in crafting clean, responsive UIs using HTML, CSS, JavaScript and React. I've worked on freelance gigs building sleek, user-friendly interfaces for clients, and I also love turning my own ideas into reality, like RateMate, a smart currency converter, and a Food Waste Reduction app aimed at real-world impact. I'm always building, learning, and ready to take on exciting web projects that make a difference!`}
+              {freelancerProfile?.bio || `Hey there! I'm ${gig.freelancer}, a passionate Front-End Developer and B.Tech CSE student at Maharaja Agrasen College. I specialize in crafting clean, responsive UIs using HTML, CSS, JavaScript and React. I've worked on freelance gigs building sleek, user-friendly interfaces for clients, and I also love turning my own ideas into reality, like RateMate, a smart currency converter, and a Food Waste Reduction app aimed at real-world impact. I'm always building, learning, and ready to take on exciting web projects that make a difference!`}
             </p>
           </div>
+
+          {/* Contact Popup */}
+          {/* Removed Contact Popup */}
         </div>
         <div className="gig-sidebar">
           <GigPackage
@@ -352,231 +498,263 @@ const page = ({ params }) => {
         </div>
       </div>
 
-      {/* Posts section */}
+      {/* Reviews section */}
       <div className="gig-reviews">
         <div className="content-wrapper">
-          <h2>Reviews</h2>
-          <div className="reviews-summary">
-            <h3>{reviews.length} reviews for this Gig</h3>
-            <div className="star-rating-breakdown">
-              <p>
-                5 Stars (
-                {reviews.filter((r) => Math.round(r.rating) === 5).length})
-              </p>
-              <p>
-                4 Stars (
-                {reviews.filter((r) => Math.round(r.rating) === 4).length})
-              </p>
-              <p>
-                3 Stars (
-                {reviews.filter((r) => Math.round(r.rating) === 3).length})
-              </p>
-              <p>
-                2 Stars (
-                {reviews.filter((r) => Math.round(r.rating) === 2).length})
-              </p>
-              <p>
-                1 Star (
-                {reviews.filter((r) => Math.round(r.rating) === 1).length})
-              </p>
-            </div>
-            <div className="seller-rating-breakdown">
-              <p>
-                Seller communication level ★{" "}
-                {(
-                  reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length
-                ).toFixed(1)}
-              </p>
-              <p>
-                Quality of delivery ★{" "}
-                {(
-                  reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length
-                ).toFixed(1)}
-              </p>
-              <p>
-                Value of delivery ★{" "}
-                {(
-                  reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length
-                ).toFixed(1)}
-              </p>
-            </div>
+          {/* Reviews Header */}
+          <div className="reviews-header">
+            <h2>Reviews</h2>
+            <div className="reviews-count">{reviews.length} reviews for this Gig</div>
           </div>
-          <div className="search-reviews">
-            <input
-              type="text"
-              placeholder="Search reviews"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <button onClick={handleSearch}>Search</button>
-          </div>
-          <div className="sort-reviews">
-            <div className="dropdown-wrapper">
-              <div className="dropdown">
-                <button
-                  className="add-review-btn"
-                  onClick={() => setIsOpen(!isOpen)}
-                >
-                  {selected} <span className="arrow">{isOpen ? "▲" : "▼"}</span>
-                </button>
 
-                {isOpen && (
-                  <ul className="dropdown-menu">
-                    {options.map((option, index) => (
-                      <li
-                        key={index}
-                        onClick={() => handleSort(option)}
-                        className="dropdown-item"
-                      >
-                        {option}
-                      </li>
-                    ))}
-                  </ul>
-                )}
+          {/* Reviews Summary Card */}
+          <div className="reviews-summary-card">
+            <div className="summary-left">
+              <div className="star-breakdown">
+                <h4>Rating Breakdown</h4>
+                <div className="star-rows">
+                  <div className="star-row">
+                    <span>5 Stars</span>
+                    <span className="star-count">({reviews.filter((r) => Math.round(r.rating) === 5).length})</span>
+                  </div>
+                  <div className="star-row">
+                    <span>4 Stars</span>
+                    <span className="star-count">({reviews.filter((r) => Math.round(r.rating) === 4).length})</span>
+                  </div>
+                  <div className="star-row">
+                    <span>3 Stars</span>
+                    <span className="star-count">({reviews.filter((r) => Math.round(r.rating) === 3).length})</span>
+                  </div>
+                  <div className="star-row">
+                    <span>2 Stars</span>
+                    <span className="star-count">({reviews.filter((r) => Math.round(r.rating) === 2).length})</span>
+                  </div>
+                  <div className="star-row">
+                    <span>1 Star</span>
+                    <span className="star-count">({reviews.filter((r) => Math.round(r.rating) === 1).length})</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="summary-right">
+              <div className="average-ratings">
+                <h4>Average Ratings</h4>
+                <div className="rating-item">
+                  <span>Seller communication level</span>
+                  <span className="rating-value">★ {reviews.length > 0 ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1) : '0.0'}</span>
+                </div>
+                <div className="rating-item">
+                  <span>Quality of delivery</span>
+                  <span className="rating-value">★ {reviews.length > 0 ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1) : '0.0'}</span>
+                </div>
+                <div className="rating-item">
+                  <span>Value of delivery</span>
+                  <span className="rating-value">★ {reviews.length > 0 ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1) : '0.0'}</span>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Add reviews input */}
-          <div className="add-review">
-            <div className="review-rating-selector">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <span
-                  key={star}
-                  className={`star ${star <= newReviewRating ? "active" : ""}`}
-                  onClick={() => setNewReviewRating(star)}
-                >
-                  ★
-                </span>
-              ))}
+          {/* Search and Sort Controls */}
+          <div className="reviews-controls">
+            <div className="search-section">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={e => {
+                  setSearchTerm(e.target.value);
+                  handleSearch(e.target.value);
+                }}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    handleSearch(searchTerm);
+                  }
+                }}
+                placeholder="Search reviews..."
+                className="search-input"
+              />
+              <button onClick={() => handleSearch(searchTerm)} className="search-btn">
+                Search
+              </button>
             </div>
-            <textarea
-              placeholder="Write your review..."
-              value={newReviewText}
-              onChange={(e) => setNewReviewText(e.target.value)}
-              rows={4}
-              className="add-review-textarea"
-            />
-            <button
-              onClick={handleAddReview}
-              className="add-review-btn"
-              disabled={!newReviewText.trim()}
-            >
-              Add Review
-            </button>
+            <div className="sort-section">
+              <div className="dropdown-wrapper">
+                <div className="dropdown">
+                  <button
+                    className="sort-btn"
+                    onClick={() => setIsOpen(!isOpen)}
+                  >
+                    {selected} <span className="arrow">{isOpen ? "▲" : "▼"}</span>
+                  </button>
+
+                  {isOpen && (
+                    <ul className="dropdown-menu">
+                      {options.map((option, index) => (
+                        <li
+                          key={index}
+                          onClick={() => handleSort(option)}
+                          className="dropdown-item"
+                        >
+                          {option}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
+
+          {/* Add Review Section */}
+          <div className="add-review-section">
+            <h4>Write a Review</h4>
+            <div className="review-form">
+              <div className="rating-selector">
+                <span className="rating-label">Your Rating:</span>
+                <div className="star-selector">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <span
+                      key={star}
+                      className={`star ${star <= newReviewRating ? "active" : ""}`}
+                      onClick={() => setNewReviewRating(star)}
+                    >
+                      ★
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <textarea
+                value={newReviewText}
+                onChange={e => setNewReviewText(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && !e.shiftKey && newReviewText.trim()) {
+                    e.preventDefault();
+                    handleAddReview();
+                  }
+                }}
+                placeholder="Write your review..."
+                rows={4}
+                className="review-textarea"
+              />
+              <button
+                onClick={handleAddReview}
+                className="submit-review-btn"
+                disabled={!newReviewText.trim()}
+              >
+                Add Review
+              </button>
+              {addReviewError && (
+                <div className="error-message">
+                  {addReviewError}
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Individual Reviews */}
-          {filteredReviews.length > 0 ? (
-            filteredReviews.map((review) => {
-              const isOwnReview = currentUser && (review.reviewer_id === currentUser.id || review.reviewer_name === currentUser.username);
-              return (
-                <div key={review.id} className="individual-review">
-                  <img
-                    src={review.avatar || 'https://via.placeholder.com/40'}
-                    alt="Reviewer Avatar"
-                    className="reviewer-avatar"
-                  />
-                  <div className="review-content">
-                    <h4>
-                      {review.reviewer_name}
-                    </h4>
-                    <p className="review-meta">
-                      {review.country_code && review.country && (
+          <div className="reviews-list">
+            {filteredReviews.length > 0 ? (
+              filteredReviews.map((review) => {
+                const isOwnReview = currentUser && (review.reviewer_id === currentUser.id || review.reviewer_name === currentUser.username);
+                return (
+                  <div key={review.id} className="review-item">
+                    <div className="review-header">
                       <img
-                        src={`https://flagsapi.com/${review.country_code}/flat/32.png`}
-                        alt="Country Flag"
-                        className="country-flag"
-                        />
-                      )}
-                      {review.country ? `${review.country} • ` : ''}
-                      {review.created_at ?
-                        formatDistanceToNow(new Date(review.created_at), { addSuffix: true }) :
-                        (review.time || '')
-                      }
-                    </p>
-                    {editReviewId === review.id ? (
-                      <>
-                        <div className="review-rating-selector mb-3 flex gap-1">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <span
-                              key={star}
-                              className={`star ${star <= editReviewRating ? "active" : ""}`}
-                              style={{
-                                color: star <= editReviewRating ? '#FFD700' : '#555',
-                                cursor: 'pointer',
-                                fontSize: '1.5em',
-                                textShadow: star <= editReviewRating ? '0 0 8px #FFD70099' : 'none',
-                                transition: 'color 0.2s, text-shadow 0.2s',
-                              }}
-                              onClick={() => setEditReviewRating(star)}
-                            >
-                              ★
-                            </span>
-                          ))}
+                        src={review.avatar || 'https://via.placeholder.com/40'}
+                        alt="Reviewer Avatar"
+                        className="reviewer-avatar"
+                      />
+                      <div className="reviewer-info">
+                        <h5 className="reviewer-name">{review.reviewer_name}</h5>
+                        <div className="review-meta">
+                          {review.country_code && review.country && (
+                            <img
+                              src={`https://flagsapi.com/${review.country_code}/flat/32.png`}
+                              alt="Country Flag"
+                              className="country-flag"
+                            />
+                          )}
+                          <span className="review-location">
+                            {review.country ? `${review.country} • ` : ''}
+                            {review.created_at ?
+                              formatDistanceToNow(new Date(review.created_at), { addSuffix: true }) :
+                              (review.time || '')
+                            }
+                          </span>
                         </div>
-                        <textarea
-                          value={editReviewText}
-                          onChange={e => setEditReviewText(e.target.value)}
-                          rows={3}
-                          className="mb-3 w-full px-4 py-2 rounded-lg shadow focus:outline-none resize-none"
-                          style={{
-                            background: '#18112c',
-                            color: '#fff',
-                            border: '2px solid #A020F0',
-                            boxShadow: '0 2px 8px 0 #A020F033',
-                            fontSize: '1em',
-                            transition: 'border 0.2s, box-shadow 0.2s',
-                          }}
-                        />
-                        <div className="flex gap-3">
-                          <button
-                            onClick={() => handleSaveEdit(review)}
-                            className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg shadow-md transition-all duration-200 flex items-center gap-2"
-                            style={{ boxShadow: '0 2px 8px 0 #A020F055' }}
-                          >
-                            <FaCheck /> Save
-                          </button>
-                          <button
-                            onClick={handleCancelEdit}
-                            className="px-5 py-2 border-2 border-purple-400 text-purple-300 hover:bg-purple-900/30 hover:text-white rounded-lg font-semibold transition-all duration-200 flex items-center gap-2"
-                          >
-                            <FaTimes /> Cancel
-                          </button>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <p className="review-rating">★ {review.rating}</p>
-                        <div className="review-comment">{review.comment}</div>
-                        {isOwnReview && (
-                          <div className="flex gap-2 mt-2">
+                      </div>
+                      <div className="review-rating-display">★ {review.rating}</div>
+                    </div>
+                    
+                    <div className="review-content">
+                      {editReviewId === review.id ? (
+                        <div className="edit-review-form">
+                          <div className="edit-rating-selector">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <span
+                                key={star}
+                                className={`star ${star <= editReviewRating ? "active" : ""}`}
+                                onClick={() => setEditReviewRating(star)}
+                              >
+                                ★
+                              </span>
+                            ))}
+                          </div>
+                          <textarea
+                            value={editReviewText}
+                            onChange={e => setEditReviewText(e.target.value)}
+                            rows={3}
+                            className="edit-textarea"
+                          />
+                          <div className="edit-actions">
                             <button
-                              onClick={() => handleEditReview(review)}
-                              className="px-2 py-1 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded flex items-center gap-1 text-xs"
+                              onClick={() => handleSaveEdit(review)}
+                              className="save-btn"
                             >
-                              <FaPencilAlt /> Edit
+                              <FaCheck /> Save
                             </button>
                             <button
-                              onClick={() => handleDeleteReview(review)}
-                              className="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-800 rounded flex items-center gap-1 text-xs"
+                              onClick={handleCancelEdit}
+                              className="cancel-btn"
                             >
-                              <FaTrash /> Delete
+                              <FaTimes /> Cancel
                             </button>
                           </div>
-                        )}
-                      </>
-                    )}
+                        </div>
+                      ) : (
+                        <div className="review-text">{review.comment}</div>
+                      )}
+                      
+                      {isOwnReview && editReviewId !== review.id && (
+                        <div className="review-actions">
+                          <button
+                            onClick={() => handleEditReview(review)}
+                            className="edit-btn"
+                          >
+                            <FaPencilAlt /> Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteReview(review)}
+                            className="delete-btn"
+                          >
+                            <FaTrash /> Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })
-          ) : (
-            <p>No reviews found.</p>
-          )}
+                );
+              })
+            ) : (
+              <div className="no-reviews">
+                <p>No reviews found.</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-export default page
+export default page;

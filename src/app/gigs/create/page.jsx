@@ -1,16 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Select from 'react-select';
 import { AsyncPaginate } from 'react-select-async-paginate';
 import { toast } from "react-toastify";
-import { useEffect } from "react";
-import Link from "next/link";
 import { FaCopy, FaRegEdit } from "react-icons/fa";
 import { CiLocationOn } from "react-icons/ci";
-import { gigService } from "@/utils/services";
 import { useSkillsAPI } from "@/Hooks/useSkillsAPI";
+import { useCategoriesAPI } from "@/Hooks/useCategoriesAPI";
 import dynamic from 'next/dynamic';
 
 // Use an environment variable or fallback to localhost
@@ -40,11 +38,12 @@ const LANGUAGE_CODE_TO_NAME = {
 
 export default function CreateGig() {
   const router = useRouter();
-  const { loadOptions, loading: skillsAPILoading, error: skillsAPIError } = useSkillsAPI();
+  const { loadOptions: loadSkillsOptions, loading: skillsAPILoading, error: skillsAPIError, handleInputChange: handleSkillsInputChange, handleKeyDown: handleSkillsKeyDown, inputValue: skillsInputValue, searchSkills, isInitialized: skillsInitialized } = useSkillsAPI();
+  const { loadOptions: loadCategoriesOptions, loading: categoriesAPILoading, error: categoriesAPIError, handleInputChange: handleCategoriesInputChange, handleKeyDown: handleCategoriesKeyDown, inputValue: categoriesInputValue, searchCategories, isInitialized: categoriesInitialized } = useCategoriesAPI();
   const [form, setForm] = useState({
     title: "",
     description: "",
-    skills: [],
+    skills: [], // always an array
     price: "",
     delivery_time: "",
     picture: null,
@@ -55,11 +54,38 @@ export default function CreateGig() {
   const [availableLanguages, setAvailableLanguages] = useState([]);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [category, setCategory] = useState(null);
-  const [availableCategories, setAvailableCategories] = useState([]);
-  const [categoriesLoading, setCategoriesLoading] = useState(true);
-  const [categoriesError, setCategoriesError] = useState(null);
   const TITLE_MAX_LENGTH = 80;
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [forceUpdate, setForceUpdate] = useState(0); // Add this state to force re-render
+
+  // Add a manual skill search function that will be triggered on Enter
+  const handleSkillSearch = useCallback((e) => {
+    if (e.key === 'Enter' && skillsInputValue.trim().length > 0) {
+      e.preventDefault();
+      console.log('Manual search triggered for:', skillsInputValue);
+      searchSkills(skillsInputValue).then(() => {
+        // Force component update after search results are updated
+        setForceUpdate(prev => prev + 1);
+      });
+    }
+  }, [skillsInputValue, searchSkills]);
+
+  // Add a manual category search function that will be triggered on Enter
+  const handleCategorySearch = useCallback((e) => {
+    if (e.key === 'Enter' && categoriesInputValue.trim().length > 0) {
+      e.preventDefault();
+      console.log('Manual category search triggered for:', categoriesInputValue);
+      searchCategories(categoriesInputValue).then(() => {
+        // Force component update after search results are updated
+        setForceUpdate(prev => prev + 1);
+      });
+    }
+  }, [categoriesInputValue, searchCategories]);
+
+  // Add useEffect to log when forceUpdate changes
+  useEffect(() => {
+    console.log('Component forced to update, iteration:', forceUpdate);
+  }, [forceUpdate]);
 
   useEffect(() => {
     // Fetch user data for sidebar
@@ -125,26 +151,8 @@ export default function CreateGig() {
     }
     fetchCompletionPercent();
     
-    // Skills will be loaded dynamically via search
+    // Skills and categories will be loaded dynamically via search hooks
     
-    // Fetch categories from backend
-    async function fetchCategories() {
-      setCategoriesLoading(true);
-      setCategoriesError(null);
-      try {
-        const res = await fetch(`${API_URL}/base/categories/`);
-        if (!res.ok) throw new Error('Failed to fetch categories');
-        const data = await res.json();
-        setAvailableCategories(data.map(cat => ({ value: cat.id, label: cat.name })));
-      } catch (err) {
-        console.error("Failed to fetch categories:", err);
-        setCategoriesError('Could not load categories');
-        setAvailableCategories([]);
-      } finally {
-        setCategoriesLoading(false);
-      }
-    }
-    fetchCategories();
   }, [router]);
 
   const handleChange = (e) => {
@@ -157,7 +165,7 @@ export default function CreateGig() {
   };
 
   const handleSkillsChange = (selected) => {
-    setForm((prev) => ({ ...prev, skills: selected }));
+    setForm((prev) => ({ ...prev, skills: selected || [] }));
   };
 
   // No need for a separate loadSkills function as we're using the one from useSkillsAPI
@@ -194,8 +202,8 @@ export default function CreateGig() {
         formData.append('picture', form.picture);
       }
       
-      // Add category ID
-      formData.append('category_ids', category.value);
+      // Add category names (backend expects category_names as array of strings)
+      formData.append('category_names', category.label);
       
       // Add skills
       form.skills.forEach(skill => {
@@ -397,10 +405,18 @@ export default function CreateGig() {
                           const languageName = lang.language || lang;
                           return LANGUAGE_CODE_TO_NAME[languageName] || languageName;
                         });
-                        return languageNames.join(', ');
+                        if (languageNames.length === 1) {
+                          return languageNames[0];
+                        } else {
+                          return `${languageNames[0]} +${languageNames.length - 1}`;
+                        }
                       } else if (Array.isArray(userData?.lang_spoken) && userData.lang_spoken.length > 0) {
                         const languageNames = userData.lang_spoken.map(code => LANGUAGE_CODE_TO_NAME[code] || code);
-                        return languageNames.join(', ');
+                        if (languageNames.length === 1) {
+                          return languageNames[0];
+                        } else {
+                          return `${languageNames[0]} +${languageNames.length - 1}`;
+                        }
                       } else {
                         return 'N/A';
                       }
@@ -489,9 +505,7 @@ export default function CreateGig() {
               <h2 className="text-xl font-bold text-purple-400 mb-4 animate-popIn" style={{ animationDelay: '0.55s' }}>Skills</h2>
               <div>
                 <label className="block mb-1">Skills</label>
-                {skillsAPILoading ? (
-                  <div className="text-purple-300 py-2">Loading skills...</div>
-                ) : skillsAPIError ? (
+                {skillsAPIError ? (
                   <div className="text-red-400 py-2">{skillsAPIError}</div>
                 ) : (
                   <DynamicAsyncPaginate
@@ -499,15 +513,16 @@ export default function CreateGig() {
                     name="skills"
                     value={form.skills}
                     onChange={handleSkillsChange}
-                    loadOptions={loadOptions}
-                    placeholder="Type to search skills (min 2 characters)..."
+                    loadOptions={loadSkillsOptions}
+                    onInputChange={handleSkillsInputChange}
+                    onKeyDown={handleSkillSearch}
+                    inputValue={skillsInputValue}
+                    placeholder={!skillsInitialized ? "Loading skills..." : "Type to search skills and press Enter..."}
                     isLoading={skillsAPILoading}
                     className="text-black"
                     classNamePrefix="select"
                     menuPortalTarget={typeof window !== 'undefined' ? document.body : null}
-                    onInputChange={(inputValue) => {
-                      console.log('Input changed:', inputValue);
-                    }}
+                    key={`skills-select-${forceUpdate}`} // Add key to force re-render
                     styles={{
                       menuPortal: base => ({ ...base, zIndex: 9999 }),
                       menu: base => ({ ...base, backgroundColor: '#18112c', color: 'white', zIndex: 9999 }),
@@ -533,20 +548,23 @@ export default function CreateGig() {
               <h2 className="text-xl font-bold text-purple-400 mb-4 animate-popIn" style={{ animationDelay: '0.5s' }}>Category</h2>
               <div>
                 <label className="block mb-1">Category</label>
-                {categoriesLoading ? (
-                  <div className="text-purple-300 py-2">Loading categories...</div>
-                ) : categoriesError ? (
-                  <div className="text-red-400 py-2">{categoriesError}</div>
+                {categoriesAPIError ? (
+                  <div className="text-red-400 py-2">{categoriesAPIError}</div>
                 ) : (
-                  <DynamicSelect
+                  <DynamicAsyncPaginate
                     name="category"
-                    options={availableCategories}
                     value={category}
                     onChange={setCategory}
+                    loadOptions={loadCategoriesOptions}
+                    onInputChange={handleCategoriesInputChange}
+                    onKeyDown={handleCategorySearch}
+                    inputValue={categoriesInputValue}
+                    placeholder={!categoriesInitialized ? "Loading categories..." : "Type to search categories and press Enter..."}
+                    isLoading={categoriesAPILoading}
                     className="text-black"
                     classNamePrefix="select"
-                    placeholder="Select or search category..."
                     menuPortalTarget={typeof window !== 'undefined' ? document.body : null}
+                    key={`categories-select-${forceUpdate}`} // Add key to force re-render
                     styles={{
                       menuPortal: base => ({ ...base, zIndex: 9999 }),
                       menu: base => ({ ...base, backgroundColor: '#18112c', color: 'white', zIndex: 9999 }),

@@ -52,17 +52,35 @@ function GigList() {
   const [language, setLanguage] = useState("Any");
   const [location, setLocation] = useState("Any");
   const [sortBy, setSortBy] = useState("recent");
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true); // Default to dark mode
   const [showSort, setShowSort] = useState(false);
   const [gigs, setGigs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isHydrated, setIsHydrated] = useState(false);
 
   const filtersRef = useRef();
   const width = useScreenWidth();
   const searchParams = useSearchParams();
   const searchQuery = searchParams.get("search")?.toLowerCase() || "";
+
+  // Apply dark mode immediately on mount
+  useEffect(() => {
+    // Force dark mode immediately
+    document.body.classList.add("dark-mode");
+    setIsHydrated(true);
+    
+    // Check if user has a theme preference in localStorage
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme === "light") {
+      setIsDarkMode(false);
+      document.body.classList.remove("dark-mode");
+    } else {
+      setIsDarkMode(true);
+      document.body.classList.add("dark-mode");
+    }
+  }, []);
 
   useEffect(() => {
     const fetchGigs = async () => {
@@ -102,15 +120,6 @@ function GigList() {
     };
     fetchGigs();
   }, [searchQuery]);
-
-  useEffect(() => {
-    // Check if user has a theme preference in localStorage
-    const savedTheme = localStorage.getItem("theme");
-    if (savedTheme === "dark") {
-      setIsDarkMode(true);
-      document.body.classList.add("dark-mode");
-    }
-  }, []);
 
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
@@ -187,11 +196,44 @@ function GigList() {
       }
     });
 
-  if (loading) {
-    return <div className="flex justify-center items-center min-h-[200px]">Loading gigs...</div>;
+  // Show loading state until hydrated
+  if (!isHydrated) {
+    return (
+      <div className="gig-list-container mt-18" style={{ 
+        backgroundColor: '#000000', 
+        color: '#FFFFFF',
+        minHeight: '100vh',
+        padding: '20px 0'
+      }}>
+        <div className="flex justify-center items-center min-h-[200px]">Loading...</div>
+      </div>
+    );
   }
+
+  if (loading) {
+    return (
+      <div className="gig-list-container mt-18" style={{ 
+        backgroundColor: '#000000', 
+        color: '#FFFFFF',
+        minHeight: '100vh',
+        padding: '20px 0'
+      }}>
+        <div className="flex justify-center items-center min-h-[200px]">Loading gigs...</div>
+      </div>
+    );
+  }
+  
   if (error) {
-    return <div className="text-center text-red-600 p-4">{error}</div>;
+    return (
+      <div className="gig-list-container mt-18" style={{ 
+        backgroundColor: '#000000', 
+        color: '#FFFFFF',
+        minHeight: '100vh',
+        padding: '20px 0'
+      }}>
+        <div className="text-center text-red-600 p-4">{error}</div>
+      </div>
+    );
   }
 
   return (

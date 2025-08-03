@@ -75,7 +75,6 @@ body {
     padding-top: 20px; /* Vertical padding only */
     padding-bottom: 20px; /* Vertical padding only */
     margin-bottom: 0;
-    border-bottom: 1px solid var(--light-border-color); /* Lighter border for dark theme */
     box-shadow: none;
 }
 
@@ -89,6 +88,29 @@ body {
     color: var(--secondary-color); /* Use theme secondary color */
     margin-bottom: 15px;
     text-align: left;
+}
+
+.gig-title-main {
+  font-size: 32px;
+  font-weight: bold;
+  color: var(--secondary-color);
+  margin-bottom: 10px;
+  margin-top: 0;
+  text-align: left;
+}
+
+.gig-meta-flex {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-size: 18px;
+  color: var(--text-color);
+  margin-bottom: 8px;
+}
+
+.freelancer-name {
+  font-weight: 600;
+  color: var(--secondary-color);
 }
 
 .gig-seller-info {
@@ -213,6 +235,7 @@ body {
     padding: 0; /* No padding here, content inside will have padding */
     border-radius: 0;
     box-shadow: none;
+    margin-bottom: 0;
 }
 
 .gig-image-carousel img {
@@ -294,16 +317,22 @@ body {
 
 .gig-sidebar {
     flex: 1;
-    min-width: 400px;
-    background-color: var(--dark-bg-color); /* Dark background for sidebar */
-    padding: 0;
-    border-radius: 8px; /* Rounded corners for sidebar */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4); /* Darker shadow */
-    height: fit-content;
+    min-width: 320px;
+    max-width: 400px;
     position: sticky;
-    top: 1.5rem;
-    border: 1px solid var(--light-border-color); /* Subtle border */
+    top: 100px;
+    align-self: flex-start;
+    z-index: 2;
+    margin-bottom: 40px;
+    background-color: var(--dark-bg-color);
+    border: 1px solid var(--light-border-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.package-details, .package-header, .gig-id-display {
+    border: none !important;
+    box-shadow: none !important;
 }
 
 .gig-sidebar:hover {
@@ -443,7 +472,7 @@ body {
     padding-left: 24px; /* Added horizontal padding for content */
     padding-right: 24px; /* Added horizontal padding for content */
     margin-top: 40px;
-    margin-bottom: 120px; /* Increased space below the section further */
+    margin-bottom: 0; /* Increased space below the section further */
     border-radius: 8px; /* Rounded corners */
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4); /* Darker shadow */
     border: 1px solid var(--light-border-color); /* Added subtle border */
@@ -1244,4 +1273,623 @@ body {
         opacity: 1;
         transform: translateY(0);
     }
+} 
+
+/* Reviews Section - Reorganized */
+.gig-reviews {
+  margin-top: 40px;
+  padding: 30px 0;
+}
+
+/* Reviews Header */
+.reviews-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--light-border-color);
+}
+
+.reviews-header h2 {
+  font-size: 28px;
+  font-weight: bold;
+  color: var(--secondary-color);
+  margin: 0;
+}
+
+.reviews-count {
+  font-size: 16px;
+  color: var(--text-color);
+  opacity: 0.8;
+}
+
+/* Reviews Summary Card */
+.reviews-summary-card {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  background: var(--card-bg-color);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 32px;
+  border: 1px solid var(--light-border-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.summary-left h4,
+.summary-right h4 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--secondary-color);
+  margin-bottom: 16px;
+}
+
+.star-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.star-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.star-count {
+  color: var(--text-color);
+  opacity: 0.7;
+  font-weight: 500;
+}
+
+.average-ratings {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rating-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--light-border-color);
+}
+
+.rating-item:last-child {
+  border-bottom: none;
+}
+
+.rating-value {
+  color: var(--star-color);
+  font-weight: 600;
+  font-size: 16px;
+}
+
+/* Reviews Controls */
+.reviews-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  gap: 20px;
+}
+
+.search-section {
+  display: flex;
+  gap: 12px;
+  flex: 1;
+  max-width: 400px;
+}
+
+.search-input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid var(--light-border-color);
+  border-radius: 8px;
+  background: var(--input-bg-color);
+  color: var(--text-color);
+  font-size: 14px;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(115, 49, 186, 0.2);
+}
+
+.search-btn {
+  padding: 12px 20px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.search-btn:hover {
+  background: var(--primary-dark-hover);
+}
+
+.sort-section {
+  display: flex;
+  align-items: center;
+}
+
+.sort-btn {
+  padding: 12px 20px;
+  background: var(--card-bg-color);
+  color: var(--text-color);
+  border: 1px solid var(--light-border-color);
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sort-btn:hover {
+  background: var(--dropdown-hover);
+  border-color: var(--primary-color);
+}
+
+/* Add Review Section */
+.add-review-section {
+  background: var(--card-bg-color);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 32px;
+  border: 1px solid var(--light-border-color);
+}
+
+.add-review-section h4 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--secondary-color);
+  margin-bottom: 20px;
+}
+
+.review-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.rating-selector {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rating-label {
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.star-selector {
+  display: flex;
+  gap: 4px;
+}
+
+.star-selector .star {
+  font-size: 24px;
+  color: #555;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.star-selector .star.active {
+  color: var(--star-color);
+}
+
+.star-selector .star:hover {
+  color: var(--star-color);
+}
+
+.review-textarea {
+  width: 100%;
+  padding: 16px;
+  border: 1px solid var(--light-border-color);
+  border-radius: 8px;
+  background: var(--input-bg-color);
+  color: var(--text-color);
+  font-size: 14px;
+  resize: vertical;
+  min-height: 120px;
+}
+
+.review-textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(115, 49, 186, 0.2);
+}
+
+.submit-review-btn {
+  align-self: flex-start;
+  padding: 12px 24px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.submit-review-btn:hover:not(:disabled) {
+  background: var(--primary-dark-hover);
+}
+
+.submit-review-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error-message {
+  color: #ef4444;
+  font-size: 14px;
+  font-weight: 500;
+  margin-top: 8px;
+}
+
+/* Reviews List */
+.reviews-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.review-item {
+  background: var(--card-bg-color);
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid var(--light-border-color);
+  transition: box-shadow 0.2s;
+}
+
+.review-item:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.review-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.reviewer-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.reviewer-info {
+  flex: 1;
+}
+
+.reviewer-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--secondary-color);
+  margin: 0 0 4px 0;
+}
+
+.review-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-color);
+  opacity: 0.8;
+}
+
+.country-flag {
+  width: 20px;
+  height: 15px;
+  border-radius: 2px;
+}
+
+.review-location {
+  font-size: 14px;
+  color: var(--text-color);
+  opacity: 0.8;
+}
+
+.review-rating-display {
+  font-size: 18px;
+  color: var(--star-color);
+  font-weight: 600;
+}
+
+.review-content {
+  margin-left: 64px;
+}
+
+.review-text {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-color);
+  margin-bottom: 16px;
+}
+
+/* Edit Review Form */
+.edit-review-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.edit-rating-selector {
+  display: flex;
+  gap: 4px;
+}
+
+.edit-rating-selector .star {
+  font-size: 20px;
+  color: #555;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.edit-rating-selector .star.active {
+  color: var(--star-color);
+}
+
+.edit-textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--light-border-color);
+  border-radius: 8px;
+  background: var(--input-bg-color);
+  color: var(--text-color);
+  font-size: 14px;
+  resize: vertical;
+  min-height: 100px;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.save-btn,
+.cancel-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.save-btn {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+}
+
+.save-btn:hover {
+  background: var(--primary-dark-hover);
+}
+
+.cancel-btn {
+  background: transparent;
+  color: var(--text-color);
+  border: 1px solid var(--light-border-color);
+}
+
+.cancel-btn:hover {
+  background: var(--dropdown-hover);
+}
+
+/* Review Actions */
+.review-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.edit-btn,
+.delete-btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+}
+
+.edit-btn {
+  background: rgba(115, 49, 186, 0.1);
+  color: var(--primary-color);
+}
+
+.edit-btn:hover {
+  background: rgba(115, 49, 186, 0.2);
+}
+
+.delete-btn {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.delete-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.no-reviews {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-color);
+  opacity: 0.7;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .reviews-summary-card {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .reviews-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .search-section {
+    max-width: none;
+  }
+  
+  .review-header {
+    flex-wrap: wrap;
+  }
+  
+  .review-content {
+    margin-left: 0;
+    margin-top: 12px;
+  }
+  
+  .edit-actions {
+    flex-direction: column;
+  }
+  
+  .review-actions {
+    flex-direction: column;
+  }
+} 
+
+/* Contact Tooltip Styles */
+.contact-button-container {
+  position: relative;
+  display: inline-block;
+}
+
+.contact-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a1a1a;
+  border: 2px solid var(--primary-color);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 8px;
+  min-width: 250px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  animation: tooltipSlideIn 0.2s ease-out;
+}
+
+.contact-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 8px solid transparent;
+  border-top-color: var(--primary-color);
+}
+
+@keyframes tooltipSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.tooltip-item {
+  margin-bottom: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tooltip-item:last-child {
+  margin-bottom: 0;
+}
+
+.tooltip-item strong {
+  color: var(--primary-color);
+  font-weight: 600;
+  margin-right: 10px;
+  min-width: 50px;
+  display: inline-block;
+}
+
+.tooltip-item {
+  color: #ffffff;
+  font-weight: 400;
+}
+
+/* Improved contact button arrangement */
+.freelancer-status-contact {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.freelancer-status {
+  font-size: 14px;
+  color: #10b981;
+}
+
+.contact-us-agency-button {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border: 1px solid var(--primary-color);
+}
+
+.contact-us-agency-button:hover {
+  background: var(--primary-dark-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(115, 49, 186, 0.3);
+}
+
+/* Responsive design for tooltip */
+@media (max-width: 480px) {
+  .contact-tooltip {
+    min-width: 180px;
+    left: 0;
+    transform: none;
+  }
+  
+  .contact-tooltip::after {
+    left: 20px;
+    transform: none;
+  }
+  
+  .freelancer-status-contact {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
 } 

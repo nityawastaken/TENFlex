@@ -23,20 +23,9 @@ import GigImage from "@/app/components/GigImage";
 import { orderService } from '@/utils/services';
 import { userService } from '@/utils/services';
 import { reviewService } from '@/utils/services';
+import { getLanguageNames } from '@/utils/languageUtils';
 // Remove: import GigCard from "@/app/components/GigCard";
 // Remove: import "@/app/gig-list/GigList.css";
-
-// Add this mapping at the top of the file
-const LANGUAGE_CODE_TO_NAME = {
-  en: 'English',
-  hi: 'Hindi',
-  fr: 'French',
-  es: 'Spanish',
-  de: 'German',
-  zh: 'Chinese',
-  ru: 'Russian',
-  // Add more as needed
-};
 
 // Add fade-in animation keyframes
 
@@ -131,7 +120,6 @@ export default function ProfilePage() {
   const { currentUser, loading: userLoading } = useUserContext();
   const [selectedSection, setSelectedSection] = useState("home");
   const selectedOption = useRef();
-  const [selectedOrderFilter, setSelectedOrderFilter] = useState("ongoing");
   const params = useParams();
   const router = useRouter();
   const userIdFromURL = params?.id;
@@ -153,6 +141,11 @@ export default function ProfilePage() {
   // Add loading state for order status change
   const [orderStatusLoading, setOrderStatusLoading] = useState(false);
   const [completionPercent, setCompletionPercent] = useState(null);
+  const [languageNames, setLanguageNames] = useState([]);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleteGigModalOpen, setIsDeleteGigModalOpen] = useState(false);
+  const [gigToDelete, setGigToDelete] = useState(null);
+  const [orderFilter, setOrderFilter] = useState('all');
 
   // Copy contact info function
   const copyContactInfo = async (type, value) => {
@@ -322,6 +315,22 @@ useEffect(() => {
         setLoading(false);
       });
   }, [userIdFromURL]);
+
+  useEffect(() => {
+    if (profileUser?.lang_spoken) {
+      const loadLanguageNames = async () => {
+        try {
+          const names = await getLanguageNames(profileUser.lang_spoken);
+          setLanguageNames(names);
+        } catch (error) {
+          console.error('Error loading language names:', error);
+          // Fallback to code names if utility fails
+          setLanguageNames(profileUser.lang_spoken);
+        }
+      };
+      loadLanguageNames();
+    }
+  }, [profileUser?.lang_spoken]);
 
   const handleSelectOrderFilter = () => {
     setSelectedOrderFilter(selectedOption.current.value);
@@ -657,11 +666,13 @@ useEffect(() => {
                       let languageNames = [];
                       if (Array.isArray(profileUser?.languages) && profileUser.languages.length > 0) {
                         languageNames = profileUser.languages.map(lang => {
-                          const languageName = LANGUAGE_CODE_TO_NAME[lang.language] || lang.language;
+                          // Use the loaded language names or fallback to code
+                          const languageName = languageNames.find(name => name.toLowerCase().includes(lang.language.toLowerCase())) || lang.language;
                           return languageName;
                         });
                       } else if (Array.isArray(profileUser?.lang_spoken) && profileUser.lang_spoken.length > 0) {
-                        languageNames = profileUser.lang_spoken.map(code => LANGUAGE_CODE_TO_NAME[code] || code);
+                        // Use the loaded language names or fallback to code names
+                        languageNames = languageNames.length > 0 ? languageNames : profileUser.lang_spoken;
                       }
                       if (languageNames.length === 0) return 'N/A';
                       if (languageNames.length === 1) return languageNames[0];
@@ -671,22 +682,26 @@ useEffect(() => {
                   </span>
                   {/* Hover Popup for multiple languages */}
                   {(() => {
-                    let languageNames = [];
+                    let displayNames = [];
                     if (Array.isArray(profileUser?.languages) && profileUser.languages.length > 0) {
-                      languageNames = profileUser.languages.map(lang => {
-                        const languageName = LANGUAGE_CODE_TO_NAME[lang.language] || lang.language;
+                      displayNames = profileUser.languages.map(lang => {
+                        // Use the loaded language names or fallback to code
+                        const languageName = languageNames.find(name => name.toLowerCase().includes(lang.language.toLowerCase())) || lang.language;
                         return languageName;
                       });
+                    } else if (languageNames.length > 0) {
+                      displayNames = languageNames;
                     } else if (Array.isArray(profileUser?.lang_spoken) && profileUser.lang_spoken.length > 0) {
-                      languageNames = profileUser.lang_spoken.map(code => LANGUAGE_CODE_TO_NAME[code] || code);
+                      // Fallback to code names if language names haven't loaded yet
+                      displayNames = profileUser.lang_spoken;
                     }
-                    if (languageNames.length > 1) {
+                    if (displayNames.length > 1) {
                       return (
                         <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto z-10">
                           <div className="bg-[#1a1333] border border-purple-500/30 rounded-lg shadow-2xl p-3 min-w-[200px] max-w-[300px] backdrop-blur-md">
                             <div className="text-xs font-semibold text-purple-300 mb-2 border-b border-purple-500/30 pb-1">All Languages:</div>
                             <div className="space-y-1">
-                              {languageNames.map((lang, index) => (
+                              {displayNames.map((lang, index) => (
                                 <div key={index} className="text-xs text-gray-200 flex items-center gap-2">
                                   <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
                                   {lang}

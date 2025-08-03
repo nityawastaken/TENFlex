@@ -21,26 +21,13 @@ const Navbar = () => {
   // const userRedux = useSelector((store) => store.user)
   // console.log("reduxUser = ",userRedux);
 
-  const getLinks = (role) => {
-    const base = [
-      { name: "Business", href: "/business" },
-      { name: "Explore", href: "/#explore" },
+  const getLinks = (isFreelancer) => {
+    // Both freelancers and clients get the same three navigation links
+    return [
+      { name: "Home", href: "/" },
+      { name: "Explore", href: "/gig-list" },
       { name: "Projects", href: "/projects" },
     ];
-
-    if (role === "freelancer") {
-      base.push(
-        { name: "My Gigs", href: "/my-gigs" },
-        { name: "Orders", href: "/orders" }
-      );
-    } else if (role === "customer") {
-      base.push(
-        { name: "Browse Services", href: "/services" },
-        { name: "Hire a Freelancer", href: "/hire" }
-      );
-    }
-
-    return base;
   };
 
   const getInitials = (name = "") => {
@@ -76,9 +63,7 @@ const Navbar = () => {
       const parsedUser = JSON.parse(storedUser);
       setUser(parsedUser);
       setProfileImage(parsedUser.profile_picture || null);
-      setNavLinks(
-        getLinks(parsedUser.is_freelancer ? "freelancer" : "customer")
-      );
+      setNavLinks(getLinks(parsedUser.is_freelancer));
     } else {
       setNavLinks(getLinks(null));
     }

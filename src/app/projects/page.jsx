@@ -106,20 +106,35 @@ const ProjectPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [token, setToken] = useState("");
+  const [retrying, setRetrying] = useState(false);
 
   const apiHost = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
   async function fetchProjects() {
-    setLoading(true);
+    if (retrying) {
+      setRetrying(true);
+    } else {
+      setLoading(true);
+    }
     setError(null);
     try {
       const backendProjects = await projectService.getAllProjects();
       setProjects(backendProjects);
     } catch (err) {
-      setError("An error occurred while fetching projects");
+      console.error("Error fetching projects:", err);
+      if (err.message.includes("401") || err.message.includes("Unauthorized")) {
+        setError("Please log in to view projects");
+      } else if (err.message.includes("403") || err.message.includes("Forbidden")) {
+        setError("You don't have permission to view projects");
+      } else if (err.message.includes("500") || err.message.includes("Internal Server Error") || err.message.includes("no such table")) {
+        setError("The database is currently being updated. This is a temporary issue that will be resolved shortly. Please try again in a few minutes.");
+      } else {
+        setError("An error occurred while fetching projects. Please try again later.");
+      }
       setProjects([]);
     } finally {
       setLoading(false);
+      setRetrying(false);
     }
   }
 
@@ -157,8 +172,9 @@ const ProjectPage = () => {
   const handleAddProject = async (e) => {
     e.preventDefault();
 
-    const storedUser = JSON.parse(localStorage.getItem("user"));
-    if (!storedUser) {
+    const storedUser = localStorage.getItem("userMin") ? JSON.parse(localStorage.getItem("userMin")) : null;
+    const token = localStorage.getItem("token");
+    if (!storedUser || !token) {
       toast.error("You must be logged in to post a project.");
       return;
     }
@@ -248,6 +264,11 @@ const ProjectPage = () => {
 
       // Close project popup
       closeProjectPopup();
+      
+      // Force a page refresh to update orders in profile
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
     } catch (error) {
       console.error("Error accepting bid:", error);
       toast.error("Failed to accept bid. Please try again.");
@@ -459,9 +480,39 @@ const ProjectPage = () => {
           </div>
         )}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 animate-fadeIn flex items-center">
-            <AlertCircle className="text-red-500 mr-2" size={20} />
-            <span className="text-red-700">{error}</span>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-6 animate-fadeIn">
+            <div className="flex items-start">
+              <AlertCircle className="text-red-500 mr-3 mt-0.5" size={20} />
+              <div className="flex-1">
+                <h3 className="text-red-800 font-semibold mb-2">Unable to Load Projects</h3>
+                <p className="text-red-700 mb-4">{error}</p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setRetrying(true);
+                      fetchProjects();
+                    }}
+                    disabled={retrying}
+                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                  >
+                    {retrying ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Retrying...
+                      </>
+                    ) : (
+                      'Try Again'
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setError(null)}
+                    className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors duration-200 font-medium"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
         {!loading && !error && filteredProjects.length === 0 && (
@@ -471,6 +522,7 @@ const ProjectPage = () => {
             </p>
           </div>
         )}
+
         {filteredProjects.map((project, index) => (
           <div
             key={project.id || index}
@@ -514,7 +566,7 @@ const ProjectPage = () => {
               <span className="text-black">
                 {project.bids ? project.bids.length : 0} bids
               </span>
-              {isFreelancer && project.is_open && (
+              {isFreelancer && project.is_open && !project.accepted_bid && !project.accepted_bid_id && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation(); // Prevent popup from opening
@@ -529,6 +581,11 @@ const ProjectPage = () => {
               {!project.is_open && (
                 <span className="text-green-600 font-semibold">
                   Closed - Bid accepted
+                </span>
+              )}
+              {isFreelancer && project.is_open && (project.accepted_bid || project.accepted_bid_id) && (
+                <span className="text-orange-600 font-semibold">
+                  Bid accepted - No more bids
                 </span>
               )}
             </div>
@@ -1042,7 +1099,7 @@ const ProjectPage = () => {
                 >
                   Close
                 </button>
-                {isFreelancer && selectedProject.is_open && (
+                {isFreelancer && selectedProject.is_open && !selectedProject.accepted_bid && !selectedProject.accepted_bid_id && (
                   <button
                     onClick={() => {
                       closeProjectPopup();
@@ -1053,6 +1110,11 @@ const ProjectPage = () => {
                   >
                     Place Bid
                   </button>
+                )}
+                {isFreelancer && selectedProject.is_open && (selectedProject.accepted_bid || selectedProject.accepted_bid_id) && (
+                  <span className="text-orange-600 font-semibold px-6 py-2">
+                    Bid accepted - No more bids allowed
+                  </span>
                 )}
               </div>
             </div>
