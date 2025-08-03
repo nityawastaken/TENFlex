@@ -438,6 +438,8 @@ class BidMiniSerializer(serializers.ModelSerializer):
 class ProjectPostWithBidsSerializer(serializers.ModelSerializer):
     client_name = serializers.CharField(source='client.username', read_only=True)
     bids = serializers.SerializerMethodField()
+    skills= SkillSerializer(many=True, read_only=True)
+    categories = CategorySerializer(many=True, read_only=True)
     class Meta:
         model = ProjectPost
         fields = [
