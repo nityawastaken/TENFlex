@@ -157,7 +157,17 @@ export default function ProfilePage() {
   const getLanguageDisplay = () => {
     if (!user) return 'N/A';
     
-    if (Array.isArray(user.lang_spoken) && user.lang_spoken.length > 0) {
+    if (Array.isArray(user.languages) && user.languages.length > 0) {
+      const languageNames = user.languages.map(lang => {
+        const languageName = lang.language || lang;
+        return LANGUAGE_CODE_TO_NAME[languageName] || languageName;
+      });
+      if (languageNames.length === 1) {
+        return languageNames[0];
+      } else {
+        return `${languageNames[0]} +${languageNames.length - 1}`;
+      }
+    } else if (Array.isArray(user.lang_spoken) && user.lang_spoken.length > 0) {
       // Show first language + count if multiple
       const languages = user.lang_spoken.map(code => LANGUAGE_CODE_TO_NAME[code] || code);
       if (languages.length === 1) {
@@ -310,6 +320,27 @@ export default function ProfilePage() {
               )}
             </span>
           </div>
+          
+          {/* Edit Profile Button in sidebar */}
+          <Link 
+            href={`/profile/${user.id}/edit`}
+            className="w-full mt-4 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded text-white text-sm flex items-center justify-center gap-2"
+          >
+            <FaRegEdit /> Edit Profile
+          </Link>
+
+          {/* Create Gig Button for freelancers */}
+          {user.is_freelancer && (
+            <Link 
+              href="/gigs/create"
+              className="w-full mt-2 px-4 py-2 bg-green-600 hover:bg-green-700 rounded text-white text-sm flex items-center justify-center gap-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Create Gig
+            </Link>
+          )}
         </div>
 
         {/* Navigation */}

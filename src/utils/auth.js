@@ -41,19 +41,22 @@ export const authService = {
         localStorage.setItem('token', response.token);
         let userData = null;
         try {
-          // Step 1: Get user id by username
-          const userMin = await apiCall(endpoints.getUserByUsername(credentials.username), {
+          // Step 1: Get user data by username using the fixed endpoint
+          userData = await apiCall(endpoints.getUserByUsername(credentials.username), {
             headers: { Authorization: `Token ${response.token}` }
           });
-          // Step 2: Get full user profile by id
-          if (userMin && userMin.id) {
-            userData = await apiCall(endpoints.profileDetail(userMin.id), {
+          
+          // Step 2: Get full user profile by id if we have the user data
+          if (userData && userData.id) {
+            const fullUserData = await apiCall(endpoints.profileDetail(userData.id), {
               headers: { Authorization: `Token ${response.token}` }
             });
+            userData = fullUserData; // Use the full profile data
           }
           } catch (err) {
             console.error("Error fetching user data after login:", err);
           }
+        
         if (userData) {
           userData.token = response.token;
           localStorage.setItem('user', JSON.stringify(userData));
@@ -82,11 +85,20 @@ export const authService = {
         });
         return response;
       } else {
-        // Try to get current user data using backend endpoint
-      const response = await apiCall('users/me/', {
+        // Since we don't have a users/me endpoint, we need to get the username
+        // from localStorage or use a different approach
+        const user = this.getCurrentUser();
+        if (user && user.username) {
+          // Use get_user_by_username endpoint
+          const response = await apiCall(`get_user_by_username/${user.username}/`, {
         headers: { Authorization: `Token ${token}` }
       });
       return response;
+        } else {
+          // If we don't have user data in localStorage, we can't fetch it
+          // This typically happens during the initial login process
+          throw new Error("Cannot fetch user data: no user ID or username available. Please login again.");
+        }
       }
     } catch (error) {
       console.error("Error fetching user data:", error);

@@ -148,7 +148,7 @@ export default function SignUpForm() {
   if (checking) return null;
 
   return (
-    <div className="bg-gray-950 text-white font-sans min-h-screen flex flex-col items-center py-12 px-4 mt-20">
+    <div className="text-white font-sans min-h-screen flex flex-col items-center py-12 px-4 mt-20">
       <form
         onSubmit={handleSubmit}
         className="w-full max-w-md p-8 bg-gray-900 rounded-2xl shadow-2xl"

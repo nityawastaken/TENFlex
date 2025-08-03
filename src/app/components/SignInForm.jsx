@@ -38,8 +38,9 @@ export default function SignInForm() {
     setLoading(true);
 
     try {
-      // Use the auth service to login
+      // Use the auth service to login - this will handle fetching user data
       const response = await authService.login(form);
+      
       if (response.token) {
         // Use user data from login response
         const userToStore = {
@@ -76,9 +77,10 @@ export default function SignInForm() {
         alert("Sign in successful!");
         router.push("/");
       } else {
-        alert("Sign in failed. Please check your credentials.");
+        alert("Sign in successful but failed to load user data. Please try again.");
       }
     } catch (error) {
+      console.error("Login error:", error);
       alert("Sign in failed. Please check your credentials.");
     } finally {
       setLoading(false);
@@ -88,7 +90,7 @@ export default function SignInForm() {
   if (checking) return null;
 
   return (
-    <div className="bg-gray-950 text-white font-sans min-h-screen flex flex-col items-center py-12 px-4 mt-20">
+    <div className="text-white font-sans min-h-screen flex flex-col items-center py-12 px-4 mt-20">
       <form
         onSubmit={handleSubmit}
         className="bg-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-md mx-auto mt-2"
@@ -140,4 +142,4 @@ export default function SignInForm() {
       </form>
     </div>
   );
-}
+} 

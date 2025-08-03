@@ -15,6 +15,24 @@
   --card-hover-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
 }
 
+/* Default to dark mode to prevent white flash */
+body {
+  --primary-color: #7331ba;
+  --primary-dark-hover: #3c1073;
+  --secondary-color: #FFFFFF;
+  --text-color: #FFFFFF;
+  --card-bg-color: #000000;
+  --card-bg-color-rgb: 0, 0, 0;
+  --input-bg-color: #3A3A3A;
+  --light-border-color: #424242;
+  --star-color: #FFC107;
+  --page-bg-color: #000000;
+  --placeholder-color: rgba(255, 255, 255, 0.7);
+  --hover-bg-subtle: rgba(255, 255, 255, 0.1);
+  --card-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+  --card-hover-shadow: 0 8px 16px rgba(0, 0, 0, 0.6);
+}
+
 body.dark-mode {
   --primary-color: #7331ba;
   --primary-dark-hover: #3c1073;
@@ -30,6 +48,24 @@ body.dark-mode {
   --hover-bg-subtle: rgba(255, 255, 255, 0.1);
   --card-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
   --card-hover-shadow: 0 8px 16px rgba(0, 0, 0, 0.6);
+}
+
+/* Light mode styles */
+body:not(.dark-mode) {
+  --primary-color: #7E57C2;
+  --primary-dark-hover: #5E35B1;
+  --secondary-color: #000000;
+  --text-color: #404145;
+  --card-bg-color: #FFFFFF;
+  --card-bg-color-rgb: 255, 255, 255;
+  --input-bg-color: #F5F5F5;
+  --light-border-color: #E0E0E0;
+  --star-color: #FFC107;
+  --page-bg-color: #FFFFFF;
+  --placeholder-color: rgba(0, 0, 0, 0.5);
+  --hover-bg-subtle: rgba(0, 0, 0, 0.05);
+  --card-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  --card-hover-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
 }
 
 * {

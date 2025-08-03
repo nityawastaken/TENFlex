@@ -9,21 +9,9 @@ import { CiLocationOn } from "react-icons/ci";
 import Select from 'react-select';
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { userService } from "@/utils/services";
+import { userService, languageService } from "@/utils/services";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
-// Define language code to name mapping
-const LANGUAGE_CODE_TO_NAME = {
-  en: 'English',
-  hi: 'Hindi',
-  fr: 'French',
-  es: 'Spanish',
-  de: 'German',
-  zh: 'Chinese',
-  ru: 'Russian',
-  // Add more languages as needed
-};
 
 export default function Edit() {
   const router = useRouter();
@@ -33,9 +21,8 @@ export default function Edit() {
   const [loading, setLoading] = useState(true);
   const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false);
   const [selectedLanguages, setSelectedLanguages] = useState([]);
-  // Remove availableLanguages and proficiencyLevels state
-  // Remove any fetch to /base/languages/ or /base/proficiency-levels/
-  // Remove all references to availableLanguages and proficiencyLevels in the UI
+  const [allLanguages, setAllLanguages] = useState([]);
+  const [languagesLoading, setLanguagesLoading] = useState(false);
 
   const languageRef = useRef(null);
 
@@ -45,8 +32,49 @@ export default function Edit() {
     return /^\+\d{10,15}$/.test(number);
   };
 
+  // Fetch all languages from backend
+  const fetchLanguages = async () => {
+    try {
+      setLanguagesLoading(true);
+      const languages = await languageService.getAllLanguages();
+      setAllLanguages(languages);
+    } catch (error) {
+      console.error('Error fetching languages:', error);
+      // Fallback to basic languages if API fails
+      setAllLanguages([
+        { code: 'en', name: 'English' },
+        { code: 'hi', name: 'Hindi' },
+        { code: 'fr', name: 'French' },
+        { code: 'es', name: 'Spanish' },
+        { code: 'de', name: 'German' },
+        { code: 'zh', name: 'Chinese' },
+        { code: 'ru', name: 'Russian' }
+      ]);
+    } finally {
+      setLanguagesLoading(false);
+    }
+  };
+
+  // Convert languages to Select options format
+  const languageOptions = allLanguages.map(lang => ({
+    value: lang.code,
+    label: lang.name
+  }));
+
+  // Get selected language values for Select component
+  const selectedLanguageValues = selectedLanguages.map(code => {
+    const language = allLanguages.find(lang => lang.code === code);
+    return {
+      value: code,
+      label: language ? language.name : code
+    };
+  });
+
   useEffect(() => {
     if (!id) return;
+
+    // Fetch languages first
+    fetchLanguages();
 
     async function fetchUser() {
       try {
@@ -88,7 +116,7 @@ export default function Edit() {
         if (Array.isArray(data.lang_spoken) && data.lang_spoken.length > 0) {
           userLangs = data.lang_spoken.map(langCode => ({
             code: langCode,
-            name: LANGUAGE_CODE_TO_NAME[langCode] || langCode
+            name: allLanguages.find(lang => lang.code === langCode)?.name || langCode
           }));
         }
         
@@ -98,8 +126,8 @@ export default function Edit() {
           languages: userLangs,
           profile_picture: data.profile_picture || "",
           name: data.username || "",
-          email: data.email || "",
           contact: data.contact_number || "",
+          email: data.email || "",
           experience: data.experience || "",
           avgRating: data.avg_rating ?? "N/A",
           ongoingOrders: data.inline_orders ?? 0,
@@ -107,8 +135,8 @@ export default function Edit() {
           is_freelancer: data.is_freelancer,
         });
         
-        // Set selected languages
-        setSelectedLanguages(userLangs.map(lang => lang.code));
+        // Set selected languages for the Select component
+        setSelectedLanguages(data.lang_spoken || []);
         
       } catch (error) {
         console.error("Error fetching user:", error);
@@ -122,18 +150,40 @@ export default function Edit() {
     fetchUser();
   }, [id, router]);
 
+  // Update language names when allLanguages is loaded
+  useEffect(() => {
+    if (allLanguages.length > 0 && userData?.languages) {
+      // Check if we need to update language names
+      const needsUpdate = userData.languages.some(userLang => 
+        !allLanguages.find(lang => lang.code === userLang.code)?.name
+      );
+      
+      if (needsUpdate) {
+        const updatedLanguages = userData.languages.map(userLang => ({
+          code: userLang.code,
+          name: allLanguages.find(lang => lang.code === userLang.code)?.name || userLang.code
+        }));
+        
+        setUserData(prev => ({
+          ...prev,
+          languages: updatedLanguages
+        }));
+      }
+    }
+  }, [allLanguages]); // Remove userData?.languages from dependencies
+
   const handleLanguageModal = () => {
     setIsLanguageModalOpen(!isLanguageModalOpen);
   };
 
   const handleLanguageChange = (selectedOptions) => {
-    const selectedCodes = selectedOptions.map(option => option.value);
+    const selectedCodes = selectedOptions ? selectedOptions.map(option => option.value) : [];
     setSelectedLanguages(selectedCodes);
     
     // Update userData.languages with the full language objects
     const updatedLanguages = selectedCodes.map(code => ({
       code: code,
-      name: LANGUAGE_CODE_TO_NAME[code] || code
+      name: allLanguages.find(lang => lang.code === code)?.name || code
     }));
     
     setUserData(prev => ({
@@ -269,17 +319,6 @@ export default function Edit() {
   const cardClass = "mb-8 bg-[#1a1333] rounded-lg shadow-lg p-6 animate-fadeIn transition-all duration-700 ease-out backdrop-blur-md border-2 border-transparent hover:border-gradient-to-r from-purple-400 to-pink-400 hover:scale-105 hover:shadow-2xl";
   const cardInnerClass = "bg-[#24194a] p-3 rounded mb-2 hover:scale-105 hover:shadow-xl transition-transform duration-300";
   const buttonClass = "px-4 py-2 bg-purple-600 hover:bg-purple-800 rounded text-white font-semibold transition-transform duration-200 hover:scale-105 hover:shadow-lg";
-
-  // Format language options for the Select component
-  const languageOptions = Object.keys(LANGUAGE_CODE_TO_NAME).map(code => ({
-    value: code,
-    label: LANGUAGE_CODE_TO_NAME[code]
-  }));
-  
-  // Get the currently selected language values
-  const selectedLanguageValues = languageOptions.filter(option => 
-    selectedLanguages.includes(option.value)
-  );
 
   return (
     <>

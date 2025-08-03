@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Select from 'react-select';
 import { AsyncPaginate } from 'react-select-async-paginate';
@@ -10,6 +10,7 @@ import { FaCopy, FaRegEdit } from "react-icons/fa";
 import { CiLocationOn } from "react-icons/ci";
 import { gigService } from "@/utils/services";
 import { useSkillsAPI } from "@/Hooks/useSkillsAPI";
+import { useCategoriesAPI } from "@/Hooks/useCategoriesAPI";
 import dynamic from 'next/dynamic';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -40,20 +41,18 @@ export default function EditGig() {
   const router = useRouter();
   const params = useParams();
   const gigId = params?.id;
-  const { loadOptions, loading: skillsAPILoading, error: skillsAPIError } = useSkillsAPI();
+  const { loadOptions: loadSkillsOptions, loading: skillsAPILoading, error: skillsAPIError, handleInputChange: handleSkillsInputChange, handleKeyDown: handleSkillsKeyDown, inputValue: skillsInputValue, searchSkills, isInitialized: skillsInitialized } = useSkillsAPI();
+  const { loadOptions: loadCategoriesOptions, loading: categoriesAPILoading, error: categoriesAPIError, handleInputChange: handleCategoriesInputChange, handleKeyDown: handleCategoriesKeyDown, inputValue: categoriesInputValue, searchCategories, isInitialized: categoriesInitialized } = useCategoriesAPI();
   const [form, setForm] = useState({
     title: "",
     description: "",
-    skills: [],
+    skills: [], // always an array
     price: "",
     delivery_time: "",
     picture: null,
   });
   const [loading, setLoading] = useState(false);
   const [category, setCategory] = useState(null);
-  const [availableCategories, setAvailableCategories] = useState([]);
-  const [categoriesLoading, setCategoriesLoading] = useState(true);
-  const [categoriesError, setCategoriesError] = useState(null);
   const TITLE_MAX_LENGTH = 80;
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [userData, setUserData] = useState(null);
@@ -62,26 +61,28 @@ export default function EditGig() {
   const [originalForm, setOriginalForm] = useState(null);
   const [originalCategory, setOriginalCategory] = useState(null);
   const [originalsSet, setOriginalsSet] = useState(false);
+  const [forceUpdate, setForceUpdate] = useState(0);
 
-  // Fetch categories from backend
-  useEffect(() => {
-    async function fetchCategories() {
-      setCategoriesLoading(true);
-      setCategoriesError(null);
-      try {
-        const res = await fetch(`${API_URL}/base/categories/`);
-        if (!res.ok) throw new Error('Failed to fetch categories');
-        const data = await res.json();
-        setAvailableCategories(data.map(cat => ({ value: cat.id, label: cat.name })));
-      } catch (err) {
-        setCategoriesError('Could not load categories');
-        setAvailableCategories([]);
-      } finally {
-        setCategoriesLoading(false);
-      }
+  // Add manual search functions
+  const handleSkillSearch = useCallback((e) => {
+    if (e.key === 'Enter' && skillsInputValue.trim().length > 0) {
+      e.preventDefault();
+      console.log('Manual skill search triggered for:', skillsInputValue);
+      searchSkills(skillsInputValue).then(() => {
+        setForceUpdate(prev => prev + 1);
+      });
     }
-    fetchCategories();
-  }, []);
+  }, [skillsInputValue, searchSkills]);
+
+  const handleCategorySearch = useCallback((e) => {
+    if (e.key === 'Enter' && categoriesInputValue.trim().length > 0) {
+      e.preventDefault();
+      console.log('Manual category search triggered for:', categoriesInputValue);
+      searchCategories(categoriesInputValue).then(() => {
+        setForceUpdate(prev => prev + 1);
+      });
+    }
+  }, [categoriesInputValue, searchCategories]);
 
   // Fetch gig data and pre-fill form
   useEffect(() => {
@@ -112,34 +113,6 @@ export default function EditGig() {
     }
     fetchGig();
   }, [gigId]);
-
-  // Map skill/category IDs to select options after options load
-  useEffect(() => {
-    // Only run if we haven't set originals yet, and all data is loaded
-    if (
-      !originalsSet &&
-      form.skills.length &&
-      availableSkills.length &&
-      category &&
-      availableCategories.length
-    ) {
-      // Map skills to actual option objects
-      const mappedSkills = form.skills
-        .map(s => availableSkills.find(opt => opt.value === (s.value || s)))
-        .filter(Boolean); // Remove any not found
-
-      // Map category to actual option object
-      const mappedCategory = availableCategories.find(
-        opt => opt.value === (category.value || category)
-      );
-
-      setForm(f => ({ ...f, skills: mappedSkills }));
-      setCategory(mappedCategory);
-      setOriginalForm(of => of ? { ...of, skills: mappedSkills } : of);
-      setOriginalCategory(mappedCategory);
-      setOriginalsSet(true);
-    }
-  }, [form.skills, availableSkills, category, availableCategories, originalsSet]);
 
   useEffect(() => {
     // Fetch user data for sidebar (reuse logic from create gig)
@@ -245,7 +218,7 @@ export default function EditGig() {
   };
 
   const handleSkillsChange = (selected) => {
-    setForm((prev) => ({ ...prev, skills: selected }));
+    setForm((prev) => ({ ...prev, skills: selected || [] }));
   };
 
   // No need for a separate loadSkills function as we're using the one from useSkillsAPI
@@ -276,7 +249,7 @@ export default function EditGig() {
         price: form.price,
         delivery_time: form.delivery_time,
         picture: form.picture,
-        category_ids: [category.value],
+        category_names: [category.label], // Backend expects category_names as array of strings
         skill_names: form.skills.map(skill => skill.label),
       };
       // Use gigService to update gig
@@ -421,10 +394,18 @@ export default function EditGig() {
                           const languageName = LANGUAGE_CODE_TO_NAME[lang.language] || lang.language;
                           return languageName;
                         });
-                        return languageNames.join(', ');
+                        if (languageNames.length === 1) {
+                          return languageNames[0];
+                        } else {
+                          return `${languageNames[0]} +${languageNames.length - 1}`;
+                        }
                       } else if (Array.isArray(userData?.lang_spoken) && userData.lang_spoken.length > 0) {
                         const languageNames = userData.lang_spoken.map(code => LANGUAGE_CODE_TO_NAME[code] || code);
-                        return languageNames.join(', ');
+                        if (languageNames.length === 1) {
+                          return languageNames[0];
+                        } else {
+                          return `${languageNames[0]} +${languageNames.length - 1}`;
+                        }
                       } else {
                         return 'N/A';
                       }
@@ -512,9 +493,7 @@ export default function EditGig() {
               <h2 className="text-xl font-bold text-purple-400 mb-4 animate-popIn" style={{ animationDelay: '0.55s' }}>Skills</h2>
               <div>
                 <label className="block mb-1">Skills</label>
-                {skillsAPILoading ? (
-                  <div className="text-purple-300 py-2">Loading skills...</div>
-                ) : skillsAPIError ? (
+                {skillsAPIError ? (
                   <div className="text-red-400 py-2">{skillsAPIError}</div>
                 ) : (
                   <DynamicAsyncPaginate
@@ -522,12 +501,16 @@ export default function EditGig() {
                     name="skills"
                     value={form.skills}
                     onChange={handleSkillsChange}
-                    loadOptions={loadOptions}
-                    placeholder="Type to search skills (min 2 characters)..."
+                    loadOptions={loadSkillsOptions}
+                    onInputChange={handleSkillsInputChange}
+                    onKeyDown={handleSkillSearch}
+                    inputValue={skillsInputValue}
+                    placeholder={!skillsInitialized ? "Loading skills..." : "Type to search skills and press Enter..."}
                     isLoading={skillsAPILoading}
                     className="text-black"
                     classNamePrefix="select"
                     menuPortalTarget={typeof window !== 'undefined' ? document.body : null}
+                    key={`skills-select-${forceUpdate}`}
                     styles={{
                       menuPortal: base => ({ ...base, zIndex: 9999 }),
                       menu: base => ({ ...base, backgroundColor: '#18112c', color: 'white', zIndex: 9999 }),
@@ -553,20 +536,23 @@ export default function EditGig() {
               <h2 className="text-xl font-bold text-purple-400 mb-4 animate-popIn" style={{ animationDelay: '0.5s' }}>Category</h2>
               <div>
                 <label className="block mb-1">Category</label>
-                {categoriesLoading ? (
-                  <div className="text-purple-300 py-2">Loading categories...</div>
-                ) : categoriesError ? (
-                  <div className="text-red-400 py-2">{categoriesError}</div>
+                {categoriesAPIError ? (
+                  <div className="text-red-400 py-2">{categoriesAPIError}</div>
                 ) : (
-                  <DynamicSelect
+                  <DynamicAsyncPaginate
                     name="category"
-                    options={availableCategories}
                     value={category}
                     onChange={setCategory}
+                    loadOptions={loadCategoriesOptions}
+                    onInputChange={handleCategoriesInputChange}
+                    onKeyDown={handleCategorySearch}
+                    inputValue={categoriesInputValue}
+                    placeholder={!categoriesInitialized ? "Loading categories..." : "Type to search categories and press Enter..."}
+                    isLoading={categoriesAPILoading}
                     className="text-black"
                     classNamePrefix="select"
-                    placeholder="Select or search category..."
                     menuPortalTarget={typeof window !== 'undefined' ? document.body : null}
+                    key={`categories-select-${forceUpdate}`}
                     styles={{
                       menuPortal: base => ({ ...base, zIndex: 9999 }),
                       menu: base => ({ ...base, backgroundColor: '#18112c', color: 'white', zIndex: 9999 }),

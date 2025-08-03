@@ -31,10 +31,10 @@ export const gigService = {
     }
     
     // Add categories
-    if (gigData.category_ids && Array.isArray(gigData.category_ids)) {
-      gigData.category_ids.forEach(id => formData.append('category_ids', id));
-    } else if (gigData.category_ids) {
-      formData.append('category_ids', gigData.category_ids);
+    if (gigData.category_names && Array.isArray(gigData.category_names)) {
+      gigData.category_names.forEach(name => formData.append('category_names', name));
+    } else if (gigData.category_names) {
+      formData.append('category_names', gigData.category_names);
     }
     
     // Add skills
@@ -78,10 +78,10 @@ export const gigService = {
     }
     
     // Add categories
-    if (gigData.category_ids && Array.isArray(gigData.category_ids)) {
-      gigData.category_ids.forEach(id => formData.append('category_ids', id));
-    } else if (gigData.category_ids) {
-      formData.append('category_ids', gigData.category_ids);
+    if (gigData.category_names && Array.isArray(gigData.category_names)) {
+      gigData.category_names.forEach(name => formData.append('category_names', name));
+    } else if (gigData.category_names) {
+      formData.append('category_names', gigData.category_names);
     }
     
     // Add skills
@@ -344,3 +344,18 @@ export const gigListService = {
     });
   },
 }; 
+
+// Language services
+export const languageService = {
+  // Get all languages (with optional search)
+  async getAllLanguages(search = '') {
+    const queryParams = search ? `?search=${encodeURIComponent(search)}` : '';
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/base/languages/${queryParams}`);
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch languages');
+    }
+    
+    return await response.json();
+  }
+};
