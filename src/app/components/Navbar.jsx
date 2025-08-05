@@ -17,6 +17,7 @@ const Navbar = () => {
   const [isScroll, setIsScroll] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [token, setToken] = useState("");
+  const [mobileSearch, setMobileSearch] = useState("");
 
   // const userRedux = useSelector((store) => store.user)
   // console.log("reduxUser = ",userRedux);
@@ -76,18 +77,28 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const openMenu = () => {
-    if (sideMenuRef.current) {
-      sideMenuRef.current.style.transform = "translateX(0)";
-      setIsMenuOpen(true);
-    }
-  };
+  // Lock scroll when menu is open
+  useEffect(() => {
+    if (!isMenuOpen) document.body.style.overflow = "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMenuOpen]);
 
+  // Close menu on route change
+  useEffect(() => {
+    const handleRouteChange = () => closeMenu();
+    router.events?.on?.("routeChangeStart", handleRouteChange);
+    return () => router.events?.off?.("routeChangeStart", handleRouteChange);
+  }, [router]);
+
+  const openMenu = () => {
+    setIsMenuOpen(true);
+    document.body.style.overflow = "hidden";
+  };
   const closeMenu = () => {
-    if (sideMenuRef.current) {
-      sideMenuRef.current.style.transform = "translateX(-100%)";
-      setIsMenuOpen(false);
-    }
+    setIsMenuOpen(false);
+    document.body.style.overflow = "";
   };
 
   if (!isMounted) return null;
@@ -101,7 +112,10 @@ const Navbar = () => {
       >
         {/* Logo and Search */}
         <div className="flex items-center gap-4 md:gap-10">
-          <Link href={"/"} className="font-bold tracking-wider text-2xl md:text-3xl text-white">
+          <Link
+            href={"/"}
+            className="font-bold tracking-wider text-2xl md:text-3xl text-white"
+          >
             TENFLE<span className="text-[#A020F0]">x</span>
           </Link>
 
@@ -118,6 +132,40 @@ const Navbar = () => {
             <button
               type="submit"
               className="text-[#A020F0] hover:ml-2 transition-all duration-300"
+            >
+              <FaArrowRight />
+            </button>
+          </form>
+
+          {/* Mobile Search */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (mobileSearch.trim()) {
+                router.push(
+                  `/gig-list?search=${encodeURIComponent(mobileSearch.trim())}`
+                );
+              } else {
+                router.push("/gig-list");
+              }
+              setMobileSearch("");
+              closeMenu();
+            }}
+            className="flex md:hidden items-center gap-2 w-full max-w-[180px]"
+            style={{ marginLeft: 8 }}
+          >
+            <input
+              type="text"
+              value={mobileSearch}
+              onChange={(e) => setMobileSearch(e.target.value)}
+              placeholder="Search..."
+              className="px-3 py-2 border border-gray-300 bg-black text-white rounded-full focus:outline-none focus:ring-2 focus:ring-[#A020F0] w-full"
+              style={{ minWidth: 0 }}
+            />
+            <button
+              type="submit"
+              className="text-[#A020F0] hover:ml-2 transition-all duration-300"
+              style={{ minWidth: 44, minHeight: 44 }}
             >
               <FaArrowRight />
             </button>
@@ -214,11 +262,13 @@ const Navbar = () => {
 
       {/* Mobile Side Menu */}
       <div
-        ref={sideMenuRef}
-        className="fixed top-0 left-0 h-full w-64 bg-black text-white p-5 transform -translate-x-full transition-transform duration-300 ease-in-out z-50 lg:hidden"
+        className={`fixed top-0 left-0 h-full w-64 bg-black text-white p-5 transition-transform duration-300 ease-in-out z-50 lg:hidden ${
+          isMenuOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+        style={{ touchAction: "manipulation" }}
       >
         <button
-          onClick={closeMenu}
+          onClick={closeMenu} style={{ minWidth: 44, minHeight: 44 }}
           className="absolute top-5 right-5 text-white text-2xl focus:outline-none"
         >
           &times;
@@ -238,8 +288,13 @@ const Navbar = () => {
           {user ? (
             <>
               <Link
-                href={`/profile/${user?.id}`}
+                href={
+                  user?.is_freelancer
+                    ? `/profile/${user?.id}`
+                    : `/client-profile/${user?.id}`
+                }
                 className="flex items-center gap-2"
+                onClick={closeMenu}
               >
                 <div className="flex items-center gap-2 mt-4">
                   {profileImage ? (
@@ -247,7 +302,7 @@ const Navbar = () => {
                       src={
                         profileImage.startsWith("http")
                           ? profileImage
-                          : `${process.env.NEXT_PUBLIC_API_URL}${profileImage}`
+                          : `${process.env.NEXT_PUBLIC_API_URL}/${profileImage}`
                       }
                       alt="Profile"
                       className="w-10 h-10 rounded-full border border-white object-cover"
@@ -267,7 +322,7 @@ const Navbar = () => {
                   handleLogout();
                   closeMenu();
                 }}
-                className="text-sm border mt-4 px-3 py-1 rounded-full hover:bg-white hover:text-black transition"
+                className="text-sm border mt-4 px-3 py-1 rounded-full hover:bg-white hover:text-black transition" style={{ minWidth: 44, minHeight: 44 }}
               >
                 Logout
               </button>
@@ -294,9 +349,10 @@ const Navbar = () => {
       </div>
 
       {isMenuOpen && (
-        <div
+        <div 
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
           onClick={closeMenu}
+          style={{ touchAction: "manipulation", minWidth: 44, minHeight: 44  }}
         ></div>
       )}
     </>
