@@ -65,8 +65,8 @@ export const apiCall = async (endpoint, options = {}) => {
   const user = localStorage.getItem('user');
   if (user) {
     try {
-      const userData = JSON.parse(user);
-      if (userData && userData.token) {
+    const userData = JSON.parse(user);
+    if (userData && userData.token) {
         token = userData.token;
       }
     } catch (e) {

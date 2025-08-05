@@ -157,7 +157,7 @@ const ProjectPage = () => {
   }, []);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("userMin");
+    const storedUser = localStorage.getItem("user");
     const Token = localStorage.getItem("token");
     if (storedUser) {
       setUser(JSON.parse(storedUser));

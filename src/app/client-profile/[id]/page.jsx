@@ -107,7 +107,7 @@ const ClientProfilePage = ({ params }) => {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const userString = localStorage.getItem("userMin");
+      const userString = localStorage.getItem("user");
       const userr = userString ? JSON.parse(userString) : null;
       setUser(userr);
     }

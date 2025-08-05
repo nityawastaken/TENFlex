@@ -272,6 +272,10 @@ useEffect(() => {
       reviewService.getAllReviews({ reviewee_id: userIdFromURL })
     ])
       .then(async ([profileData, reviewsData]) => {
+        // Debug logging
+        console.log('Profile page - Raw profile data:', profileData);
+        console.log('Profile page - is_freelancer field:', profileData.is_freelancer);
+        
         // Map backend fields to frontend fields
         const getProfilePictureUrl = (picture) => {
           if (!picture) return null;
@@ -298,7 +302,13 @@ useEffect(() => {
           skills: profileData.skills,
           category_tags: profileData.category_tags,
           last_updated: profileData.last_updated,
+          is_freelancer: profileData.is_freelancer, // Add the is_freelancer field
         };
+        
+        // Debug logging for mapped profile
+        console.log('Profile page - Mapped profile:', mappedProfile);
+        console.log('Profile page - Mapped is_freelancer:', mappedProfile.is_freelancer);
+        
         setProfileUser(mappedProfile);
         setReviews(reviewsData.results || reviewsData);
         // Fetch all gigs for this freelancer using the correct endpoint

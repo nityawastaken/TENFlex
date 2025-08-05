@@ -4,6 +4,8 @@ import Footer from "./components/Footer";
 import { UserProvider } from "@/app/contexts/UserContext";
 import Link from "next/link";
 import Providers from "./Providers";
+import { ToastContainer } from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
 
 export const metadata = {
   title: "TENFlex",
@@ -47,6 +49,22 @@ export default function RootLayout({ children }) {
             </UserProvider>
           </main>
           <Footer />
+          
+          {/* Global Toast Container for notifications */}
+          <ToastContainer
+            position="top-right"
+            autoClose={5000}
+            hideProgressBar={false}
+            newestOnTop={true}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="dark"
+            limit={3}
+            enableMultiContainer={false}
+          />
         </Providers>
       </body>
     </html>

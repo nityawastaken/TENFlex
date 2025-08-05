@@ -36,8 +36,6 @@ export function UserProvider({ children }) {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const router = useRouter();
 
-  let userMin;
-
   // Initialize user from localStorage and validate token
   useEffect(() => {
     const initializeUser = async () => {
@@ -119,14 +117,10 @@ export function UserProvider({ children }) {
     }
   }, [currentUser]);
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const userString = localStorage.getItem("userMin");
-      userMin = userString ? JSON.parse(userString) : null;
-    }
-  }, [currentUser]);
-
   const loginUser = async (userData) => {
+    console.log("UserContext - loginUser called with:", userData);
+    console.log("UserContext - is_freelancer field:", userData?.is_freelancer);
+    
     setCurrentUser(userData);
     authService.updateUserData(userData);
 
@@ -194,10 +188,11 @@ export function UserProvider({ children }) {
                     className="w-full py-3 rounded-full bg-[#A020F0] text-white font-bold text-lg shadow-lg hover:bg-purple-700 transition"
                     onClick={() => {
                       setShowProfileModal(false);
+                      const userData = authService.getCurrentUser();
                       router.push(
-                        userMin?.is_freelancer
-                          ? `/profile/${currentUser.id}/edit`
-                          : `/client-profile/${userMin.id}/`
+                        userData?.is_freelancer
+                          ? `/profile/${userData.id}/edit`
+                          : `/client-profile/${userData.id}/`
                       );
                     }}
                   >

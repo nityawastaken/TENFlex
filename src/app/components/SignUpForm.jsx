@@ -26,6 +26,14 @@ export default function SignUpForm() {
       router.push("/");
     } else {
       setChecking(false);
+      
+      // Check for pre-selected user type from WhatYouCanDo section
+      const signupType = localStorage.getItem("signupType");
+      if (signupType) {
+        setForm(prev => ({ ...prev, userType: signupType }));
+        // Clear the localStorage after reading it
+        localStorage.removeItem("signupType");
+      }
     }
   }, []);
 

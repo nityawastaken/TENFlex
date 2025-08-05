@@ -42,42 +42,29 @@ export default function SignInForm() {
       const response = await authService.login(form);
       
       if (response.token) {
-        // Use user data from login response
-        const userToStore = {
-          ...response.user,
-          token: response.token,
-        };
-        // console.log("form.userName :", form.username)
-        // if (response.token) {
-        //   localStorage.setItem("authToken", response.data.token);
-        //   console.log("login response :", response);
-
-        //   const userData = await axios.get(
-        //     `${process.env.NEXT_PUBLIC_API_URL}/base/get_user_by_username/${form.username}`
-        //   );
-        //   console.log("response2 :", userData)
-        //   if (userData.data.id) {
-        //     const userToStoreRedux = {
-        //       id: userData.data.id,
-        //       username: userData.data.username,
-        //       first_name: userData.data.first_name,
-        //       profile_picture: userData.data.profile_picture,
-        //       role: userData.data.is_freelancer ? "freelancer" : "customer",
-        //     };
-
-        //     // setUId(userData.data.id)
-        //     // loginUser(userToStore);
-        //     // authService.updateUserData(userToStore);
-        //     console.log("userToStore: ",userToStoreRedux)
-        //     dispatch(setReduxUser(userToStoreRedux));
-        //   }
-        // }
-        loginUser(userToStore);
-        authService.updateUserData(userToStore);
-        alert("Sign in successful!");
-        router.push("/");
+        // The authService.login method already fetches and stores user data in localStorage
+        // We just need to get it from localStorage and use it
+        const userData = authService.getCurrentUser();
+        
+        if (userData) {
+          // Use the user data that was already fetched and stored by authService.login
+          const userToStore = {
+            ...userData,
+            token: response.token,
+          };
+          
+          console.log("SignIn - User data loaded:", userToStore);
+          console.log("SignIn - is_freelancer field:", userToStore.is_freelancer);
+          
+          loginUser(userToStore);
+          authService.updateUserData(userToStore);
+          alert("Sign in successful!");
+          router.push("/");
+        } else {
+          alert("Sign in successful but failed to load user data. Please try again.");
+        }
       } else {
-        alert("Sign in successful but failed to load user data. Please try again.");
+        alert("Sign in failed. Please check your credentials.");
       }
     } catch (error) {
       console.error("Login error:", error);
