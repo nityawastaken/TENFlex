@@ -29,7 +29,7 @@ const ProfileDetails = ({
   languages,
   id,
 }) => {
-  const userObj = localStorage.getItem("userMin");
+      const userObj = localStorage.getItem("user");
   const user = userObj ? JSON.parse(userObj) : "";
 
   // console.log("file ", file)

@@ -66,9 +66,8 @@ export default function ProfilePage() {
           if (!response.ok) throw new Error("Failed to fetch user profile");
           freshUser = await response.json();
           setUser(freshUser);
-          // Debug: Log and toast the values for inline_orders and completed_orders
+          // Debug: Log the values for inline_orders and completed_orders
           console.log("Fetched user from backend:", freshUser);
-          toast.info(`inline_orders: ${freshUser.inline_orders}, completed_orders: ${freshUser.completed_orders}`);
           // Update localStorage only for token/id, not for rendering
           localStorage.setItem("user", JSON.stringify({ ...freshUser, token }));
         } catch (error) {

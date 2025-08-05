@@ -12,7 +12,6 @@ import { reviewService } from '@/utils/services';
 import { useUserContext } from '@/app/contexts/UserContext';
 import { FaPencilAlt, FaCheck, FaTimes, FaTrash } from 'react-icons/fa';
 import axios from 'axios';
-import "react-toastify/dist/ReactToastify.css";
 import AddToGigList from '@/app/components/AddToGigList';
 import { getLanguageNames } from '@/utils/languageUtils';
 
@@ -52,7 +51,7 @@ const page = ({ params }) => {
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
     if (typeof window !== "undefined") {
-      const userString = localStorage.getItem("userMin");
+      const userString = localStorage.getItem("user");
       const userr = userString ? JSON.parse(userString) : null;
       setUser(userr);
     }
@@ -417,7 +416,6 @@ const page = ({ params }) => {
                 <h3
                 onClick={() => handleOpenProfile(gig.freelancer)}>{gig.freelancer}</h3>
                 <div className="freelancer-status-contact">
-                  <span className="freelancer-status online">● Online</span>
                   <div className="contact-button-container">
                     <button 
                       className="contact-us-agency-button"

@@ -3,7 +3,7 @@ import React from 'react';
 function GigHeader({ service_text, avg_rating, user_id, num_reviews, orders_in_queue }) {
   return (
     <div className="gig-header">
-      <h1 className="gig-title-main">{service_text}</h1>
+      <h1 className="gig-title-main">{service_text}</h1>  
       <div className="gig-meta-flex">
         <div className="rating-stars">
           {/* Render stars based on avg_rating */}

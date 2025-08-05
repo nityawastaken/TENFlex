@@ -56,7 +56,7 @@ const Navbar = () => {
 
   useEffect(() => {
     setIsMounted(true);
-    const storedUser = localStorage.getItem("userMin");
+    const storedUser = localStorage.getItem("user");
     setToken(localStorage.getItem("token"));
 
     if (storedUser) {

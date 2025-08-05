@@ -36,6 +36,8 @@ export const authService = {
         body: JSON.stringify(credentials),
       });
       
+      console.log("AuthService - Login response:", response);
+      
       // Store token in localStorage
       if (response.token) {
         localStorage.setItem('token', response.token);
@@ -46,12 +48,16 @@ export const authService = {
             headers: { Authorization: `Token ${response.token}` }
           });
           
+          console.log("AuthService - User data from username endpoint:", userData);
+          
           // Step 2: Get full user profile by id if we have the user data
           if (userData && userData.id) {
             const fullUserData = await apiCall(endpoints.profileDetail(userData.id), {
               headers: { Authorization: `Token ${response.token}` }
             });
             userData = fullUserData; // Use the full profile data
+            console.log("AuthService - Full user profile data:", userData);
+            console.log("AuthService - is_freelancer field:", userData.is_freelancer);
           }
           } catch (err) {
             console.error("Error fetching user data after login:", err);
@@ -61,9 +67,11 @@ export const authService = {
           userData.token = response.token;
           localStorage.setItem('user', JSON.stringify(userData));
           localStorage.setItem('userMin', JSON.stringify(userData));
+          console.log("AuthService - User data stored in localStorage:", userData);
         } else {
           // fallback: store only token, but this should not happen
           localStorage.setItem('user', JSON.stringify({ token: response.token }));
+          console.log("AuthService - Fallback: stored only token");
         }
       }
       return response;

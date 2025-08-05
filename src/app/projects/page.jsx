@@ -146,7 +146,7 @@ const ProjectPage = () => {
   }, []);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("userMin");
+    const storedUser = localStorage.getItem("user");
     const Token = localStorage.getItem("token");
     if (storedUser) {
       setUser(JSON.parse(storedUser));
@@ -175,7 +175,7 @@ const ProjectPage = () => {
   const handleAddProject = async (e) => {
     e.preventDefault();
 
-    const storedUser = localStorage.getItem("userMin") ? JSON.parse(localStorage.getItem("userMin")) : null;
+    const storedUser = localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : null;
     const token = localStorage.getItem("token");
     if (!storedUser || !token) {
       toast.error("You must be logged in to post a project.");
