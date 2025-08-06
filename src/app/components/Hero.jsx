@@ -22,6 +22,16 @@ const Hero = () => {
     console.log(e.target.value);
   };
 
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    const query = searchText.trim();
+    if (query) {
+      window.location.href = `/gig-list?search=${encodeURIComponent(query)}`;
+    } else {
+      window.location.href = "/gig-list";
+    }
+  };
+
   const togglePlayPause = () => {
     if (!videoRef.current) return;
     if (isPlaying) {
@@ -30,6 +40,13 @@ const Hero = () => {
       videoRef.current.play();
     }
     setIsPlaying(!isPlaying);
+  };
+
+  const scrollToWhatYouCanDo = () => {
+    const element = document.querySelector('[data-section="ready-to-get-started"]');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   return (
@@ -52,12 +69,32 @@ const Hero = () => {
 
           {/* 🔹 Overlay and Content */}
           <div className="absolute top-0 left-0 w-full h-full bg-black/40 flex flex-col items-center justify-center gap-6 p-4 @[480px]:p-10 z-10">
+            {/* Call to Action Button - Top Right */}
+            <div className="absolute top-8 right-8 z-20">
+              <button
+                onClick={scrollToWhatYouCanDo}
+                className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-xl font-semibold hover:from-purple-600 hover:to-pink-600 transition-all duration-500 shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/40 transform hover:scale-110 active:scale-95 hover:-translate-y-1 flex items-center gap-2 animate-pulse hover:animate-none"
+              >
+                <span className="transition-all duration-300">Get Started Today</span>
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  width="20" 
+                  height="20" 
+                  fill="currentColor" 
+                  viewBox="0 0 24 24"
+                  className="transition-transform duration-300 hover:translate-y-1"
+                >
+                  <path d="M7 10l5 5 5-5z"/>
+                </svg>
+              </button>
+            </div>
+
             <h1 className="text-white text-4xl font-black leading-tight tracking-[-0.033em] @[480px]:text-5xl text-center max-w-[800px]">
               Find the perfect freelance services for your business
             </h1>
 
             {/* ...your search bar remains unchanged */}
-            <label className="flex flex-col min-w-40 h-14 w-full max-w-[480px] @[480px]:h-16">
+            <form onSubmit={handleSearchSubmit} className="flex flex-col min-w-40 h-14 w-full max-w-[480px] @[480px]:h-16">
               <div className="flex w-full flex-1 items-stretch rounded-xl h-full">
                 <div
                   className="text-[#ad95c6] flex border border-[#4d3663] bg-black items-center justify-center pl-[15px] rounded-l-xl border-r-0"
@@ -78,44 +115,16 @@ const Hero = () => {
                 <input
                   placeholder="Search for a service"
                   className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-0 border border-[#4d3663] bg-black focus:border-[#4d3663] h-full placeholder:text-[#ad95c6] px-[15px] rounded-r-none border-r-0 pr-2 rounded-l-none border-l-0 pl-2 text-sm font-normal leading-normal @[480px]:text-base @[480px]:font-normal @[480px]:leading-normal"
-                  onChange={handleChange} // step 3
-                  value={searchText} // step 4
+                  onChange={handleChange}
+                  value={searchText}
                 />
                 <div className="flex items-center justify-center rounded-r-xl border-l-0 border border-[#4d3663] bg-black pr-[7px]">
-                  <button className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 px-4 @[480px]:h-12 @[480px]:px-5 bg-[#8020df] text-white text-sm font-bold leading-normal tracking-[0.015em] @[480px]:text-base @[480px]:font-bold @[480px]:leading-normal @[480px]:tracking-[0.015em]">
+                  <button type="submit" className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 px-4 @[480px]:h-12 @[480px]:px-5 bg-[#8020df] text-white text-sm font-bold leading-normal tracking-[0.015em] @[480px]:text-base @[480px]:font-bold @[480px]:leading-normal @[480px]:tracking-[0.015em]">
                     <span className="truncate">Search</span>
                   </button>
                 </div>
               </div>
-            </label>
-
-            {/* button elements to display some services */}
-            <div className="flex flex-wrap mx-auto items-center gap-4 mt-2">
-              <button className="bg-transparent border border-[#A020F0] text-white px-6 py-2 rounded-lg hover:bg-[#a020f03c] transition flex items-center gap-2">
-                Website Development
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="#A020F0" viewBox="0 0 24 24">
-                  <path d="M10 17l5-5-5-5v10z"/>
-                </svg>
-              </button>
-              <button className="bg-transparent border border-[#A020F0] text-white px-6 py-2 rounded-lg hover:bg-[#a020f03c] transition flex items-center gap-2">
-                architecture and interior design
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="#A020F0" viewBox="0 0 24 24">
-                  <path d="M10 17l5-5-5-5v10z"/>
-                </svg>
-              </button>
-              <button className="bg-transparent border border-[#A020F0] text-white px-6 py-2 rounded-lg hover:bg-[#a020f03c] transition flex items-center gap-2">
-                AI Services
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="#A020F0" viewBox="0 0 24 24">
-                  <path d="M10 17l5-5-5-5v10z"/>
-                </svg>
-              </button>
-              <button className="bg-transparent border border-[#A020F0] text-white px-6 py-2 rounded-lg hover:bg-[#a020f03c] transition flex items-center gap-2">
-                Logo Design
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="#A020F0" viewBox="0 0 24 24">
-                  <path d="M10 17l5-5-5-5v10z"/>
-                </svg>
-              </button>
-            </div>
+            </form>
 
             {/* 🔘 Play/Pause Button */}
             <button

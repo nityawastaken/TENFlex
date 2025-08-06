@@ -79,3 +79,29 @@ body::after {
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;     /* Firefox */
 }
+
+/* Subtle, professional custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(120, 60, 180, 0.15); /* subtle purple tint */
+  border-radius: 8px;
+  transition: background 0.3s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(120, 60, 180, 0.28); /* more visible on hover */
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* For Firefox */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(120, 60, 180, 0.18) transparent;
+}
