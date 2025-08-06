@@ -60,9 +60,9 @@ const WhatYouCanDo = () => {
       color: "from-yellow-500 to-orange-500"
     },
     {
-      icon: MessageSquare,
-      title: "Direct Communication",
-      description: "Chat directly with freelancers to discuss requirements and project details",
+      icon: FileText,
+      title: "Gig List",
+      description: "Save your favorite gigs to a personalized list for easy access and quick booking",
       color: "from-green-500 to-teal-500"
     },
     {
@@ -72,13 +72,13 @@ const WhatYouCanDo = () => {
       color: "from-red-500 to-pink-500"
     },
     {
-      icon: Clock,
-      title: "Fast Delivery",
-      description: "Get your projects delivered on time with clear deadlines and progress tracking",
+      icon: MessageSquare,
+      title: "Add Project Post",
+      description: "Post your project requirements and get proposals from qualified freelancers",
       color: "from-indigo-500 to-blue-600"
     },
     {
-      icon: FileText,
+      icon: Clock,
       title: "Project Management",
       description: "Track project progress, manage revisions, and maintain all project files in one place",
       color: "from-purple-500 to-indigo-600"
@@ -93,19 +93,19 @@ const WhatYouCanDo = () => {
       color: "from-emerald-500 to-green-600"
     },
     {
-      icon: Users,
-      title: "Global Client Base",
-      description: "Connect with clients from around the world and expand your business reach",
+      icon: DollarSign,
+      title: "Bidding System",
+      description: "Submit competitive bids on projects and win work that matches your skills and rates",
       color: "from-blue-500 to-cyan-500"
     },
     {
-      icon: DollarSign,
+      icon: TrendingUp,
       title: "Earn More",
       description: "Set your own rates and earn competitive income doing what you love",
       color: "from-yellow-500 to-amber-500"
     },
     {
-      icon: TrendingUp,
+      icon: Star,
       title: "Build Portfolio",
       description: "Grow your professional portfolio with diverse projects and client testimonials",
       color: "from-purple-500 to-pink-500"
@@ -137,47 +137,67 @@ const WhatYouCanDo = () => {
   };
 
   return (
-    <section className="py-20 relative overflow-hidden">
+    <section className="py-20 relative overflow-hidden" data-section="what-you-can-do">
       <div className="container mx-auto px-4 relative z-10">
         {/* Section Header */}
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
             What You Can Do on{' '}
             <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-              TENFlEx
+              TENFLEx
             </span>
           </h2>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
             Whether you're looking to hire talented professionals or showcase your skills to the world, 
-            TENFlex provides the perfect platform for both clients and freelancers.
+            TENFLEX provides the perfect platform for both clients and freelancers.
           </p>
         </div>
 
         {/* Tab Navigation */}
         <div className="flex justify-center mb-12">
-          <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-2 border border-gray-700/50">
-            <button
-              onClick={() => setActiveTab('client')}
-              className={`px-8 py-3 rounded-xl font-semibold transition-all duration-300 ${
-                activeTab === 'client'
-                  ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/25'
-                  : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
+          <div className="relative bg-gray-800/50 backdrop-blur-sm rounded-2xl p-2 border border-gray-700/50">
+            {/* Sliding Background Indicator */}
+            <div 
+              className={`absolute top-2 bottom-2 rounded-xl transition-all duration-700 ease-out ${
+                activeTab === 'client' 
+                  ? 'left-2 w-[calc(50%-8px)] bg-gradient-to-r from-purple-500 to-pink-500' 
+                  : 'left-[calc(50%-4px)] w-[calc(50%-8px)] bg-gradient-to-r from-emerald-500 to-teal-500'
               }`}
-            >
-              <Users className="inline-block w-5 h-5 mr-2" />
-              For Clients
-            </button>
-            <button
-              onClick={() => setActiveTab('freelancer')}
-              className={`px-8 py-3 rounded-xl font-semibold transition-all duration-300 ${
-                activeTab === 'freelancer'
-                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25'
-                  : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
-              }`}
-            >
-              <Briefcase className="inline-block w-5 h-5 mr-2" />
-              For Freelancers
-            </button>
+              style={{
+                transition: 'all 0.7s cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
+            />
+            
+            <div className="relative flex">
+              <button
+                onClick={() => setActiveTab('client')}
+                className={`relative px-8 py-3 rounded-xl font-semibold transition-all duration-500 ease-out z-10 ${
+                  activeTab === 'client'
+                    ? 'text-white'
+                    : 'text-gray-300 hover:text-white'
+                }`}
+                style={{
+                  transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
+              >
+                <Users className="inline-block w-5 h-5 mr-2 transition-transform duration-300 ease-out" />
+                For Clients
+              </button>
+              <button
+                onClick={() => setActiveTab('freelancer')}
+                className={`relative px-8 py-3 rounded-xl font-semibold transition-all duration-500 ease-out z-10 ${
+                  activeTab === 'freelancer'
+                    ? 'text-white'
+                    : 'text-gray-300 hover:text-white'
+                }`}
+                style={{
+                  transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
+              >
+                <Briefcase className="inline-block w-5 h-5 mr-2 transition-transform duration-300 ease-out" />
+                For Freelancers
+              </button>
+            </div>
           </div>
         </div>
 
@@ -204,7 +224,7 @@ const WhatYouCanDo = () => {
         </div>
 
         {/* CTA Section */}
-        <div className="text-center mt-16">
+        <div className="text-center mt-16" data-section="ready-to-get-started">
           <div className="bg-gradient-to-r from-purple-600/20 to-pink-600/20 backdrop-blur-sm border border-purple-500/30 rounded-2xl p-8">
             <h3 className="text-2xl font-bold text-white mb-4">
               Ready to Get Started?
