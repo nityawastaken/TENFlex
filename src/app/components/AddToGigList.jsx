@@ -2,6 +2,7 @@ import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { CreateNewGigList } from "./CreateNewGigList";
 
 const AddToGigList = ({ setAddToGiglist, gigId }) => {
   const [gigList, setGigList] = useState([]);
@@ -41,7 +42,7 @@ const AddToGigList = ({ setAddToGiglist, gigId }) => {
           },
         }
       );
-      if (res.statusText === "OK") {
+      if (res.status === 200) {
         toast.success("Added to your GigList.");
         setTimeout(() => setAddToGiglist(false), 3000);
       } else {
@@ -75,36 +76,40 @@ const AddToGigList = ({ setAddToGiglist, gigId }) => {
 
         {/* GigList inputs */}
         <div className="space-y-3">
-          {gigList.map((gig) => (
-            <div
-              key={gig.id}
-              className="flex items-center justify-between gap-2 border border-purple-700 bg-[#1a1333] px-4 py-3 rounded-lg shadow-sm"
-            >
-              <span className="truncate w-2/3 text-purple-100 font-medium">
-                {gig.name || "Unnamed"}
-              </span>
-              <button
-                onClick={(e) => handleAddToGiglist(gig.id, e)}
-                className="flex items-center gap-1 bg-gradient-to-r from-purple-700 to-purple-500 text-white px-4 py-1.5 rounded-lg font-semibold shadow hover:scale-105 hover:from-purple-800 hover:to-purple-600 transition cursor-pointer"
+          {gigList.length === 0 ? (
+            <CreateNewGigList setAddToGiglist={setAddToGiglist}/>
+          ) : (
+            gigList.map((gig) => (
+              <div
+                key={gig.id}
+                className="flex items-center justify-between gap-2 border border-purple-700 bg-[#1a1333] px-4 py-3 rounded-lg shadow-sm"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={2}
-                  stroke="currentColor"
-                  className="w-4 h-4"
+                <span className="truncate w-2/3 text-purple-100 font-medium">
+                  {gig.name || "Unnamed"}
+                </span>
+                <button
+                  onClick={(e) => handleAddToGiglist(gig.id, e)}
+                  className="flex items-center gap-1 bg-gradient-to-r from-purple-700 to-purple-500 text-white px-4 py-1.5 rounded-lg font-semibold shadow hover:scale-105 hover:from-purple-800 hover:to-purple-600 transition cursor-pointer"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 4v16m8-8H4"
-                  />
-                </svg>
-                Add
-              </button>
-            </div>
-          ))}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                    stroke="currentColor"
+                    className="w-4 h-4"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 4v16m8-8H4"
+                    />
+                  </svg>
+                  Add
+                </button>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

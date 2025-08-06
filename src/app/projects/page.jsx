@@ -316,6 +316,12 @@ const ProjectPage = () => {
     // setSelectedProject(null);
   };
 
+  const closeUpdateModal = () =>{
+    setShowProjectPopup(false);
+    setTags("")
+    setSkills("")
+  }
+
   //onClick go to userProfile
   const handleOpenProfile = async (freelancer) => {
     try {
@@ -634,7 +640,7 @@ const ProjectPage = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4 transition-opacity duration-300">
           <div className="bg-gradient-to-br from-[#2d1a4d] via-[#5a2b77] to-[#1a1333] text-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 relative shadow-xl scrollbar-hide transform transition-all ease-in-out">
             {/* Close Button */}
-            <div onClick={() => setShowModal(false)}>
+            <div onClick={() => {setShowModal(false);closeUpdateModal()}}>
               <button className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors cursor-pointer  ">
                 <X size={24} />
               </button>
@@ -714,7 +720,7 @@ const ProjectPage = () => {
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {tags.map((tag, idx) => (
+                  {tags && tags.map((tag, idx) => (
                     <span
                       key={idx}
                       className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm"
@@ -749,7 +755,7 @@ const ProjectPage = () => {
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {skills.map((skill, idx) => (
+                  {skills && skills.map((skill, idx) => (
                     <span
                       key={idx}
                       className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm"
@@ -764,7 +770,7 @@ const ProjectPage = () => {
               <div className="flex justify-end gap-3 mt-6">
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
+                  onClick={() => {setShowModal(false); closeUpdateModal()}}
                   className="px-4 py-2 border-2 border-gray-700 rounded-lg text-gray-200 hover:bg-gray-800 hover:backdrop-opacity-10 transition cursor-pointer hover:scale-105"
                 >
                   Cancel
@@ -795,6 +801,7 @@ const ProjectPage = () => {
           setTags={setTags}
           tags={tags}
           selectedProject={selectedProject}
+          closeUpdateModal={closeUpdateModal}
         />
       )}
 

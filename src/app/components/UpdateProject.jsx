@@ -15,6 +15,7 @@ const UpdateProject = ({
   setTags,
   tags,
   selectedProject,
+  closeUpdateModal
 }) => {
   const [fields, setFields] = useState({
     title: selectedProject?.title || "",
@@ -32,7 +33,7 @@ const UpdateProject = ({
       <div className="bg-gradient-to-br from-[#2d1a4d] via-[#5a2b77] to-[#1a1333] text-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 sm:p-8 relative shadow-2xl border border-purple-900 scrollbar-hide">
         {/* Close Button */}
         <button
-          onClick={() => setUpdateModal(false)}
+          onClick={() => {setUpdateModal(false);closeUpdateModal()}}
           className="absolute top-4 right-4 text-purple-300 hover:text-red-500 transition-colors "
           aria-label="Close modal"
         >
@@ -151,7 +152,7 @@ const UpdateProject = ({
               </button>
             </div>
             <div className="flex flex-wrap gap-2 mt-3">
-              {tags.map((tag, idx) => (
+              {tags && tags.map((tag, idx) => (
                 <span
                   key={idx}
                   className="bg-purple-900/70 text-purple-200 px-3 py-1 rounded-full text-sm border border-purple-700 shadow-sm"
@@ -186,7 +187,7 @@ const UpdateProject = ({
               </button>
             </div>
             <div className="flex flex-wrap gap-2 mt-3">
-              {skills.map((skill, idx) => (
+              {skills && skills.map((skill, idx) => (
                 <span
                   key={idx}
                   className="bg-green-900/70 text-green-200 px-3 py-1 rounded-full text-sm border border-green-700 shadow-sm"
@@ -201,7 +202,7 @@ const UpdateProject = ({
           <div className="flex justify-end gap-3 pt-4">
             <button
               type="button"
-              onClick={() => setUpdateModal(false)}
+              onClick={() => {setUpdateModal(false);closeUpdateModal()}}
               className="px-5 py-2 border border-purple-700 text-purple-200 rounded-lg hover:bg-purple-900/40 transition transform hover:scale-105 font-semibold shadow"
             >
               Cancel
