@@ -6,3 +6,13 @@ node_modules/
 .env.production.local
 .DS_Store
 **/.DS_Store
+
+base/
+gig_pictures/
+profile_pictures
+TENFlex_backend/
+db.sqlite3
+env.example
+manage.py
+requirements.txt
+SETUP_BACKEND.md
