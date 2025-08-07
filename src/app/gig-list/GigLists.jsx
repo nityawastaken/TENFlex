@@ -70,7 +70,7 @@ function GigLists() {
   // const router = useRouter()
   // const {query} = router;
   // const searchQuery = query.search?.toLowerCase() || ""; 
-  console.log("searchQuery : ", searchQuery)
+  // console.log("searchQuery : ", searchQuery)
 
 
   // Apply dark mode immediately on mount
