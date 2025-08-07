@@ -13,6 +13,7 @@
     "@emotion/styled": "^11.14.1",
     "@mui/material": "^7.2.0",
     "@reduxjs/toolkit": "^2.8.2",
+    "autoprefixer": "^10.4.21",
     "axios": "^1.11.0",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^2.0.1",
@@ -23,6 +24,7 @@
     "lucide-react": "^0.515.0",
     "mongoose": "^8.16.3",
     "next": "15.3.3",
+    "postcss": "^8.5.6",
     "react": "^19.0.0",
     "react-css-spinners": "^4.0.2",
     "react-dom": "^19.0.0",
@@ -40,6 +42,6 @@
     "@tailwindcss/postcss": "^4",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
-    "tailwindcss": "^4"
+    "tailwindcss": "^4.1.11"
   }
 }
