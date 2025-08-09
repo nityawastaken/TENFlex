@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { X } from "lucide-react";
+import axios from "axios";
 
 const UpdateProject = ({
   updateProject,
@@ -15,25 +16,94 @@ const UpdateProject = ({
   setTags,
   tags,
   selectedProject,
-  closeUpdateModal
+  closeUpdateModal,
 }) => {
   const [fields, setFields] = useState({
     title: selectedProject?.title || "",
     description: selectedProject?.description || "",
-    start_date: selectedProject?.created_at || selectedProject?.start_date ||  "",
+    start_date:selectedProject?.created_at
+      ? new Date(selectedProject.created_at.replace(/\.\d+Z$/, "Z"))
+          .toISOString()
+          .split("T")[0]
+      : "",
     deadline: selectedProject?.deadline || "",
     budget: selectedProject?.budget || 0,
     categories: selectedProject?.categories || [],
     skills: selectedProject?.skills || [],
   });
+  const [query, setQuery] = useState("");
+  const [categoryQuery, setCategoryQuery] = useState("");
+  const [skillSuggestions, setSkillSuggestions] = useState([]);
+  const [categorySuggestions, setCategorySuggestions] = useState([]);
+  const [categoryDropdownVisible, setCategoryDropdownVisible] = useState(false);
+  const [skillsDropdownVisible, setSkillsDropdownVisible] = useState(false);
 
-  
+  console.log("start_date : ", selectedProject.created_at.toLocaleString())
+
+
+  const skillsList = async () => {
+    try {
+      const response = await axios.get(
+        `https://api.apilayer.com/skills?q=${query}`,
+        {
+          headers: {
+            apikey: process.env.NEXT_PUBLIC_SKILLS_API_KEY,
+          },
+        }
+      );
+      // console.log("Skills fetched:", response.data);
+      setSkillSuggestions(response.data || []);
+      setSkillsDropdownVisible(true)
+    } catch (error) {
+      console.log("Error fetching skills:", error);
+    }
+  };
+
+  const categoryList = async () => {
+    try {
+      const response = await axios.get(
+        `https://api.apilayer.com/skills?q=${categoryQuery}`,
+        {
+          headers: {
+            apikey: process.env.NEXT_PUBLIC_SKILLS_API_KEY,
+          },
+        }
+      );
+      setCategorySuggestions(response.data || []);
+      setCategoryDropdownVisible(true)
+    } catch (error) {
+      console.log("Error fetching Categories:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (!query) return;
+    const delayDebounce = setTimeout(() => {
+      skillsList();
+    }, 300); // 300ms debounce delay
+
+    return () => clearTimeout(delayDebounce); // Cleanup
+  }, [query]);
+
+    useEffect(() => {
+    if (!categoryQuery) return;
+
+    const delayDebounce = setTimeout(() => {
+      categoryList();
+    }, 300); // 300ms debounce delay
+
+    return () => clearTimeout(delayDebounce); // Cleanup
+  }, [categoryQuery]);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center  backdrop-blur-sm px-4">
       <div className="bg-gradient-to-br from-[#2d1a4d] via-[#5a2b77] to-[#1a1333] text-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 sm:p-8 relative shadow-2xl border border-purple-900 scrollbar-hide">
         {/* Close Button */}
         <button
-          onClick={() => {setUpdateModal(false);closeUpdateModal()}}
+          onClick={() => {
+            setUpdateModal(false);
+            closeUpdateModal();
+          }}
           className="absolute top-4 right-4 text-purple-300 hover:text-red-500 transition-colors "
           aria-label="Close modal"
         >
@@ -85,32 +155,42 @@ const UpdateProject = ({
 
           {/* Dates */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <input
-              type="date"
-              name="postDate"
-              value={fields.start_date || ""}
-              onChange={(e) =>
-              setFields((prevFields) => ({
-                ...prevFields,
-                start_date: e.target.value,
-              }))
-            }
-              required
-              className="w-full p-3 border border-purple-700 bg-[#1a1333] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm"
-            />
-            <input
-              type="date"
-              name="deadline"
-              value={fields.deadline || ""}
-              onChange={(e) =>
-              setFields((prevFields) => ({
-                ...prevFields,
-                deadline: e.target.value,
-              }))
-            }
-              required
-              className="w-full p-3 border border-purple-700 bg-[#1a1333] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm"
-            />
+            <div>
+              <label className="block text-sm font-semibold text-purple-300 mb-1">
+                Start Date
+              </label>
+              <input
+                type="date"
+                name="postDate"
+                value={fields.start_date || ""}
+                onChange={(e) =>
+                  setFields((prevFields) => ({
+                    ...prevFields,
+                    start_date: e.target.value,
+                  }))
+                }
+                required
+                className="w-full p-3 border border-purple-700 bg-[#1a1333] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-purple-300 mb-1">
+                Deadline
+              </label>
+              <input
+                type="date"
+                name="deadline"
+                value={fields.deadline || ""}
+                onChange={(e) =>
+                  setFields((prevFields) => ({
+                    ...prevFields,
+                    deadline: e.target.value,
+                  }))
+                }
+                required
+                className="w-full p-3 border border-purple-700 bg-[#1a1333] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm"
+              />
+            </div>
           </div>
 
           {/* Budget */}
@@ -130,71 +210,125 @@ const UpdateProject = ({
           />
 
           {/* Tags Section */}
-          <div>
+          <div className="relative">
             <label className="block text-sm font-semibold text-purple-300 mb-1">
               Categories
             </label>
-            <div className="flex gap-2">
-              <input
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                placeholder="Enter category"
-                className="flex-grow p-3 border border-purple-700 bg-[#1a1333] rounded-lg placeholder-purple-400 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm"
-              />
-              <button
-                type="button"
-                onClick={() =>
-                  tagInput && setTags([...tags, tagInput]) & setTagInput("")
+            <input
+              value={tagInput}
+              onChange={(e) => {
+                setTagInput(e.target.value);
+                setCategoryQuery(e.target.value);
+              }}
+               onFocus={() => {
+                if (categorySuggestions.length > 0) {
+                  setCategoryDropdownVisible(true);
                 }
-                className="bg-gradient-to-r from-purple-700 to-purple-500 hover:from-purple-800 hover:to-purple-600 text-white px-4 py-2 rounded-lg transition shadow font-semibold"
-              >
-                Add
-              </button>
-            </div>
+              }}
+              onBlur={() => {
+                setTimeout(() => setCategoryDropdownVisible(false), 100); // allow time for click
+              }}
+              placeholder="Search category"
+              className="w-full p-3 border border-purple-700 bg-[#1a1333] rounded-lg placeholder-purple-400 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm"
+              autoComplete="off"
+            />
+            {/* <button
+              type="button"
+              onClick={() =>
+                tagInput && setTags([...tags, tagInput]) & setTagInput("")
+              }
+              className="bg-gradient-to-r from-purple-700 to-purple-500 hover:from-purple-800 hover:to-purple-600 text-white px-4 py-2 rounded-lg transition shadow font-semibold"
+            >
+              Add
+            </button> */}
+
+            {categorySuggestions.length > 0 && categoryDropdownVisible && (
+              <ul className="absolute z-10 mt-1 w-full bg-[#1a1333] border border-purple-700 rounded-lg shadow-lg max-h-48 overflow-y-auto text-sm">
+                {categorySuggestions.map((suggestion, index) => (
+                  <li
+                    key={index}
+                    className="px-4 py-2 cursor-pointer hover:bg-purple-700/40 text-purple-200"
+                    onClick={() => {
+                      if (!tags.includes(suggestion)) {
+                        setTags([...tags, suggestion]);
+                      }
+                      setTagInput("");
+                      setCategoryQuery("");
+                      setCategorySuggestions([]);
+                      setCategoryDropdownVisible(false);
+                    }}
+                  >
+                    {suggestion}
+                  </li>
+                ))}
+              </ul>
+            )}
+
             <div className="flex flex-wrap gap-2 mt-3">
-              {tags && tags.map((tag, idx) => (
-                <span
-                  key={idx}
-                  className="bg-purple-900/70 text-purple-200 px-3 py-1 rounded-full text-sm border border-purple-700 shadow-sm"
-                >
-                  {tag}
-                </span>
-              ))}
+              {tags &&
+                tags.map((tag, idx) => (
+                  <span
+                    key={idx}
+                    className="bg-purple-900/70 text-purple-200 px-3 py-1 rounded-full text-sm border border-purple-700 shadow-sm"
+                  >
+                    {tag}
+                  </span>
+                ))}
             </div>
           </div>
 
           {/* Skills Section */}
-          <div>
-            <label className="block text-sm font-semibold text-green-300 mb-1">
-              Skills
-            </label>
-            <div className="flex gap-2">
-              <input
-                value={skillInput}
-                onChange={(e) => setSkillInput(e.target.value)}
-                placeholder="Enter skill"
-                className="flex-grow p-3 border border-green-700 bg-[#1a1333] rounded-lg placeholder-green-400 text-white focus:outline-none focus:ring-2 focus:ring-green-500 shadow-sm"
-              />
-              <button
-                type="button"
-                onClick={() =>
-                  skillInput &&
-                  setSkills([...skills, skillInput]) & setSkillInput("")
+          <div className="relative">
+            <input
+              value={skillInput}
+              onChange={(e) => {
+                setSkillInput(e.target.value);
+                setQuery(e.target.value);
+              }}
+              onFocus={() => {
+                if (skillSuggestions.length > 0) {
+                  setSkillsDropdownVisible(true);
                 }
-                className="bg-gradient-to-r from-green-700 to-green-500 hover:from-green-800 hover:to-green-600 text-white px-4 py-2 rounded-lg transition shadow font-semibold"
-              >
-                Add
-              </button>
-            </div>
+              }}
+              onBlur={() => {
+                setTimeout(() => setSkillsDropdownVisible(false), 100); // allow time for click
+              }}
+              placeholder="Search skill"
+              className="flex-grow p-3 border border-green-700 bg-[#1a1333] rounded-lg placeholder-green-400 text-white focus:outline-none focus:ring-2 focus:ring-green-500 shadow-sm w-full"
+              autoComplete="off"
+            />
+
+            {skillSuggestions.length > 0 && skillsDropdownVisible && (
+              <ul className="absolute z-10 mt-1 w-full bg-[#1a1333] border border-green-700 rounded-lg shadow-lg max-h-48 overflow-y-auto text-sm">
+                {skillSuggestions.map((suggestion, index) => (
+                  <li
+                    key={index}
+                    className="px-4 py-2 cursor-pointer hover:bg-green-700/40 text-green-200"
+                    onClick={() => {
+                      if (!skills.includes(suggestion)) {
+                        setSkills([...skills, suggestion]);
+                      }
+                      setSkillInput("");
+                      setQuery("");
+                      setSkillSuggestions([]);
+                      setSkillsDropdownVisible(false)
+                    }}
+                  >
+                    {suggestion}
+                  </li>
+                ))}
+              </ul>
+            )}
             <div className="flex flex-wrap gap-2 mt-3">
-              {skills && skills.map((skill, idx) => (
-                <span
-                  key={idx}
-                  className="bg-green-900/70 text-green-200 px-3 py-1 rounded-full text-sm border border-green-700 shadow-sm"
-                >
-                  {skill}
-                </span>
-              ))}
+              {skills &&
+                skills.map((skill, idx) => (
+                  <span
+                    key={idx}
+                    className="bg-green-900/70 text-green-200 px-3 py-1 rounded-full text-sm border border-green-700 shadow-sm"
+                  >
+                    {skill}
+                  </span>
+                ))}
             </div>
           </div>
 
@@ -202,7 +336,10 @@ const UpdateProject = ({
           <div className="flex justify-end gap-3 pt-4">
             <button
               type="button"
-              onClick={() => {setUpdateModal(false);closeUpdateModal()}}
+              onClick={() => {
+                setUpdateModal(false);
+                closeUpdateModal();
+              }}
               className="px-5 py-2 border border-purple-700 text-purple-200 rounded-lg hover:bg-purple-900/40 transition transform hover:scale-105 font-semibold shadow"
             >
               Cancel

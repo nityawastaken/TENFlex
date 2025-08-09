@@ -103,6 +103,13 @@ const ProjectPage = () => {
   const [skills, setSkills] = useState([]);
   const [skillsMap, setSkillsMap] = useState({});
 
+  const [query, setQuery] = useState("");
+  const [categoryQuery, setCategoryQuery] = useState("");
+  const [skillSuggestions, setSkillSuggestions] = useState([]);
+  const [categorySuggestions, setCategorySuggestions] = useState([]);
+  const [categoryDropdownVisible, setCategoryDropdownVisible] = useState(false);
+  const [skillsDropdownVisible, setSkillsDropdownVisible] = useState(false);
+
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -151,6 +158,60 @@ const ProjectPage = () => {
       setRetrying(false);
     }
   }
+
+  const skillsList = async () => {
+    try {
+      const response = await axios.get(
+        `https://api.apilayer.com/skills?q=${query}`,
+        {
+          headers: {
+            apikey: process.env.NEXT_PUBLIC_SKILLS_API_KEY,
+          },
+        }
+      );
+      // console.log("Skills fetched:", response.data);
+      setSkillSuggestions(response.data || []);
+      setSkillsDropdownVisible(true)
+    } catch (error) {
+      console.log("Error fetching skills:", error);
+    }
+  };
+
+  const categoryList = async () => {
+    try {
+      const response = await axios.get(
+        `https://api.apilayer.com/skills?q=${categoryQuery}`,
+        {
+          headers: {
+            apikey: process.env.NEXT_PUBLIC_SKILLS_API_KEY,
+          },
+        }
+      );
+      setCategorySuggestions(response.data || []);
+      setCategoryDropdownVisible(true)
+    } catch (error) {
+      console.log("Error fetching Categories:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (!query) return;
+    const delayDebounce = setTimeout(() => {
+      skillsList();
+    }, 300); // 300ms debounce delay
+
+    return () => clearTimeout(delayDebounce); // Cleanup
+  }, [query]);
+
+    useEffect(() => {
+    if (!categoryQuery) return;
+
+    const delayDebounce = setTimeout(() => {
+      categoryList();
+    }, 300); // 300ms debounce delay
+
+    return () => clearTimeout(delayDebounce); // Cleanup
+  }, [categoryQuery]);
 
   useEffect(() => {
     fetchProjects();
@@ -316,11 +377,11 @@ const ProjectPage = () => {
     // setSelectedProject(null);
   };
 
-  const closeUpdateModal = () =>{
+  const closeUpdateModal = () => {
     setShowProjectPopup(false);
-    setTags("")
-    setSkills("")
-  }
+    setTags("");
+    setSkills("");
+  };
 
   //onClick go to userProfile
   const handleOpenProfile = async (freelancer) => {
@@ -640,7 +701,12 @@ const ProjectPage = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4 transition-opacity duration-300">
           <div className="bg-gradient-to-br from-[#2d1a4d] via-[#5a2b77] to-[#1a1333] text-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 relative shadow-xl scrollbar-hide transform transition-all ease-in-out">
             {/* Close Button */}
-            <div onClick={() => {setShowModal(false);closeUpdateModal()}}>
+            <div
+              onClick={() => {
+                setShowModal(false);
+                closeUpdateModal();
+              }}
+            >
               <button className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors cursor-pointer  ">
                 <X size={24} />
               </button>
@@ -674,18 +740,28 @@ const ProjectPage = () => {
 
               {/* Dates */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <input
-                  type="date"
-                  name="postDate"
-                  required
-                  className="w-full p-3 border-2 border-purple-700 bg-[#1a1333] text-purple-200 shadow-lg rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
-                />
-                <input
-                  type="date"
-                  name="deadline"
-                  required
-                  className="w-full p-3 border-2 border-purple-700 bg-[#1a1333] text-purple-200 shadow-lg rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
-                />
+                <div>
+                  <label className="block text-sm font-semibold text-gray-300 pl-1 mb-1">
+                    Start Date
+                  </label>
+                  <input
+                    type="date"
+                    name="postDate"
+                    required
+                    className="w-full p-3 border-2 border-purple-700 bg-[#1a1333] text-purple-200 shadow-lg rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-300 pl-1 mb-1">
+                    Deadline
+                  </label>
+                  <input
+                    type="date"
+                    name="deadline"
+                    required
+                    className="w-full p-3 border-2 border-purple-700 bg-[#1a1333] text-purple-200 shadow-lg rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                  />
+                </div>
               </div>
 
               {/* Budget */}
@@ -697,72 +773,126 @@ const ProjectPage = () => {
                 className="w-full p-3 border-2 border-purple-700 bg-[#1a1333] text-gray-200 shadow-lg rounded-lg placeholder-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
               />
 
-              {/* Tags */}
-              <div>
-                <label className="text-sm font-medium text-gray-200">
+              {/* Tags Section */}
+              <div className="relative">
+                <label className="block text-sm font-semibold text-purple-300 mb-1">
                   Categories
                 </label>
-                <div className="flex gap-2 mt-1">
-                  <input
-                    value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
-                    placeholder="Enter category"
-                    className="flex-grow p-3 border-2 border-purple-700 bg-[#1a1333] text-gray-200 shadow-lg rounded-lg placeholder-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      tagInput && setTags([...tags, tagInput]) & setTagInput("")
+                <input
+                  value={tagInput}
+                  onChange={(e) => {
+                    setTagInput(e.target.value);
+                    setCategoryQuery(e.target.value);
+                  }}
+                  onFocus={() => {
+                    if (categorySuggestions.length > 0) {
+                      setCategoryDropdownVisible(true);
                     }
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition cursor-pointer"
-                  >
-                    Add
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {tags && tags.map((tag, idx) => (
-                    <span
-                      key={idx}
-                      className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm"
-                    >
-                      {tag}
-                    </span>
-                  ))}
+                  }}
+                  onBlur={() => {
+                    setTimeout(() => setCategoryDropdownVisible(false), 100); // allow time for click
+                  }}
+                  placeholder="Search category"
+                  className="w-full p-3 border border-purple-700 bg-[#1a1333] rounded-lg placeholder-purple-400 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm"
+                  autoComplete="off"
+                />
+                {/* <button
+                  type="button"
+                  onClick={() =>
+                    tagInput && setTags([...tags, tagInput]) & setTagInput("")
+                  }
+                  className="bg-gradient-to-r from-purple-700 to-purple-500 hover:from-purple-800 hover:to-purple-600 text-white px-4 py-2 rounded-lg transition shadow font-semibold"
+                >
+                  Add
+                </button> */}
+
+                {categorySuggestions.length > 0 && categoryDropdownVisible && (
+                  <ul className="absolute z-10 mt-1 w-full bg-[#1a1333] border border-purple-700 rounded-lg shadow-lg max-h-48 overflow-y-auto text-sm">
+                    {categorySuggestions.map((suggestion, index) => (
+                      <li
+                        key={index}
+                        className="px-4 py-2 cursor-pointer hover:bg-purple-700/40 text-purple-200"
+                        onClick={() => {
+                          if (!tags.includes(suggestion)) {
+                            setTags([...tags, suggestion]);
+                          }
+                          setTagInput("");
+                          setCategoryQuery("");
+                          setCategorySuggestions([]);
+                          setCategoryDropdownVisible(false);
+                        }}
+                      >
+                        {suggestion}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {tags &&
+                    tags.map((tag, idx) => (
+                      <span
+                        key={idx}
+                        className="bg-purple-900/70 text-purple-200 px-3 py-1 rounded-full text-sm border border-purple-700 shadow-sm"
+                      >
+                        {tag}
+                      </span>
+                    ))}
                 </div>
               </div>
 
-              {/* Skills */}
-              <div>
-                <label className="text-sm font-medium text-gray-200">
-                  Skills
-                </label>
-                <div className="flex gap-2 mt-1">
-                  <input
-                    value={skillInput}
-                    onChange={(e) => setSkillInput(e.target.value)}
-                    placeholder="Enter skill"
-                    className="flex-grow p-3 border-2 border-purple-700 bg-[#1a1333] text-gray-200 shadow-lg rounded-lg placeholder-purple-200 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      skillInput &&
-                      setSkills([...skills, skillInput]) & setSkillInput("")
+              {/* Skills Section */}
+              <div className="relative">
+                <input
+                  value={skillInput}
+                  onChange={(e) => {
+                    setSkillInput(e.target.value);
+                    setQuery(e.target.value);
+                  }}
+                  onFocus={() => {
+                    if (skillSuggestions.length > 0) {
+                      setSkillsDropdownVisible(true);
                     }
-                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition cursor-pointer"
-                  >
-                    Add
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {skills && skills.map((skill, idx) => (
-                    <span
-                      key={idx}
-                      className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm"
-                    >
-                      {skill}
-                    </span>
-                  ))}
+                  }}
+                  onBlur={() => {
+                    setTimeout(() => setSkillsDropdownVisible(false), 100); // allow time for click
+                  }}
+                  placeholder="Search skill"
+                  className="flex-grow p-3 border border-green-700 bg-[#1a1333] rounded-lg placeholder-green-400 text-white focus:outline-none focus:ring-2 focus:ring-green-500 shadow-sm w-full"
+                  autoComplete="off"
+                />
+
+                {skillSuggestions.length > 0 && skillsDropdownVisible && (
+                  <ul className="absolute z-10 mt-1 w-full bg-[#1a1333] border border-green-700 rounded-lg shadow-lg max-h-48 overflow-y-auto text-sm">
+                    {skillSuggestions.map((suggestion, index) => (
+                      <li
+                        key={index}
+                        className="px-4 py-2 cursor-pointer hover:bg-green-700/40 text-green-200"
+                        onClick={() => {
+                          if (!skills.includes(suggestion)) {
+                            setSkills([...skills, suggestion]);
+                          }
+                          setSkillInput("");
+                          setQuery("");
+                          setSkillSuggestions([]);
+                          setSkillsDropdownVisible(false)
+                        }}
+                      >
+                        {suggestion}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {skills &&
+                    skills.map((skill, idx) => (
+                      <span
+                        key={idx}
+                        className="bg-green-900/70 text-green-200 px-3 py-1 rounded-full text-sm border border-green-700 shadow-sm"
+                      >
+                        {skill}
+                      </span>
+                    ))}
                 </div>
               </div>
 
@@ -770,7 +900,10 @@ const ProjectPage = () => {
               <div className="flex justify-end gap-3 mt-6">
                 <button
                   type="button"
-                  onClick={() => {setShowModal(false); closeUpdateModal()}}
+                  onClick={() => {
+                    setShowModal(false);
+                    closeUpdateModal();
+                  }}
                   className="px-4 py-2 border-2 border-gray-700 rounded-lg text-gray-200 hover:bg-gray-800 hover:backdrop-opacity-10 transition cursor-pointer hover:scale-105"
                 >
                   Cancel

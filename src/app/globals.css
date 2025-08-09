@@ -98,3 +98,12 @@ html {
   scrollbar-width: thin;
   scrollbar-color: rgba(120, 60, 180, 0.18) transparent;
 }
+
+
+/* For Calender icon */
+@layer utilities {
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+  }
+}
