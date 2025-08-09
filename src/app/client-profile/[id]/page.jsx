@@ -212,6 +212,7 @@ const ClientProfilePage = ({ params }) => {
   };
 
   const handleNav = (ref) => {
+    console.log("ref  : ", ref)
     if (ref?.current) {
       ref.current.scrollIntoView({ behavior: "smooth", block: "center" });
     }
@@ -293,7 +294,7 @@ const ClientProfilePage = ({ params }) => {
               projectsRef,
               ordersRef,
               reviewsRef,
-              freelancersRef,
+              giglistsRef,
             }}
           />
         )}
