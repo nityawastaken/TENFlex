@@ -152,7 +152,7 @@ const ProjectCard = ({ p }) => {
               >
                 <span className="absolute bottom-0 right-0 block w-64 h-64 mb-32 mr-4 transition duration-500 origin-bottom-left transform rotate-45 translate-x-24 bg-[#ff00ff] rounded-full opacity-40 group-hover:rotate-90 ease"></span>
 
-                <span class="relative text-white">
+                <span className="relative text-white">
                   {loading ? "Reopening..." : "Reopen Project"}
                 </span>
               </button>

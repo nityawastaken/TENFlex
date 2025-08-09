@@ -26,6 +26,7 @@ const Updateform = ({
 }) => {
   const width = useScreenWidth();
   const [langInput, setLangInput] = useState("");
+  const [isError, setIsError] = useState(false);
 
   const handleAddLanguage = (e) => {
     e.preventDefault();
@@ -37,6 +38,18 @@ const Updateform = ({
     setLangInput("");
   };
 
+  const handleChange = (e) => {
+    e.preventDefault();
+    const value = e.target.value;
+    setEditContact(value);
+    const regex = /^\+91\d{10}$/;
+    if (value.length === 0 || value === null) {
+      setIsError(false);
+    } else {
+      setIsError(!regex.test(value));
+    }
+  };
+
   return (
     <form
       className={`${
@@ -44,7 +57,7 @@ const Updateform = ({
       } w-full max-w-lg md:w-[500px] mx-auto z-30 left-0 right-0 bg-gradient-to-br from-[#24194a] via-[#1a0d2b] to-[#28163a] p-6 md:p-8 pt-2 rounded-xl shadow-2xl space-y-4 border border-purple-900 h-[79vh] overflow-y-scroll scrollbar-hide`}
       onSubmit={(e) => {
         e.preventDefault();
-        handleSave();
+        !isError && handleSave();
       }}
     >
       <h2 className="text-2xl font-bold text-white text-center mb-2 tracking-wide">
@@ -85,16 +98,22 @@ const Updateform = ({
           <label className="block text-sm text-purple-200 mb-1 font-medium">
             Contact Number
           </label>
-          <input
-            className="w-full bg-[#2d2357] text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-400 transition"
-            value={editContact}
-            onChange={(e) => setEditContact(e.target.value)}
-            type="tel"
-            // pattern="[0-9]{10}"
-            // maxLength="10"
-            placeholder="With +91 Enter 10-digit number "
-            required
-          />
+          <div>
+            <input
+              className="w-full bg-[#2d2357] text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-400 transition"
+              value={editContact}
+              onChange={handleChange}
+              type="tel"
+              placeholder="eg +919123456780"
+              required
+            />
+          </div>
+          {isError && (
+            <p className="text-red-500 ml-2 text-xs leading-tight">
+              Enter a valid phone number in international format (e.g.
+              +919876543210).
+            </p>
+          )}
         </div>
         <div>
           <label className="block text-sm text-purple-200 mb-1 font-medium">
@@ -219,7 +238,7 @@ const Updateform = ({
       <div className="flex flex-col sm:flex-row gap-4 justify-center mt-4">
         <button
           type="submit"
-          className="px-6 py-2 bg-gradient-to-r from-purple-600 to-purple-800 text-white font-semibold rounded-lg shadow hover:scale-105 transition w-full sm:w-auto cursor-pointer"
+          className={`px-6 py-2 bg-gradient-to-r from-purple-600 to-purple-800 text-white font-semibold rounded-lg shadow hover:scale-105 transition w-full sm:w-auto ${!isError? "cursor-pointer" : "cursor-not-allowed"} `}
         >
           Save
         </button>
