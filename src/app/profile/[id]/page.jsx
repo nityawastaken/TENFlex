@@ -765,7 +765,7 @@ useEffect(() => {
         {/* Main Content */}
         <div className="flex-1 max-w-4xl mx-auto">
           {/* Profile Completion Progress Bar */}
-          {completionPercent !== null && (
+          {completionPercent !== null && isOwnProfile &&(
             <div className="w-full mb-6">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-sm font-semibold text-purple-400">Profile Completion</span>

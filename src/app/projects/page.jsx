@@ -19,6 +19,7 @@ import axios from "axios";
 import UpdateProject from "../components/UpdateProject";
 import { useRouter } from "next/navigation";
 import useFetchUserByUsername from "@/Hooks/useFetchUserByUsername";
+import Link from "next/link";
 
 // Add CSS animations
 const projectPageStyles = `
@@ -172,7 +173,7 @@ const ProjectPage = () => {
       );
       // console.log("Skills fetched:", response.data);
       setSkillSuggestions(response.data || []);
-      setSkillsDropdownVisible(true)
+      setSkillsDropdownVisible(true);
     } catch (error) {
       console.log("Error fetching skills:", error);
     }
@@ -189,7 +190,7 @@ const ProjectPage = () => {
         }
       );
       setCategorySuggestions(response.data || []);
-      setCategoryDropdownVisible(true)
+      setCategoryDropdownVisible(true);
     } catch (error) {
       console.log("Error fetching Categories:", error);
     }
@@ -204,7 +205,7 @@ const ProjectPage = () => {
     return () => clearTimeout(delayDebounce); // Cleanup
   }, [query]);
 
-    useEffect(() => {
+  useEffect(() => {
     if (!categoryQuery) return;
 
     const delayDebounce = setTimeout(() => {
@@ -385,20 +386,20 @@ const ProjectPage = () => {
   };
 
   //onClick go to userProfile
-  const fetchUser = useFetchUserByUsername()
+  const fetchUser = useFetchUserByUsername();
 
-  const handleOpenProfile = async (userName) =>{
-    const userProfile = await fetchUser(userName)
+  const handleOpenProfile = async (userName) => {
+    const userProfile = await fetchUser(userName);
     if (userProfile) {
       const { id, is_freelancer } = userProfile;
       const path = is_freelancer ? `/profile/${id}/` : `/client-profile/${id}/`;
-      console.log("path :", path)
+      console.log("path :", path);
       router.push(path);
     } else {
       // Show error to user, or handle accordingly
       console.log("User not found");
     }
-  }
+  };
 
   const toggleFilter = (value, setState, state) => {
     if (state.includes(value)) {
@@ -575,39 +576,41 @@ const ProjectPage = () => {
             <span className="ml-3 text-gray-600">Loading projects...</span>
           </div>
         )}
+
+        {/* User Not logged-in show them logIn button*/}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-6 animate-fadeIn">
+          <div className="bg-red-50 border flex justify-center border-red-200 rounded-lg p-6 mb-6 animate-fadeIn">
             <div className="flex items-start">
               <AlertCircle className="text-red-500 mr-3 mt-0.5" size={20} />
               <div className="flex-1">
-                <h3 className="text-red-800 font-semibold mb-2">
-                  Unable to Load Projects
+                <h3 className="text-red-500 text-xl font-semibold mb-2">
+                  {/* You must log in to load projects. */}
+                  Unable to load projects unless you are logged in.
                 </h3>
-                <p className="text-red-700 mb-4">{error}</p>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => {
-                      setRetrying(true);
-                      fetchProjects();
-                    }}
-                    disabled={retrying}
-                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                  >
-                    {retrying ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Retrying...
-                      </>
-                    ) : (
-                      "Try Again"
-                    )}
-                  </button>
-                  <button
-                    onClick={() => setError(null)}
-                    className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors duration-200 font-medium"
-                  >
-                    Dismiss
-                  </button>
+
+                <div className="flex gap-3 justify-center">
+                  <Link href={"signin"} className="relative inline-flex items-center justify-center p-4 px-6 py-3 overflow-hidden font-medium text-indigo-600 transition duration-300 ease-out border-2 border-purple-500 rounded-full shadow-xl group cursor-pointer">
+                    <span className="absolute inset-0 flex items-center justify-center w-full h-full text-white duration-300 -translate-x-full bg-purple-500 group-hover:translate-x-0 ease">
+                      <svg
+                        className="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M14 5l7 7m0 0l-7 7m7-7H3"
+                        ></path>
+                      </svg>
+                    </span>
+                    <span className="absolute flex items-center justify-center w-full h-full text-purple-500 transition-all duration-300 transform group-hover:translate-x-full ease">
+                      Login
+                    </span>
+                    <span className="relative invisible">Login Login</span>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -874,7 +877,7 @@ const ProjectPage = () => {
                           setSkillInput("");
                           setQuery("");
                           setSkillSuggestions([]);
-                          setSkillsDropdownVisible(false)
+                          setSkillsDropdownVisible(false);
                         }}
                       >
                         {suggestion}

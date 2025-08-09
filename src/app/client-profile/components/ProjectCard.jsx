@@ -37,20 +37,20 @@ const ProjectCard = ({ p }) => {
     setLoading(false);
   };
 
-  const fetchUser = useFetchUserByUsername()
+  const fetchUser = useFetchUserByUsername();
 
-  const handleOpenProfile = async (userName) =>{
-    const userProfile = await fetchUser(userName)
+  const handleOpenProfile = async (userName) => {
+    const userProfile = await fetchUser(userName);
     if (userProfile) {
       const { id, is_freelancer } = userProfile;
       const path = is_freelancer ? `/profile/${id}/` : `/client-profile/${id}/`;
-      console.log("path :", path)
+      console.log("path :", path);
       router.push(path);
     } else {
       // Show error to user, or handle accordingly
       console.log("User not found");
     }
-  }
+  };
 
   // console.log("project : ",p)
 
@@ -138,12 +138,23 @@ const ProjectCard = ({ p }) => {
                   </p>
                 </div>
               </div>
-              <button
+              {/* <button
                 className="ml-4 px-2 py-1 bg-gradient-to-br from-[#2d1a4d] via-[#5a2b77] to-[#1a1333] text-white border border-purple-700 rounded-2xl hover:scale-90 transition disabled:opacity-50 cursor-pointer"
                 onClick={handleReopen}
                 disabled={loading}
-              >
+                >
                 {loading ? "Reopening..." : "Reopen Project"}
+                </button> */}
+              <button
+                className="relative inline-flex items-center justify-center px-2 py-2       overflow-hidden font-medium text-indigo-600 transition duration-300 ease-out rounded-full shadow-xl group hover:ring-1 hover:ring-purple-700 cursor-pointer"
+                onClick={handleReopen}
+                disabled={loading}
+              >
+                <span className="absolute bottom-0 right-0 block w-64 h-64 mb-32 mr-4 transition duration-500 origin-bottom-left transform rotate-45 translate-x-24 bg-[#ff00ff] rounded-full opacity-40 group-hover:rotate-90 ease"></span>
+
+                <span class="relative text-white">
+                  {loading ? "Reopening..." : "Reopen Project"}
+                </span>
               </button>
             </div>
           )}

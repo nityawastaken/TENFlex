@@ -141,7 +141,7 @@ const ClientProfilePage = ({ params }) => {
         });
         formData.append("profile_picture", file);
         const response = await axios.patch(
-          `http://127.0.0.1:8000/base/users/${userData.currentUser.id}/`,
+          `${process.env.NEXT_PUBLIC_API_URL}/base/users/${userData.currentUser.id}/`,
           formData,
           {
             headers: {
