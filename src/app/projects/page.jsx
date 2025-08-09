@@ -18,6 +18,7 @@ import { FaTrashCan } from "react-icons/fa6";
 import axios from "axios";
 import UpdateProject from "../components/UpdateProject";
 import { useRouter } from "next/navigation";
+import useFetchUserByUsername from "@/Hooks/useFetchUserByUsername";
 
 // Add CSS animations
 const projectPageStyles = `
@@ -384,22 +385,20 @@ const ProjectPage = () => {
   };
 
   //onClick go to userProfile
-  const handleOpenProfile = async (freelancer) => {
-    try {
-      const userData = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/base/get_user_by_username/${freelancer}`
-      );
-      if (userData.status === 200) {
-        if (userData.data.is_freelancer) {
-          router.push(`/profile/${userData?.data?.id}/`);
-        } else {
-          router.push(`/client-profile/${userData?.data?.id}/`);
-        }
-      }
-    } catch (err) {
-      console.log(err);
+  const fetchUser = useFetchUserByUsername()
+
+  const handleOpenProfile = async (userName) =>{
+    const userProfile = await fetchUser(userName)
+    if (userProfile) {
+      const { id, is_freelancer } = userProfile;
+      const path = is_freelancer ? `/profile/${id}/` : `/client-profile/${id}/`;
+      console.log("path :", path)
+      router.push(path);
+    } else {
+      // Show error to user, or handle accordingly
+      console.log("User not found");
     }
-  };
+  }
 
   const toggleFilter = (value, setState, state) => {
     if (state.includes(value)) {

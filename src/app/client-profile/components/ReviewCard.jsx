@@ -1,3 +1,4 @@
+import useFetchUserByUsername from "@/Hooks/useFetchUserByUsername";
 import axios from "axios";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -15,17 +16,18 @@ const ReviewCard = ({ r }) => {
     setGigDetails(res.data);
   };
 
-  const handleOpenProfile = async (freelancer) => {
-    try{
-      const userData = await axios.get(
-            `${process.env.NEXT_PUBLIC_API_URL}/base/get_user_by_username/${freelancer}`
-          );
-          if(userData.status === 200){
-            router.push(`/profile/${userData?.data?.id}`)
-          }
-    }
-    catch (err){
-      console.log(err)
+  const fetchUser = useFetchUserByUsername()
+
+  const handleOpenProfile = async (userName) =>{
+    const userProfile = await fetchUser(userName)
+    if (userProfile) {
+      const { id, is_freelancer } = userProfile;
+      const path = is_freelancer ? `/profile/${id}/` : `/client-profile/${id}/`;
+      console.log("path :", path)
+      router.push(path);
+    } else {
+      // Show error to user, or handle accordingly
+      console.log("User not found");
     }
   }
 

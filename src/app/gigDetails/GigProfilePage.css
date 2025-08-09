@@ -1594,6 +1594,10 @@ body {
   margin: 0 0 4px 0;
 }
 
+.reviewer-name:hover{
+  color:#7331ba;
+}
+
 .review-meta {
   display: flex;
   align-items: center;

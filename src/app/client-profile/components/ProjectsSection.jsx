@@ -21,6 +21,7 @@ const ProjectsSection = ({ refProp, projects, setProjects, id }) => {
       }
     );
     setProjects(response.data);
+    console.log("projects : ", response.data)
   };
 
 

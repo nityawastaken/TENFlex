@@ -14,6 +14,7 @@ import { FaPencilAlt, FaCheck, FaTimes, FaTrash } from 'react-icons/fa';
 import axios from 'axios';
 import AddToGigList from '@/app/components/AddToGigList';
 import { getLanguageNames } from '@/utils/languageUtils';
+import useFetchUserByUsername from '@/Hooks/useFetchUserByUsername';
 
 const page = ({ params }) => {
   const { id } = useParams();
@@ -46,7 +47,21 @@ const page = ({ params }) => {
   const paramsObj = React.use(params);
     const gigId = paramsObj.id;
 
-    const router = useRouter()
+  const fetchUser = useFetchUserByUsername()
+  const router = useRouter()
+
+  const handleOpenProfile = async (userName) =>{
+    const userProfile = await fetchUser(userName)
+    if (userProfile) {
+      const { id, is_freelancer } = userProfile;
+      const path = is_freelancer ? `/profile/${id}/` : `/client-profile/${id}/`;
+      console.log("path :", path)
+      router.push(path);
+    } else {
+      // Show error to user, or handle accordingly
+      console.log("User not found");
+    }
+  }
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -313,20 +328,6 @@ const page = ({ params }) => {
     if (!picture) return undefined;
     if (picture.startsWith('http')) return picture;
     return `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}${picture}`;
-  }
-
-  const handleOpenProfile = async (freelancer) => {
-    try{
-      const userData = await axios.get(
-            `${process.env.NEXT_PUBLIC_API_URL}/base/get_user_by_username/${freelancer}`
-          );
-          if(userData.status === 200){
-            router.push(`/profile/${userData?.data?.id}`)
-          }
-    }
-    catch (err){
-      console.log(err)
-    }
   }
 
   return (
@@ -679,10 +680,10 @@ const page = ({ params }) => {
                       <img
                         src={review.avatar || 'https://via.placeholder.com/40'}
                         alt="Reviewer Avatar"
-                        className="reviewer-avatar"
+                        className="reviewer-avatar cursor-pointer" onClick={() => handleOpenProfile(review.reviewer_name)}
                       />
                       <div className="reviewer-info">
-                        <h5 className="reviewer-name">{review.reviewer_name}</h5>
+                        <h5 className="reviewer-name cursor-pointer hover:duration-300 hover:underline" onClick={() => handleOpenProfile(review.reviewer_name)}>{review.reviewer_name}</h5>
                         <div className="review-meta">
                           {review.country_code && review.country && (
                             <img

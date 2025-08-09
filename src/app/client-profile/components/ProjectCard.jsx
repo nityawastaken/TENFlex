@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
+import useFetchUserByUsername from "@/Hooks/useFetchUserByUsername";
 
 const ProjectCard = ({ p }) => {
   let isClosed = !p.is_open; // or check if p.accepted_bid exists
@@ -36,18 +37,22 @@ const ProjectCard = ({ p }) => {
     setLoading(false);
   };
 
-  const handleOpenProfile = async (freelancer) => {
-    try {
-      const userData = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/base/get_user_by_username/${freelancer}`
-      );
-      if (userData.status === 200) {
-        router.push(`/profile/${userData?.data?.id}`);
-      }
-    } catch (err) {
-      console.log(err);
+  const fetchUser = useFetchUserByUsername()
+
+  const handleOpenProfile = async (userName) =>{
+    const userProfile = await fetchUser(userName)
+    if (userProfile) {
+      const { id, is_freelancer } = userProfile;
+      const path = is_freelancer ? `/profile/${id}/` : `/client-profile/${id}/`;
+      console.log("path :", path)
+      router.push(path);
+    } else {
+      // Show error to user, or handle accordingly
+      console.log("User not found");
     }
-  };
+  }
+
+  // console.log("project : ",p)
 
   return (
     <div
@@ -84,7 +89,7 @@ const ProjectCard = ({ p }) => {
         <div className="mb-4">
           <h4 className="text-sm text-gray-300 mb-1">Budget:</h4>
           <p className="text-gray-400 bg-[#24194a] rounded-lg p-2 text-sm">
-            {p.budget} $
+            {p.budget} ₹
           </p>
         </div>
       </div>
@@ -93,7 +98,11 @@ const ProjectCard = ({ p }) => {
           <p className="text-xs text-gray-300">
             <span className="font-semibold">Started At:</span>{" "}
             <span className="bg-[#24194a] rounded px-2 py-1">
-              {p.start_date}
+              {p.created_at
+                ? new Date(p.created_at.replace(/\.\d+Z$/, "Z"))
+                    .toISOString()
+                    .split("T")[0]
+                : ""}
             </span>
           </p>
           {closed && (
@@ -102,7 +111,11 @@ const ProjectCard = ({ p }) => {
                 <p className="text-xs text-gray-300 ">
                   <span className="font-semibold">Closed At:</span>{" "}
                   <span className="bg-[#24194a] rounded px-2 py-1">
-                    {p.closed_date || p.start_date}
+                    {p.deadline || p.created_at
+                      ? new Date(p.created_at.replace(/\.\d+Z$/, "Z"))
+                          .toISOString()
+                          .split("T")[0]
+                      : ""}
                   </span>
                 </p>
                 <div className="mt-4 gap-2">
@@ -126,7 +139,7 @@ const ProjectCard = ({ p }) => {
                 </div>
               </div>
               <button
-                className="ml-4 px-1 py-1 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition disabled:opacity-50 cursor-pointer"
+                className="ml-4 px-2 py-1 bg-gradient-to-br from-[#2d1a4d] via-[#5a2b77] to-[#1a1333] text-white border border-purple-700 rounded-2xl hover:scale-90 transition disabled:opacity-50 cursor-pointer"
                 onClick={handleReopen}
                 disabled={loading}
               >

@@ -9,19 +9,10 @@ import { CreateNewGigList } from "@/app/components/CreateNewGigList";
 const GiglistsSection = ({ refProp }) => {
   const [gigList, setGigList] = useState([]);
   const [activeIndex, setActiveIndex] = useState(null);
-  const [newGigListName, setNewGigListName] = useState("");
   const [renameGigListName, setRenameGigListName] = useState("");
   const [showRenameInput, setShowRenameInput] = useState(null);
-  const [newGig, setNewGig] = useState({
-    title: "",
-    description: "",
-    freelancer: "",
-    price: "",
-  });
-  const [showAddGigInput, setShowAddGigInput] = useState(null);
 
   const token = localStorage.getItem("token");
-  const router = useRouter();
 
   const fetchGigs = async () => {
     const response = await axios.get(
@@ -88,20 +79,6 @@ const GiglistsSection = ({ refProp }) => {
       console.log(err);
     }
   };
-
-  const handleOpenProfile = async (freelancer) => {
-    try{
-      const userData = await axios.get(
-            `${process.env.NEXT_PUBLIC_API_URL}/base/get_user_by_username/${freelancer}`
-          );
-          if(userData.status === 200){
-            router.push(`/profile/${userData?.data?.id}`)
-          }
-    }
-    catch (err){
-      console.log(err)
-    }
-  }
 
   return (
     <div className="hover:scale-105 duration-300">

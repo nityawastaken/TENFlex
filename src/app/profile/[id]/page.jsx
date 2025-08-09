@@ -24,6 +24,7 @@ import { orderService } from '@/utils/services';
 import { userService } from '@/utils/services';
 import { reviewService } from '@/utils/services';
 import { getLanguageNames } from '@/utils/languageUtils';
+import useFetchUserByUsername from "@/Hooks/useFetchUserByUsername";
 // Remove: import GigCard from "@/app/components/GigCard";
 // Remove: import "@/app/gig-list/GigList.css";
 
@@ -478,6 +479,21 @@ useEffect(() => {
 
   // Helper for showing edit/delete only for own profile
   const isOwnProfile = currentUser && profileUser && currentUser.id === profileUser.id;
+
+  // onClick got to profile page
+  const fetchUser = useFetchUserByUsername()
+  const handleOpenProfile = async (userName) =>{
+    const userProfile = await fetchUser(userName)
+    if (userProfile) {
+      const { id, is_freelancer } = userProfile;
+      const path = is_freelancer ? `/profile/${id}/` : `/client-profile/${id}/`;
+      console.log("path :", path)
+      router.push(path);
+    } else {
+      // Show error to user, or handle accordingly
+      console.log("User not found");
+    }
+  }
 
   return (
     <>
@@ -969,7 +985,7 @@ useEffect(() => {
                                 </div>
                                 <div>
                                   <span className="text-gray-400">Client:</span>
-                                  <div className="text-purple-200 font-medium truncate">{order.buyer_name || 'Unknown'}</div>
+                                  <div className="text-purple-200 font-medium truncate hover:text-purple-500 cursor-pointer" onClick={() => handleOpenProfile(order.buyer_name)}>{order.buyer_name || 'Unknown'}</div>
                                 </div>
                                 <div>
                                   <span className="text-gray-400">Price:</span>
@@ -992,7 +1008,7 @@ useEffect(() => {
                                 </div>
                                 <div>
                                   <span className="text-gray-400">Client:</span>
-                                  <div className="text-purple-200 font-medium truncate">{order.buyer_name || 'Unknown'}</div>
+                                  <div className="text-purple-200 font-medium truncate hover:text-purple-500 cursor-pointer" onClick={() => handleOpenProfile(order.buyer_name)}>{order.buyer_name || 'Unknown'}</div>
                                 </div>
                                 <div>
                                   <span className="text-gray-400">Price:</span>
@@ -1044,7 +1060,7 @@ useEffect(() => {
                     />
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-bold text-lg text-purple-200">{review.reviewer_name}</span>
+                        <span className="font-bold text-lg text-purple-200 hover:text-purple-500 cursor-pointer" onClick={() => handleOpenProfile(review.reviewer_name)}>{review.reviewer_name}</span>
                         {review.country && (
                           <span className="flex items-center gap-1 text-sm text-purple-300">
                             <img
