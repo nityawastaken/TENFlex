@@ -133,7 +133,7 @@ const ProjectCard = ({ p }) => {
                   <p className="text-xs text-gray-300 ">
                     Accepted At:{" "}
                     <span className="font-semibold">
-                      {Math.floor(acceptedBid?.bid_amount)} $
+                      ₹ {Math.floor(acceptedBid?.bid_amount)} 
                     </span>{" "}
                   </p>
                 </div>
