@@ -429,7 +429,7 @@ useEffect(() => {
     setOrderStatusLoading(true);
     try {
       // Map 'completed' to 'complete' for backend compatibility
-      const backendStatus = newStatus === 'completed' ? 'complete' : newStatus;
+      const backendStatus = newStatus === 'completed' ? 'completed' : newStatus;
       const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/base/orders/${orderId}/update-status/`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
