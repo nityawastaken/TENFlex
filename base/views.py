@@ -243,7 +243,7 @@ def update_order_status(request, order_id):
             return Response({"error": "Only the assigned freelancer can update the order status."}, status=403)
         # ✅ Validate status
         new_status = request.data.get("status")
-        if new_status not in ["pending", "ongoing", "complete"]:
+        if new_status not in ["pending", "ongoing", "completed"]:
             return Response({"error": "Invalid status"}, status=400)
         order.status = new_status
         order.save()
@@ -266,7 +266,7 @@ def add_order(request, gig_id):
             return Response({"error": "Freelancers cannot place orders."}, status=403)
         # Optional status field (defaults to 'pending')
         status = request.data.get("status", "pending")
-        if status not in ["pending", "ongoing", "complete"]:
+        if status not in ["pending", "ongoing", "completed"]:
             return Response({"error": "Invalid status."}, status=400)
         # ✅ Create order with type='gig' and item_id only
         order = Order.objects.create(
