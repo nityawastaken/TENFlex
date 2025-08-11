@@ -13,20 +13,28 @@ const OrdersSection = ({
 }) => {
   const token = localStorage.getItem("token");
   const router = useRouter();
-    const sections = ["ongoing", "pending", "completed"]; 
-  const [ordersFilter, setOrdersFilter] = useState("all");
+  
+  const [ordersFilter, setOrdersFilter] = useState("project");
+  const [loading, setLoading] = useState(true);  // Add loading state
 
   const fetchOrders = async () => {
-    const response = await axios.get(
-      process.env.NEXT_PUBLIC_API_URL + "/base/buyer/orders",
-      {
-        headers: {
-          Authorization: `Token ${token}`,
-        },
-      }
-    );
-    // console.log("orders : ", response.data)
-    setOrders(response.data);
+    setLoading(true);  // Set loading to true when starting to fetch
+    try {
+      const response = await axios.get(
+        process.env.NEXT_PUBLIC_API_URL + "/base/buyer/orders",
+        {
+          headers: {
+            Authorization: `Token ${token}`,
+          },
+        }
+      );
+      setOrders(response.data);
+      setLoading(false);  // Set loading to false once the orders are fetched
+      setSelectedStatus("pending")
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+      setLoading(false);  // Stop loading on error
+    }
   };
 
   useEffect(() => {
@@ -37,7 +45,8 @@ const OrdersSection = ({
     }
   }, []);
 
-  if (!orders && Object.keys(orders).length === 0) {
+  // If loading or no orders yet, display loading message
+  if (loading || !orders || Object.keys(orders).length === 0) {
     return (
       <Section ref={refProp} id="orders" title="Your Orders">
         <div className="text-gray-400 text-lg py-8 w-full text-center">
@@ -47,18 +56,15 @@ const OrdersSection = ({
     );
   }
 
+  // console.log("orders : ",orders.pending)
+  // Filter the orders based on the selected status and filter
   const filteredOrders =
     orders[selectedStatus]?.filter((order) => order.type === ordersFilter) ||
     [];
 
   return (
     <div className="hover:scale-105 duration-300">
-      <Section
-        ref={refProp}
-        id="orders"
-        title="Your Orders"
-        className="w-full max-w-screen"
-      >
+      <Section ref={refProp} id="orders" title="Your Orders" className="w-full max-w-screen">
         <div className="mb-4 gap-4 flex flex-col md:flex-row items-center w-full">
           <select
             name="filter-orders"
@@ -85,10 +91,7 @@ const OrdersSection = ({
             <div className="flex flex-row gap-4 min-w-full">
               {filteredOrders.length > 0 ? (
                 filteredOrders.map((order, ind) => (
-                  <div
-                    className="flex-shrink-0 w-[320px]"
-                    key={order.id || ind}
-                  >
+                  <div className="flex-shrink-0 w-[320px]" key={order.id || ind}>
                     <OrdersCard order={order} token={token} />
                   </div>
                 ))

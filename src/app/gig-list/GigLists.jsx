@@ -444,7 +444,7 @@ function GigLists() {
       ) : (
         <div className="gig-list-grid">
           {filtered.map((f, i) => {
-            console.log('Gig in list:', f);
+            // console.log('Gig in list:', f);
             return (
               <Link href={`/gigDetails/${f.id}`} key={i}>
               <GigCard f={f} />

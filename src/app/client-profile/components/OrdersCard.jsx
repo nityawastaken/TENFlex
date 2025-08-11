@@ -2,7 +2,8 @@ import useFetchUserByUsername from "@/Hooks/useFetchUserByUsername";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import React from "react";
-// import SuccessAlert from "../components/SuccessAlert";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const statusColors = {
   pending: "bg-yellow-100 text-yellow-800",
@@ -15,19 +16,27 @@ const OrdersCard = ({ order }) => {
   const token = localStorage.getItem("token");
   const router = useRouter();
 
+  //repeat gig order
   const handleRepeat = async () => {
+    const now = new Date();
+    const body = {
+      buyer:order.buyer_id,
+      status:"pending",
+      created_at: now.toISOString()
+    }
     try {
       const res = await axios.post(
         process.env.NEXT_PUBLIC_API_URL + `/base/orders/${order.id}/repeat/`,
-        {},
+        {body},
         { headers: { Authorization: `Token ${token}` } }
       );
       // console.log("order repeat : ", res.data);
-      if (res.status === 200) {
-        // <SuccessAlert />
+      if (res.status === 201) {
+        toast.success("Repeat Order Success.")
       }
     } catch (err) {
       console.log(err);
+      toast.error("Repeat Order Failed!")
     }
   };
 
@@ -38,7 +47,6 @@ const OrdersCard = ({ order }) => {
     if (userProfile) {
       const { id, is_freelancer } = userProfile;
       const path = is_freelancer ? `/profile/${id}/` : `/client-profile/${id}/`;
-      console.log("path :", path)
       router.push(path);
     } else {
       // Show error to user, or handle accordingly
@@ -48,6 +56,7 @@ const OrdersCard = ({ order }) => {
 
   return (
     <div className="w-[320px] rounded-lg bg-gradient-to-br from-[#24194a] via-[#1a0d2b] to-[#28163a] shadow-lg p-3 sm:p-4 mb-4 transition hover:shadow-lg relative hover:border-b hover:border-r flex flex-col gap-2 overflow-hidden">
+      <ToastContainer position="bottom-right" autoClose={3000} />
       <div>
         <div>
           {order.type === "project" ? (

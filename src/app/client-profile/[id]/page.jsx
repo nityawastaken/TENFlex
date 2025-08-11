@@ -126,7 +126,6 @@ const ClientProfilePage = ({ params }) => {
 
   const handleSave = async () => {
     try {
-      console.log("languages : ", languages);
       if (file instanceof File) {
         const formData = new FormData();
         formData.append("first_name", editFirstName);
@@ -174,7 +173,7 @@ const ClientProfilePage = ({ params }) => {
             },
           }
         );
-        console.log("response : ", response);
+        // console.log("response : ", response);
         if (response.data.id) {
           toast.success("Profile update succcess!");
           fetchUserData();

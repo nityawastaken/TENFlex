@@ -19,7 +19,7 @@ const Hero = () => {
 
   const handleChange = (e) => {
     setSearchText(e.target.value); // step 2
-    console.log(e.target.value);
+    // console.log(e.target.value);
   };
 
   const handleSearchSubmit = (e) => {

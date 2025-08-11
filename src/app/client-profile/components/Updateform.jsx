@@ -109,8 +109,8 @@ const Updateform = ({
             />
           </div>
           {isError && (
-            <p className="text-red-500 ml-2 text-xs leading-tight">
-              Enter a valid phone number in international format (e.g.
+            <p className="text-red-500 ml-2 pt-0.5 text-xs leading-tight">
+              Enter a valid phone number (e.g.
               +919876543210).
             </p>
           )}

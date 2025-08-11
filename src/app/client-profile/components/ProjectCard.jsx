@@ -44,7 +44,6 @@ const ProjectCard = ({ p }) => {
     if (userProfile) {
       const { id, is_freelancer } = userProfile;
       const path = is_freelancer ? `/profile/${id}/` : `/client-profile/${id}/`;
-      console.log("path :", path);
       router.push(path);
     } else {
       // Show error to user, or handle accordingly

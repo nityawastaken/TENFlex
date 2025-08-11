@@ -15,6 +15,7 @@ import axios from 'axios';
 import AddToGigList from '@/app/components/AddToGigList';
 import { getLanguageNames } from '@/utils/languageUtils';
 import useFetchUserByUsername from '@/Hooks/useFetchUserByUsername';
+import useScreenWidth from '@/Hooks/useScreenWidth';
 
 const page = ({ params }) => {
   const { id } = useParams();
@@ -49,7 +50,9 @@ const page = ({ params }) => {
   const [reviewAddedMessage, setReviewAddedMessage] = useState("");
 
   const paramsObj = React.use(params);
-    const gigId = paramsObj.id;
+  const gigId = paramsObj.id;
+  
+  const screen = useScreenWidth()
 
   const fetchUser = useFetchUserByUsername()
   const router = useRouter()
@@ -59,7 +62,6 @@ const page = ({ params }) => {
     if (userProfile) {
       const { id, is_freelancer } = userProfile;
       const path = is_freelancer ? `/profile/${id}/` : `/client-profile/${id}/`;
-      console.log("path :", path)
       router.push(path);
     } else {
       // Show error to user, or handle accordingly
@@ -380,7 +382,7 @@ const page = ({ params }) => {
                       d="M12 4v16m8-8H4"
                     />
                   </svg>
-                  Add To Your GigList
+                  {screen >= 476 ? "Add To Your GigList" : ""}
                 </button>
               </div>
             

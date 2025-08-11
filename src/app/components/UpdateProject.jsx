@@ -21,7 +21,7 @@ const UpdateProject = ({
   const [fields, setFields] = useState({
     title: selectedProject?.title || "",
     description: selectedProject?.description || "",
-    start_date:selectedProject?.created_at
+    start_date: selectedProject?.created_at
       ? new Date(selectedProject.created_at.replace(/\.\d+Z$/, "Z"))
           .toISOString()
           .split("T")[0]
@@ -37,9 +37,8 @@ const UpdateProject = ({
   const [categorySuggestions, setCategorySuggestions] = useState([]);
   const [categoryDropdownVisible, setCategoryDropdownVisible] = useState(false);
   const [skillsDropdownVisible, setSkillsDropdownVisible] = useState(false);
-
-  console.log("start_date : ", selectedProject.created_at.toLocaleString())
-
+  const [loadingSkills, setLoadingSkills] = useState(false);
+  const [loadingCategories, setLoadingCategories] = useState(false);
 
   const skillsList = async () => {
     try {
@@ -53,7 +52,7 @@ const UpdateProject = ({
       );
       // console.log("Skills fetched:", response.data);
       setSkillSuggestions(response.data || []);
-      setSkillsDropdownVisible(true)
+      setSkillsDropdownVisible(true);
     } catch (error) {
       console.log("Error fetching skills:", error);
     }
@@ -70,29 +69,42 @@ const UpdateProject = ({
         }
       );
       setCategorySuggestions(response.data || []);
-      setCategoryDropdownVisible(true)
+      setCategoryDropdownVisible(true);
     } catch (error) {
       console.log("Error fetching Categories:", error);
     }
   };
 
   useEffect(() => {
-    if (!query) return;
+    if (!query) {
+      setLoadingSkills(false);
+      return;
+    }
+    setLoadingSkills(true);
     const delayDebounce = setTimeout(() => {
-      skillsList();
-    }, 300); // 300ms debounce delay
+      skillsList().finally(() => setLoadingSkills(false));
+    }, 200); // 200ms debounce delay
 
-    return () => clearTimeout(delayDebounce); // Cleanup
+    return () => {
+      clearTimeout(delayDebounce);
+      setLoadingSkills(false);
+    }; // Cleanup
   }, [query]);
 
-    useEffect(() => {
-    if (!categoryQuery) return;
-
+  useEffect(() => {
+    if (!categoryQuery) {
+      setLoadingCategories(false);
+      return;
+    }
+    setLoadingCategories(true);
     const delayDebounce = setTimeout(() => {
-      categoryList();
-    }, 300); // 300ms debounce delay
+      categoryList().finally(() => setLoadingCategories(false));
+    }, 200); // 200ms debounce delay
 
-    return () => clearTimeout(delayDebounce); // Cleanup
+    return () => {
+      clearTimeout(delayDebounce);
+      setLoadingCategories(false);
+    }; // Cleanup
   }, [categoryQuery]);
 
   return (
@@ -123,6 +135,9 @@ const UpdateProject = ({
           className="space-y-6 text-purple-100"
         >
           {/* Title */}
+          <label className="block text-sm font-semibold text-purple-300 mb-1">
+            Title
+          </label>
           <input
             name="title"
             value={fields.title || ""}
@@ -138,6 +153,9 @@ const UpdateProject = ({
           />
 
           {/* Description */}
+          <label className="block text-sm font-semibold text-purple-300 mb-1">
+            Description
+          </label>
           <textarea
             name="description"
             value={fields.description || ""}
@@ -194,6 +212,9 @@ const UpdateProject = ({
           </div>
 
           {/* Budget */}
+          <label className="block text-sm font-semibold text-purple-300 mb-1">
+            Budget
+          </label>
           <input
             type="number"
             name="budget"
@@ -214,24 +235,36 @@ const UpdateProject = ({
             <label className="block text-sm font-semibold text-purple-300 mb-1">
               Categories
             </label>
-            <input
-              value={tagInput}
-              onChange={(e) => {
-                setTagInput(e.target.value);
-                setCategoryQuery(e.target.value);
-              }}
-               onFocus={() => {
-                if (categorySuggestions.length > 0) {
-                  setCategoryDropdownVisible(true);
-                }
-              }}
-              onBlur={() => {
-                setTimeout(() => setCategoryDropdownVisible(false), 100); // allow time for click
-              }}
-              placeholder="Search category"
-              className="w-full p-3 border border-purple-700 bg-[#1a1333] rounded-lg placeholder-purple-400 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm"
-              autoComplete="off"
-            />
+            <div className="relative w-full">
+              <input
+                value={tagInput}
+                onChange={(e) => {
+                  setTagInput(e.target.value);
+                  setCategoryQuery(e.target.value);
+                }}
+                onFocus={() => {
+                  if (categorySuggestions.length > 0) {
+                    setCategoryDropdownVisible(true);
+                  }
+                }}
+                onBlur={() => {
+                  setTimeout(() => setCategoryDropdownVisible(false), 100); // allow time for click
+                }}
+                placeholder="Search category"
+                className="w-full p-3 border border-purple-700 bg-[#1a1333] rounded-lg placeholder-purple-400 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm"
+                autoComplete="off"
+              />
+
+              {/* Loader positioned over/next to input */}
+              {loadingCategories && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex space-x-1 ">
+                  <span className="sr-only">Loading...</span>
+                  <div className="h-1 w-1 bg-gray-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                  <div className="h-1 w-1 bg-gray-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                  <div className="h-1 w-1 bg-gray-500 rounded-full animate-bounce"></div>
+                </div>
+              )}
+            </div>
             {/* <button
               type="button"
               onClick={() =>
@@ -264,7 +297,7 @@ const UpdateProject = ({
               </ul>
             )}
 
-            <div className="flex flex-wrap gap-2 mt-3">
+            <div className="flex flex-wrap gap-2 mt-2">
               {tags &&
                 tags.map((tag, idx) => (
                   <span
@@ -279,24 +312,39 @@ const UpdateProject = ({
 
           {/* Skills Section */}
           <div className="relative">
-            <input
-              value={skillInput}
-              onChange={(e) => {
-                setSkillInput(e.target.value);
-                setQuery(e.target.value);
-              }}
-              onFocus={() => {
-                if (skillSuggestions.length > 0) {
-                  setSkillsDropdownVisible(true);
-                }
-              }}
-              onBlur={() => {
-                setTimeout(() => setSkillsDropdownVisible(false), 100); // allow time for click
-              }}
-              placeholder="Search skill"
-              className="flex-grow p-3 border border-green-700 bg-[#1a1333] rounded-lg placeholder-green-400 text-white focus:outline-none focus:ring-2 focus:ring-green-500 shadow-sm w-full"
-              autoComplete="off"
-            />
+            <label className="block text-sm font-semibold text-purple-300 mb-1">
+              Skills
+            </label>
+            <div className="relative w-full">
+              <input
+                value={skillInput}
+                onChange={(e) => {
+                  setSkillInput(e.target.value);
+                  setQuery(e.target.value);
+                }}
+                onFocus={() => {
+                  if (skillSuggestions.length > 0) {
+                    setSkillsDropdownVisible(true);
+                  }
+                }}
+                onBlur={() => {
+                  setTimeout(() => setSkillsDropdownVisible(false), 100);
+                }}
+                placeholder="Search skill"
+                className="flex-grow p-3 border border-green-700 bg-[#1a1333] rounded-lg placeholder-green-400 text-white focus:outline-none focus:ring-2 focus:ring-green-500 shadow-sm w-full"
+                autoComplete="off"
+              />
+
+              {/* Loader positioned over/next to input */}
+              {loadingSkills && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex space-x-1 ">
+                  <span className="sr-only">Loading...</span>
+                  <div className="h-1 w-1 bg-gray-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                  <div className="h-1 w-1 bg-gray-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                  <div className="h-1 w-1 bg-gray-500 rounded-full animate-bounce"></div>
+                </div>
+              )}
+            </div>
 
             {skillSuggestions.length > 0 && skillsDropdownVisible && (
               <ul className="absolute z-10 mt-1 w-full bg-[#1a1333] border border-green-700 rounded-lg shadow-lg max-h-48 overflow-y-auto text-sm">
@@ -311,7 +359,7 @@ const UpdateProject = ({
                       setSkillInput("");
                       setQuery("");
                       setSkillSuggestions([]);
-                      setSkillsDropdownVisible(false)
+                      setSkillsDropdownVisible(false);
                     }}
                   >
                     {suggestion}
@@ -319,7 +367,7 @@ const UpdateProject = ({
                 ))}
               </ul>
             )}
-            <div className="flex flex-wrap gap-2 mt-3">
+            <div className="flex flex-wrap gap-2 mt-2">
               {skills &&
                 skills.map((skill, idx) => (
                   <span

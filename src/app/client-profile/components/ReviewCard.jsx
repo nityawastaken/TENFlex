@@ -23,7 +23,6 @@ const ReviewCard = ({ r }) => {
     if (userProfile) {
       const { id, is_freelancer } = userProfile;
       const path = is_freelancer ? `/profile/${id}/` : `/client-profile/${id}/`;
-      console.log("path :", path)
       router.push(path);
     } else {
       // Show error to user, or handle accordingly
@@ -48,8 +47,8 @@ const ReviewCard = ({ r }) => {
       </div>
       <div className="flex-1">
         <div className="flex flex-col md:flex-row md:justify-between gap-2">
-          <div>
-            <span className="text-sm ">Freelancer:</span>{" "}
+          <div className="flex gap-1">
+            <p className="text-sm ">Freelancer:</p>{" "}
             <h2
               onClick={() => handleOpenProfile(gigDetails?.freelancer)}
               className="cursor-pointer text-purple-200 text-sm hover:underline underline hover:-translate-y-0.5 hover:text-purple-500 duration-300 truncate"
@@ -57,15 +56,15 @@ const ReviewCard = ({ r }) => {
               {gigDetails?.freelancer}
             </h2>
           </div>
-          <p>
-            <span className="text-sm ">Gig : </span>
+          <div className="flex gap-1">
+            <p className="text-sm ">Gig : </p>
             <Link
               href={`/gigDetails/${r.gig_id}`}
               className="text-sm cursor-pointer text-purple-200 hover:underline truncate"
             >
               {r.gig_title}
             </Link>
-          </p>
+          </div>
         </div>
         <p className="text-sm text-gray-300 mt-1">
           <span className="font-medium">Posted:</span>{" "}
