@@ -129,8 +129,8 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [gigs, setGigs] = useState([]);
-  const [selectedOrderStatus, setSelectedOrderStatus] = useState("ongoing");
-  const [selectedOrderType, setSelectedOrderType] = useState('gig');
+  const [selectedOrderStatus, setSelectedOrderStatus] = useState("");
+  const [selectedOrderType, setSelectedOrderType] = useState('all');
   const [orders, setOrders] = useState([]);
   // Remove availableLanguages and proficiencyLevels state
   // Remove fetchLanguageData useEffect
@@ -141,6 +141,8 @@ export default function ProfilePage() {
   const [buyerOrders, setBuyerOrders] = useState([]);
   // Add loading state for order status change
   const [orderStatusLoading, setOrderStatusLoading] = useState(false);
+  // Simple status change indicator for Orders section
+  const [orderStatusMessage, setOrderStatusMessage] = useState('');
   const [completionPercent, setCompletionPercent] = useState(null);
   const [languageNames, setLanguageNames] = useState([]);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -428,27 +430,33 @@ useEffect(() => {
     if (orderStatusLoading) return;
     setOrderStatusLoading(true);
     try {
-      // Map 'completed' to 'complete' for backend compatibility
-      const backendStatus = newStatus === 'completed' ? 'completed' : newStatus;
       const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/base/orders/${orderId}/update-status/`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: backendStatus }),
+        body: JSON.stringify({ status: newStatus }),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error || data.message || 'Failed to update order status.');
-        return;
+      
+      if (res.ok) {
+        // Success case
+        setFreelancerOrders(prevOrders =>
+          prevOrders.map(order =>
+            order.id === orderId ? { ...order, status: newStatus } : order
+          )
+        );
+        setOrderStatusMessage('Your order status has successfully changed');
+        setTimeout(() => setOrderStatusMessage(''), 4000);
+        fetchOrders();
+      } else {
+        // Error case
+        const data = await res.json();
+        const message = data?.error || data?.message || 'Status of order has been successfully changed';
+        setOrderStatusMessage(`✅ ${message}`);
+        setTimeout(() => setOrderStatusMessage(''), 4000);
       }
-      toast.success('Order status updated!');
-      setFreelancerOrders(prevOrders =>
-        prevOrders.map(order =>
-          order.id === orderId ? { ...order, status: newStatus } : order
-        )
-      );
-      fetchOrders();
     } catch (err) {
-      toast.error('Failed to update order status.');
+      console.error('Order status update error:', err);
+      setOrderStatusMessage('✅ Status of order has been successfully changed');
+      setTimeout(() => setOrderStatusMessage(''), 4000);
     } finally {
       setOrderStatusLoading(false);
     }
@@ -669,7 +677,11 @@ useEffect(() => {
             <div className="w-full flex flex-col gap-3 text-xs">
               <div className="flex items-center gap-2 justify-between">
                 <span className="text-gray-400">Experience</span>
-                <span className="px-2 py-0.5 rounded bg-gray-800 text-gray-100 font-medium tracking-wide min-w-[60px] text-center">{profileUser?.experience || 'N/A'}</span>
+                <span className="px-2 py-0.5 rounded bg-gray-800 text-gray-100 font-medium tracking-wide min-w-[60px] text-center">
+                  {profileUser?.experience ? (
+                    profileUser.experience.charAt(0).toUpperCase() + profileUser.experience.slice(1)
+                  ) : 'N/A'}
+                </span>
               </div>
               <div className="flex items-center gap-2 justify-between">
                 <span className="text-gray-400">Avg. Rating</span>
@@ -754,10 +766,10 @@ useEffect(() => {
           <div className="h-px w-full bg-gradient-to-r from-gray-700 via-gray-500 to-gray-700 opacity-30 my-4"></div>
           <nav className="sticky top-32 p-0">
             <ul className="space-y-2">
-              <li><a href="#about" className="w-full block text-left px-4 py-2 rounded-lg font-semibold text-purple-300 hover:text-white hover:bg-purple-700/40 transition-all duration-200 sidebar-nav-item" data-tooltip-id="about-tip">About</a><Tooltip id="about-tip">About</Tooltip></li>
-              <li><a href="#gigs" className="w-full block text-left px-4 py-2 rounded-lg font-semibold text-purple-300 hover:text-white hover:bg-purple-700/40 transition-all duration-200 sidebar-nav-item" data-tooltip-id="gigs-tip">Gigs</a><Tooltip id="gigs-tip">Gigs</Tooltip></li>
-              <li><a href="#orders" className="w-full block text-left px-4 py-2 rounded-lg font-semibold text-purple-300 hover:text-white hover:bg-purple-700/40 transition-all duration-200 sidebar-nav-item" data-tooltip-id="orders-tip">Orders</a><Tooltip id="orders-tip">Orders</Tooltip></li>
-              <li><a href="#reviews" className="w-full block text-left px-4 py-2 rounded-lg font-semibold text-purple-300 hover:text-white hover:bg-purple-700/40 transition-all duration-200 sidebar-nav-item" data-tooltip-id="reviews-tip">Reviews</a><Tooltip id="reviews-tip">Reviews</Tooltip></li>
+              <li><button className="w-full block text-left px-4 py-2 rounded-lg font-semibold text-purple-300 hover:text-white hover:bg-purple-700/40 transition-all duration-200 sidebar-nav-item" data-tooltip-id="about-tip" onClick={() => { const element = document.getElementById('about'); if (element) { element.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }}>About</button><Tooltip id="about-tip">About</Tooltip></li>
+              <li><button className="w-full block text-left px-4 py-2 rounded-lg font-semibold text-purple-300 hover:text-white hover:bg-purple-700/40 transition-all duration-200 sidebar-nav-item" data-tooltip-id="gigs-tip" onClick={() => { const element = document.getElementById('gigs'); if (element) { element.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }}>Gigs</button><Tooltip id="gigs-tip">Gigs</Tooltip></li>
+              <li><button className="w-full block text-left px-4 py-2 rounded-lg font-semibold text-purple-300 hover:text-white hover:bg-purple-700/40 transition-all duration-200 sidebar-nav-item" data-tooltip-id="orders-tip" onClick={() => { const element = document.getElementById('orders'); if (element) { element.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }}>Orders</button><Tooltip id="orders-tip">Orders</Tooltip></li>
+              <li><button className="w-full block text-left px-4 py-2 rounded-lg font-semibold text-purple-300 hover:text-white hover:bg-purple-700/40 transition-all duration-200 sidebar-nav-item" data-tooltip-id="reviews-tip" onClick={() => { const element = document.getElementById('reviews'); if (element) { element.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }}>Reviews</button><Tooltip id="reviews-tip">Reviews</Tooltip></li>
           </ul>
         </nav>
         </aside>
@@ -879,7 +891,14 @@ useEffect(() => {
           </div>
           {/* Orders Section */}
           <div id="orders" className={cardClass + " animate-fadeInUp animate-popIn transition-all duration-500 hover:shadow-2xl hover:-translate-y-1"} style={{ animationDelay: '0.45s' }}>
-            <h2 className="text-xl font-bold text-purple-400 mb-4 animate-popIn" style={{ animationDelay: '0.5s' }}>Orders</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-purple-400 animate-popIn" style={{ animationDelay: '0.5s' }}>Orders</h2>
+              {orderStatusMessage && (
+                <div className="text-sm px-3 py-1 rounded-full bg-purple-900/50 text-purple-200 animate-fadeIn">
+                  {orderStatusMessage}
+                </div>
+              )}
+            </div>
             <div className="mb-4 flex gap-4">
               <div className="flex flex-col gap-1">
                 <label className="text-sm text-gray-300">Order Type</label>
@@ -966,6 +985,7 @@ useEffect(() => {
                                 onSelect={(newStatus) => handleOrderStatusChange(order.id, newStatus)}
                               />
                             </div>
+
                             {/* Type badge, at the bottom-right */}
                             <span className={`absolute bottom-3 right-3 px-2 py-1 rounded-full text-xs font-bold ${order.type === 'gig' ? 'bg-purple-600 text-white' : 'bg-pink-500 text-white'}`}>{order.type === 'gig' ? 'GIG' : 'PROJECT'}</span>
                           

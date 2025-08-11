@@ -13,8 +13,8 @@ const OrdersSection = ({
 }) => {
   const token = localStorage.getItem("token");
   const router = useRouter();
-  const sections = ["ongoing", "pending", "completed"];
-  const [ordersFilter, setOrdersFilter] = useState("gig");
+    const sections = ["ongoing", "pending", "completed"]; 
+  const [ordersFilter, setOrdersFilter] = useState("all");
 
   const fetchOrders = async () => {
     const response = await axios.get(

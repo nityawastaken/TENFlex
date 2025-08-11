@@ -18,9 +18,6 @@ const GigCard = ({ f }) => {
     <div className="gig-card">
       <div className="gig-card-img-wrap">
         <img src={getImageUrl(f.image)} alt={f.title} className="gig-card-img" />
-        <button className="gig-card-fav" title="Add to favorites">
-          ♡
-        </button>
       </div>
       <div className="gig-card-info">
         <div className="gig-card-user">

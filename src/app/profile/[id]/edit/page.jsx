@@ -23,6 +23,13 @@ export default function Edit() {
   const [selectedLanguages, setSelectedLanguages] = useState([]);
   const [allLanguages, setAllLanguages] = useState([]);
   const [languagesLoading, setLanguagesLoading] = useState(false);
+  
+  // Experience options for dropdown
+  const experienceOptions = [
+    { value: "beginner", label: "Beginner" },
+    { value: "intermediate", label: "Intermediate" },
+    { value: "expert", label: "Expert" }
+  ];
 
   const languageRef = useRef(null);
 
@@ -219,6 +226,7 @@ export default function Edit() {
       // Basic info
       formData.append('bio', userData.about || '');
       formData.append('location', userData.location || '');
+      formData.append('experience', userData.experience || '');
       
       // Phone number
         if (userData.contact) {
@@ -562,6 +570,23 @@ export default function Edit() {
                   <span className="text-red-400 text-xs">Enter a valid phone number in international format (e.g. +919876543210).</span>
                 )}
               </div>
+              {userData.is_freelancer && (
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-purple-300">Experience Level</label>
+                <select
+                  value={userData.experience || ""}
+                  onChange={(e) => setUserData({ ...userData, experience: e.target.value })}
+                  className="w-full border border-purple-700 rounded-lg px-4 py-3 bg-[#24194a] text-white focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
+                >
+                  <option value="">Select Experience Level</option>
+                  {experienceOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              )}
             </div>
           </div>
 

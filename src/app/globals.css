@@ -13,15 +13,39 @@
   }
 }
 
-/* Direct gradient background that will definitely show up */
+/* Default slight zoom-out without altering layout logic */
+html {
+  zoom: 0.9; /* Chromium-based browsers */
+}
+
 body {
   position: relative;
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
   background: #0a0a0a !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
-/* Main background gradient - subtle and professional */
+/* Global horizontal gutter tweak: reduce default side padding a bit */
+.container-narrow, .content-wrapper, .gig-list-grid, .gig-filters-container, .footer-container {
+  padding-left: 16px !important;
+  padding-right: 16px !important;
+}
+
+/* Widen max widths slightly to use more of the viewport at 90% scale */
+.gig-list-grid, .gig-filters-container, .no-freelancers-message, .content-wrapper {
+  max-width: 1500px !important; /* from 1300 -> 1500 to reduce side gaps */
+}
+
+/* Keep the grid centered */
+.gig-list-grid, .content-wrapper {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Direct gradient background */
 body::before {
   content: '';
   position: fixed;
@@ -39,7 +63,7 @@ body::before {
   z-index: -2;
 }
 
-/* Very subtle texture overlay */
+/* Subtle texture overlay */
 body::after {
   content: '';
   position: fixed;
@@ -64,14 +88,8 @@ body::after {
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-/* Hide scrollbar for IE, Edge and Firefox */
-.scrollbar-hide {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;     /* Firefox */
-}
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
 /* Subtle, professional custom scrollbar */
 ::-webkit-scrollbar {

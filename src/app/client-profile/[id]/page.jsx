@@ -44,7 +44,7 @@ const ClientProfilePage = ({ params }) => {
   const [editUsePurpose, setEditUsePurpose] = useState("");
   const [file, setFile] = useState(null);
   const [profileDelete, setProfileDelete] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState("ongoing");
+  const [selectedStatus, setSelectedStatus] = useState("pending");
 
   const [projects, setProjects] = useState([]);
   const [orders, setOrders] = useState({});

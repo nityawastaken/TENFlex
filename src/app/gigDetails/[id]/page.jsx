@@ -31,7 +31,7 @@ const page = ({ params }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredReviews, setFilteredReviews] = useState(reviews);
   const [expandedReviewId, setExpandedReviewId] = useState(null);
-  const options = ["None", "Most relevant", "Most recent", "Highest Rating"];
+  const options = ["Most recent", "Highest Rating"];
   const [editReviewId, setEditReviewId] = useState(null);
   const [editReviewText, setEditReviewText] = useState("");
   const [editReviewRating, setEditReviewRating] = useState(5);
@@ -43,6 +43,10 @@ const page = ({ params }) => {
 
   // Theme state and persistence
   const [theme, setTheme] = useState("dark");
+
+  // Add state for search notification and review success message
+  const [searchNotification, setSearchNotification] = useState("");
+  const [reviewAddedMessage, setReviewAddedMessage] = useState("");
 
   const paramsObj = React.use(params);
     const gigId = paramsObj.id;
@@ -216,6 +220,8 @@ const page = ({ params }) => {
         setReviews(data.results || data);
         setFilteredReviews(data.results || data);
       }
+      setReviewAddedMessage("Review added successfully!");
+      setTimeout(() => setReviewAddedMessage(""), 4000);
     } catch (err) {
       let msg = err?.response?.data?.detail || err?.message || 'Unknown error';
       setAddReviewError(msg);
@@ -269,21 +275,8 @@ const page = ({ params }) => {
 
     let sortedReviews = [...filteredReviews];
 
-    if (option === "None") {
-      // Reset to original order
-      sortedReviews = [...reviews];
-    } else if (option === "Most recent") {
+    if (option === "Most recent") {
       sortedReviews.sort((a, b) => {
-        const dateA = a.created_at ? new Date(a.created_at) : (a.timestamp ? new Date(a.timestamp) : 0);
-        const dateB = b.created_at ? new Date(b.created_at) : (b.timestamp ? new Date(b.timestamp) : 0);
-        return dateB - dateA;
-      });
-    } else if (option === "Most relevant") {
-      // Sort by rating first, then by created_at
-      sortedReviews.sort((a, b) => {
-        if (b.rating !== a.rating) {
-          return b.rating - a.rating;
-        }
         const dateA = a.created_at ? new Date(a.created_at) : (a.timestamp ? new Date(a.timestamp) : 0);
         const dateB = b.created_at ? new Date(b.created_at) : (b.timestamp ? new Date(b.timestamp) : 0);
         return dateB - dateA;
@@ -302,6 +295,13 @@ const page = ({ params }) => {
       (review.comment || "").toLowerCase().includes((term || "").toLowerCase())
     );
     setFilteredReviews(filtered);
+    if (term.trim()) {
+      setSearchNotification(`Found ${filtered.length} review${filtered.length !== 1 ? 's' : ''} matching "${term}"`);
+      setTimeout(() => setSearchNotification(""), 3000);
+    } else {
+      setSearchNotification("Showing all reviews");
+      setTimeout(() => setSearchNotification(""), 2000);
+    }
   };
 
   // Add delete review handler
@@ -390,6 +390,12 @@ const page = ({ params }) => {
           <div className="about-gig">
             <h2>About this gig</h2>
             <p>{gig.description}</p>
+            <h3>Categories:</h3>
+            <ul>
+              {gig.categories && gig.categories.map(category => (
+                <li key={category.id}>{category.name}</li>
+              ))}
+            </ul>
             <h3>Technical Skills:</h3>
             <ul>
               {gig.skills && gig.skills.map(skill => (
@@ -527,7 +533,6 @@ const page = ({ params }) => {
 
           {/* Reviews Summary Card */}
           <div className="reviews-summary-card">
-            <div className="summary-left">
               <div className="star-breakdown">
                 <h4>Rating Breakdown</h4>
                 <div className="star-rows">
@@ -550,24 +555,6 @@ const page = ({ params }) => {
                   <div className="star-row">
                     <span>1 Star</span>
                     <span className="star-count">({reviews.filter((r) => Math.round(r.rating) === 1).length})</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="summary-right">
-              <div className="average-ratings">
-                <h4>Average Ratings</h4>
-                <div className="rating-item">
-                  <span>Seller communication level</span>
-                  <span className="rating-value">★ {reviews.length > 0 ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1) : '0.0'}</span>
-                </div>
-                <div className="rating-item">
-                  <span>Quality of delivery</span>
-                  <span className="rating-value">★ {reviews.length > 0 ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1) : '0.0'}</span>
-                </div>
-                <div className="rating-item">
-                  <span>Value of delivery</span>
-                  <span className="rating-value">★ {reviews.length > 0 ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1) : '0.0'}</span>
                 </div>
               </div>
             </div>
@@ -575,14 +562,11 @@ const page = ({ params }) => {
 
           {/* Search and Sort Controls */}
           <div className="reviews-controls">
-            <div className="search-section">
+            <div className="search-section" style={{position: 'relative'}}>
               <input
                 type="text"
                 value={searchTerm}
-                onChange={e => {
-                  setSearchTerm(e.target.value);
-                  handleSearch(e.target.value);
-                }}
+                onChange={e => setSearchTerm(e.target.value)}
                 onKeyDown={e => {
                   if (e.key === 'Enter') {
                     handleSearch(searchTerm);
@@ -594,6 +578,11 @@ const page = ({ params }) => {
               <button onClick={() => handleSearch(searchTerm)} className="search-btn">
                 Search
               </button>
+              {searchNotification && (
+                <div className="search-notification">
+                  {searchNotification}
+                </div>
+              )}
             </div>
             <div className="sort-section">
               <div className="dropdown-wrapper">
@@ -664,6 +653,11 @@ const page = ({ params }) => {
               {addReviewError && (
                 <div className="error-message">
                   {addReviewError}
+                </div>
+              )}
+              {reviewAddedMessage && (
+                <div className="success-message">
+                  {reviewAddedMessage}
                 </div>
               )}
             </div>

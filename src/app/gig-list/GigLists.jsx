@@ -10,16 +10,7 @@ import { useSearchParams } from "next/navigation";
 import { gigService } from "@/utils/services";
 import { useRouter } from "next/router";
 
-const allLanguages = [
-  "Any",
-  "English",
-  "Hindi",
-  "Spanish",
-  "French",
-  "German",
-  "Chinese",
-  "Russian",
-];
+// Remove hardcoded language array and add state for dynamic data
 const allLocations = [
   "Any",
   "India",
@@ -48,10 +39,10 @@ const priceOptions = [
 ];
 
 function GigLists() {
-  const [duration, setDuration] = useState(7);
+  const [duration, setDuration] = useState(100); // Changed from 7 to 100 (Any)
   const [price, setPrice] = useState({ min: 0, max: 20000 });
-  const [language, setLanguage] = useState("Any");
-  const [location, setLocation] = useState("Any");
+
+  const [category, setCategory] = useState("Any");
   const [sortBy, setSortBy] = useState("recent");
   const [isDarkMode, setIsDarkMode] = useState(true); // Default to dark mode
   const [showSort, setShowSort] = useState(false);
@@ -61,6 +52,7 @@ function GigLists() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isHydrated, setIsHydrated] = useState(false);
 
+  const [categories, setCategories] = useState([]);
 
 
   const filtersRef = useRef();
@@ -90,6 +82,32 @@ function GigLists() {
     }
   }, []);
 
+  useEffect(() => {
+    const fetchFilterOptions = async () => {
+      try {
+        const apiHost = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        
+        // Fetch categories
+        const categoriesResponse = await fetch(`${apiHost}/base/categories/`);
+        if (categoriesResponse.ok) {
+          const categoriesData = await categoriesResponse.json();
+          // Extract category names, handling both string and object formats
+          const categoryNames = categoriesData.map(cat => {
+            if (typeof cat === 'string') return cat;
+            return cat.name || cat;
+          });
+          setCategories(['Any', ...categoryNames]);
+          console.log('Fetched categories:', categoryNames);
+        }
+      } catch (err) {
+        console.error('Failed to fetch filter options:', err);
+        // Fallback to default options if API fails
+        setCategories(['Any', 'Web Development', 'Mobile Development', 'Design', 'Writing', 'Marketing', 'Video', 'Audio']);
+      }
+    };
+    
+    fetchFilterOptions();
+  }, []);
 
 
   useEffect(() => {
@@ -101,25 +119,38 @@ function GigLists() {
         if (searchQuery.trim() !== "") {
           filters.search = searchQuery;
         }
+        
+
+        
         const backendGigs = await gigService.getAllGigs(filters);
-        const mapped = backendGigs.map(gig => ({
-          id: gig.id,
-          name: gig.freelancer || "Unknown",
-          title: gig.title || "Untitled",
-          rating: gig.avg_rating ?? 0,
-          reviews: gig.review_count ?? 0,
-          price: gig.price ?? 0,
-          image: gig.picture
-            ? (gig.picture.startsWith("http")
-                ? gig.picture
-                : `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}${gig.picture}`)
-            : "https://via.placeholder.com/300x200?text=No+Image",
-          badge: "",
-          tag: "",
-          duration: gig.delivery_time ?? 0,
-          languages: ["English"],
-          location: gig.location || "Any",
-        }));
+        
+        const mapped = backendGigs.map(gig => {
+          
+          return {
+            id: gig.id,
+            name: gig.freelancer || "Unknown",
+            title: gig.title || "Untitled",
+            description: gig.description || "",
+            rating: gig.avg_rating ?? 0,
+            avg_rating: gig.avg_rating ?? 0,
+            reviews: gig.review_count ?? 0,
+            price: gig.price ?? 0,
+            image: gig.picture
+              ? (gig.picture.startsWith("http")
+                  ? gig.picture
+                  : `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}${gig.picture}`)
+              : "https://via.placeholder.com/300x200?text=No+Image",
+            badge: "",
+            tag: "",
+            duration: gig.delivery_time ?? 0,
+            delivery_time: gig.delivery_time ?? 0,
+            languages: ["English"],
+            freelancer_id: gig.freelancer_id,
+            categories: gig.categories || [],
+            created_at: gig.created_at || new Date().toISOString(),
+            location: gig.location || "Any",
+          };
+        });
         setGigs(mapped);
       } catch (err) {
         setError("Failed to fetch gigs");
@@ -161,6 +192,7 @@ function GigLists() {
   };
 
   const formatDuration = (value) => {
+    if (value === 100) return "Any";
     return `${value} day${value === 1 ? "" : "s"}`;
   };
 
@@ -178,33 +210,40 @@ function GigLists() {
     }
   };
 
-  const filtered = gigs
-    .filter(
-      (f) =>
-        (duration === 7 || f.duration <= duration) &&
-        f.price >= price.min &&
-        f.price <= price.max &&
-        (language === "Any" || f.languages.includes(language)) &&
-        (location === "Any" || f.location === location) &&
-        (f.title.toLowerCase().includes(searchQuery) || f.name.toLowerCase().includes(searchQuery))
-    )
-    .sort((a, b) => {
+  // Update the filter logic to use correct field names
+  const filtered = gigs.filter((gig) => {
+    // We don't need to filter by search query here as it's handled by the backend
+    const matchesDuration = duration === 100 || gig.delivery_time <= duration;
+    
+    const matchesPrice = (gig.price >= price.min && gig.price <= price.max);
+        
+        // Check if the selected language matches either the name or code
+        // Use case-insensitive comparison
+    // Language filtering is now handled by the backend
+    const matchesCategory = category === "Any" || 
+      (gig.categories && gig.categories.some(cat => {
+        const catName = typeof cat === 'string' ? cat : (cat.name || '');
+        return catName === category;
+      }));
+    
+    return matchesDuration && matchesPrice && matchesCategory;
+  }).sort((a, b) => {
       switch (sortBy) {
         case "price-asc":
           return a.price - b.price;
         case "price-desc":
           return b.price - a.price;
         case "duration-asc":
-          return a.duration - b.duration;
+        return a.delivery_time - b.delivery_time;
         case "duration-desc":
-          return b.duration - a.duration;
+        return b.delivery_time - a.delivery_time;
         case "rating-desc":
-          return b.rating - a.rating;
+        return b.avg_rating - a.avg_rating;
         case "rating-asc":
-          return a.rating - b.rating;
+        return a.avg_rating - b.avg_rating;
         case "recent":
         default:
-          return 0;
+        return new Date(b.created_at) - new Date(a.created_at);
       }
     });
 
@@ -251,15 +290,8 @@ function GigLists() {
   return (
     <div className="gig-list-container mt-18">
       <div className="gig-filters-container">
-        <div className="sorting-btns">
-          <button className="filters-btn" onClick={handleFilter}>
-            Filters
-          </button>
-          <button className="filters-btn" onClick={handleSort}>
-            Sort{" "}
-          </button>
-        </div>
-        <div className="gig-filters" ref={filtersRef}>
+        <div className="gig-filters-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center' }}>
+          <div className="gig-filters-group" style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center', flex: '1' }}>
           <div className="gig-filter-group">
             <label>Duration:</label>
             <Box sx={{ width: 160, px: 1 }}>
@@ -292,17 +324,33 @@ function GigLists() {
                   },
                 }}
               />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
               <Typography
                 variant="body2"
                 sx={{
-                  textAlign: "center",
                   color: "var(--text-color)",
-                  mt: 0.5,
                   fontSize: "0.8rem",
                 }}
               >
-                {formatDuration(duration)}
+                  {duration === 100 ? "Any" : formatDuration(duration)}
               </Typography>
+                {duration !== 100 && (
+                  <button
+                    onClick={() => setDuration(100)}
+                    style={{
+                      background: 'none',
+                      border: '1px solid var(--primary-color)',
+                      color: 'var(--primary-color)',
+                      borderRadius: '4px',
+                      padding: '2px 8px',
+                      fontSize: '0.7rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Any
+                  </button>
+                )}
+              </div>
             </Box>
           </div>
           <div className="gig-filter-group">
@@ -352,55 +400,31 @@ function GigLists() {
               </Typography>
             </Box>
           </div>
-          <div className="gig-filter-group">
-            <label>Language:</label>
+
+          <div className="gig-filter-group" style={{ minWidth: '120px' }}>
+            <label>Category:</label>
             <select
-              value={language}
-              onChange={(e) => setLanguage(e.target.value)}
+              value={category}
+              onChange={(e) => {
+                setCategory(e.target.value);
+                console.log('Selected category:', e.target.value);
+              }}
+              style={{ width: '120px' }}
             >
-              {allLanguages.map((lang) => (
-                <option key={lang} value={lang}>
-                  {lang}
-                </option>
-              ))}
+              {categories.map((cat) => {
+                const catValue = typeof cat === 'string' ? cat : (cat.name || cat);
+                return (
+                  <option key={catValue} value={catValue}>
+                    {catValue}
+                  </option>
+                );
+              })}
             </select>
           </div>
-          <div className="gig-filter-group">
-            <label>Location:</label>
-            <select
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-            >
-              {allLocations.map((loc) => (
-                <option key={loc} value={loc}>
-                  {loc}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-        {width <= 1024 ? (
-          showSort && (
-            <div className="gig-sorting">
-              <h3>Sort By</h3>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-              >
-                <option value="recent">Recent</option>
-                <option value="price-asc">Price: Low to High</option>
-                <option value="price-desc">Price: High to Low</option>
-                <option value="duration-asc">Duration: Short to Long</option>
-                <option value="duration-desc">Duration: Long to Short</option>
-                <option value="rating-desc">Rating: High to Low</option>
-                <option value="rating-asc">Rating: Low to High</option>
-              </select>
-            </div>
-          )
-        ) : (
-          <div className="gig-sorting">
-            <h3>Sort By</h3>
-            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+          
+          <div className="gig-filter-group" style={{ marginLeft: 'auto' }}>
+            <label>Sort By:</label>
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={{ minWidth: '160px' }}>
               <option value="recent">Recent</option>
               <option value="price-asc">Price: Low to High</option>
               <option value="price-desc">Price: High to Low</option>
@@ -410,7 +434,8 @@ function GigLists() {
               <option value="rating-asc">Rating: Low to High</option>
             </select>
           </div>
-        )}
+          </div>
+        </div>
       </div>
       {filtered.length === 0 ? (
         <div className="no-freelancers-message">
