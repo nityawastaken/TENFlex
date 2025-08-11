@@ -20,30 +20,30 @@ const OrdersCard = ({ order }) => {
   const handleRepeat = async () => {
     const now = new Date();
     const body = {
-      buyer:order.buyer_id,
-      status:"pending",
-      created_at: now.toISOString()
-    }
+      buyer: order.buyer_id,
+      status: "pending",
+      created_at: now.toISOString(),
+    };
     try {
       const res = await axios.post(
         process.env.NEXT_PUBLIC_API_URL + `/base/orders/${order.id}/repeat/`,
-        {body},
+        { body },
         { headers: { Authorization: `Token ${token}` } }
       );
       // console.log("order repeat : ", res.data);
       if (res.status === 201) {
-        toast.success("Repeat Order Success.")
+        toast.success("Repeat Order Success.");
       }
     } catch (err) {
       console.log(err);
-      toast.error("Repeat Order Failed!")
+      toast.error("Repeat Order Failed!");
     }
   };
 
-  const fetchUser = useFetchUserByUsername()
+  const fetchUser = useFetchUserByUsername();
 
-  const handleOpenProfile = async (userName) =>{
-    const userProfile = await fetchUser(userName)
+  const handleOpenProfile = async (userName) => {
+    const userProfile = await fetchUser(userName);
     if (userProfile) {
       const { id, is_freelancer } = userProfile;
       const path = is_freelancer ? `/profile/${id}/` : `/client-profile/${id}/`;
@@ -52,10 +52,10 @@ const OrdersCard = ({ order }) => {
       // Show error to user, or handle accordingly
       console.log("User not found");
     }
-  }
+  };
 
   return (
-    <div className="w-[320px] rounded-lg bg-gradient-to-br from-[#24194a] via-[#1a0d2b] to-[#28163a] shadow-lg p-3 sm:p-4 mb-4 transition hover:shadow-lg relative hover:border-b hover:border-r flex flex-col gap-2 overflow-hidden">
+    <div className="w-[320px] rounded-2xl bg-gradient-to-br from-[#2a1e54] via-[#1a0d2b] to-[#3a1e4f] shadow-xl p-4 sm:p-5 mb-5 relative flex flex-col gap-3 overflow-hidden border border-transparent hover:border- hover:shadow-purple-800/30 hover:-translate-y-1 transition-all duration-300 ease-out ">
       <ToastContainer position="bottom-right" autoClose={3000} />
       <div>
         <div>

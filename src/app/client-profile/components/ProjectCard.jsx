@@ -56,7 +56,7 @@ const ProjectCard = ({ p }) => {
   return (
     <div
       key={p.id}
-      className="bg-gradient-to-br from-[#24194a] via-[#1a0d2b] to-[#28163a] shadow-lg p-6 rounded-2xl w-full md:w-[340px] min-h-[320px] flex flex-col justify-between transition-transform hover:scale-[1.03] hover:shadow-xl flex-shrink-0"
+      className="bg-gradient-to-br from-[#24194a] via-[#1a0d2b] to-[#28163a] shadow-lg p-6 rounded-2xl w-full md:w-[340px] min-h-[320px] flex flex-col justify-between hover:scale-[1.03] hover:shadow-xl flex-shrink-0 border border-transparent hover:border- hover:shadow-purple-800/30 hover:-translate-y-1 transition-all duration-300 ease-out "
     >
       <div>
         <div className="flex items-center justify-between mb-2">
