@@ -75,7 +75,7 @@ const OrdersCard = ({ order }) => {
                   <h6 className="text-sm">
                     {order.created_at
                       ? new Date(order.created_at).toLocaleDateString()
-                      : "-"}
+                      : "N/A"}
                   </h6>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -95,7 +95,11 @@ const OrdersCard = ({ order }) => {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <h6 className="text-sm">Deadline</h6>
-                  <h6 className="text-sm">{order?.deadline || "N/A"}</h6>
+                  <h6 className="text-sm">
+                    {order?.deadline
+                      ? new Date(order?.deadline).toLocaleDateString()
+                      : "N/A"}
+                  </h6>
                 </div>
               </div>
             </div>
@@ -131,6 +135,14 @@ const OrdersCard = ({ order }) => {
                   <h6 className="text-sm">Price</h6>
                   <h6 className="text-sm text-green-500">
                     ${order?.price || "N/A"}
+                  </h6>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <h6 className="text-sm">Deadline</h6>
+                  <h6 className="text-sm">
+                    {order?.deadline
+                      ? new Date(order?.deadline).toLocaleDateString()
+                      : "N/A"}
                   </h6>
                 </div>
               </div>

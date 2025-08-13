@@ -13,12 +13,12 @@ const OrdersSection = ({
 }) => {
   const token = localStorage.getItem("token");
   const router = useRouter();
-  
-  const [ordersFilter, setOrdersFilter] = useState("project");
-  const [loading, setLoading] = useState(true);  // Add loading state
+
+  const [ordersFilter, setOrdersFilter] = useState("allOrders");
+  const [loading, setLoading] = useState(true); // Add loading state
 
   const fetchOrders = async () => {
-    setLoading(true);  // Set loading to true when starting to fetch
+    setLoading(true); // Set loading to true when starting to fetch
     try {
       const response = await axios.get(
         process.env.NEXT_PUBLIC_API_URL + "/base/buyer/orders",
@@ -28,13 +28,13 @@ const OrdersSection = ({
           },
         }
       );
-      console.log("orders : ", response.data)
+      // console.log("orders : ", response.data)
       setOrders(response.data);
-      setLoading(false);  // Set loading to false once the orders are fetched
-      setSelectedStatus("pending")
+      setLoading(false); // Set loading to false once the orders are fetched
+      setSelectedStatus("allStatus");
     } catch (error) {
       console.error("Error fetching orders:", error);
-      setLoading(false);  // Stop loading on error
+      setLoading(false); // Stop loading on error
     }
   };
 
@@ -57,15 +57,37 @@ const OrdersSection = ({
     );
   }
 
-  // console.log("orders : ",orders.pending)
   // Filter the orders based on the selected status and filter
-  const filteredOrders =
-    orders[selectedStatus]?.filter((order) => order.type === ordersFilter) ||
-    [];
+  let filteredOrders;
 
+  if (selectedStatus === "allStatus" && ordersFilter === "allOrders") {
+    // Merge all orders into one array
+    filteredOrders = Object.values(orders).reduce(
+      (acc, curr) => acc.concat(curr),
+      []
+    );
+  } else if (selectedStatus === "allStatus") {
+    // Merge all orders but filter by type
+    filteredOrders = Object.values(orders)
+      .reduce((acc, curr) => acc.concat(curr), [])
+      .filter((order) => order.type === ordersFilter);
+  } else if (ordersFilter === "allOrders") {
+    // Only one status, but include all types
+    filteredOrders = orders[selectedStatus] || [];
+  } else {
+    // One status + filter by type
+    filteredOrders =
+      orders[selectedStatus]?.filter((order) => order.type === ordersFilter) ||
+      [];
+  }
   return (
     <div className="hover:scale-105 duration-300">
-      <Section ref={refProp} id="orders" title="Your Orders" className="w-full max-w-screen">
+      <Section
+        ref={refProp}
+        id="orders"
+        title="Your Orders"
+        className="w-full max-w-screen"
+      >
         <div className="mb-4 gap-4 flex flex-col md:flex-row items-center w-full">
           <select
             name="filter-orders"
@@ -74,14 +96,16 @@ const OrdersSection = ({
             onChange={(e) => setOrdersFilter(e.target.value)}
             className="px-4 py-2 border cursor-pointer border-purple-700 rounded-lg h-full bg-[#24194a] text-white w-full md:w-auto focus:ring-2 focus:ring-purple-400 transition"
           >
-            <option value="gig">Gigs</option>
-            <option value="project">Projects</option>
+            <option value="allOrders">All Orders</option>
+            <option value="gig">Gig Orders</option>
+            <option value="project">Project Orders</option>
           </select>
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
             className="px-4 cursor-pointer py-2 border border-purple-700 rounded-lg h-full bg-[#24194a] text-white w-full md:w-auto focus:ring-2 focus:ring-purple-400 transition"
           >
+            <option value="allStatus">All Status</option>
             <option value="completed">Completed</option>
             <option value="ongoing">Ongoing</option>
             <option value="pending">Pending</option>
@@ -92,7 +116,10 @@ const OrdersSection = ({
             <div className="flex flex-row gap-4 min-w-full">
               {filteredOrders.length > 0 ? (
                 filteredOrders.map((order, ind) => (
-                  <div className="flex-shrink-0 w-[320px]" key={order.id || ind}>
+                  <div
+                    className="flex-shrink-0 w-[320px]"
+                    key={order.id || ind}
+                  >
                     <OrdersCard order={order} token={token} />
                   </div>
                 ))
