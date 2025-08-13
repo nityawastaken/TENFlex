@@ -971,7 +971,7 @@ useEffect(() => {
                         return (
                         <div 
                           key={order.id} 
-                            className="bg-[#18112c] rounded-lg p-4 shadow-md border border-purple-900/30 w-[320px] h-[200px] flex-shrink-0 relative flex flex-col transform transition-all duration-500 hover:scale-105 hover:shadow-xl hover:border-purple-500 animate-fadeInUp overflow-visible"
+                            className="bg-[#18112c] rounded-lg p-4 shadow-md border border-purple-900/30 w-[320px]  flex-shrink-0 relative flex flex-col transform transition-all duration-500 hover:scale-105 hover:shadow-xl hover:border-purple-500 animate-fadeInUp overflow-visible"
                           style={{ 
                             animationDelay: `${index * 0.1}s`,
                               animationFillMode: 'both',
@@ -1009,6 +1009,12 @@ useEffect(() => {
                                 <div>
                                   <span className="text-gray-400">Price:</span>
                                   <div className="text-green-400 font-bold">${order.price || 'N/A'}</div>
+                                </div>
+                                <div>
+                                  <span className="text-gray-400">Deadline:</span>
+                                  <p className="text-purple-200 font-medium">
+                                    {order.deadline ? new Date(order.deadline).toLocaleDateString() : 'N/A'}
+                                  </p>
                                 </div>
                               </div>
                             </div>
