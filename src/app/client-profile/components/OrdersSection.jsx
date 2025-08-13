@@ -28,6 +28,7 @@ const OrdersSection = ({
           },
         }
       );
+      console.log("orders : ", response.data)
       setOrders(response.data);
       setLoading(false);  // Set loading to false once the orders are fetched
       setSelectedStatus("pending")

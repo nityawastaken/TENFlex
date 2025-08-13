@@ -54,7 +54,7 @@ const Updateform = ({
     <form
       className={`${
         width <= 786 ? "relative top-6 px-2" : "fixed "
-      } w-full max-w-lg md:w-[500px] mx-auto z-30 left-0 right-0 bg-gradient-to-br from-[#24194a] via-[#1a0d2b] to-[#28163a] p-6 md:p-8 pt-2 rounded-xl shadow-2xl space-y-4 border border-purple-900 h-[79vh] overflow-y-scroll scrollbar-hide`}
+      } w-full max-w-lg md:w-[500px] mx-auto z-30 left-0 right-0 bg-gradient-to-br from-[#24194a] via-[#1a0d2b] to-[#28163a] p-6 md:p-8 pt-2 rounded-xl shadow-2xl space-y-4 border border-purple-900 h-[90vh] overflow-y-scroll scrollbar-hide`}
       onSubmit={(e) => {
         e.preventDefault();
         !isError && handleSave();

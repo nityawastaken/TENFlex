@@ -52,7 +52,7 @@ const Hero = () => {
   return (
     <div className="layout-content-container flex flex-col w-full flex-1 mt-12 [@media(max-width:415px)]:mt-4  relative overflow-hidden">
       <div className="@container">
-        <div className="@[480px]:p-4 relative h-[calc(100vh-87px)]">
+        <div className="@[480px]:p-4 relative h-[100vh]">
           {/* 🔹 Video Background */}
           <video
             key={videoList[currentVideoIndex]}

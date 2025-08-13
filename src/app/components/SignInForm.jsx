@@ -58,6 +58,8 @@ export default function SignInForm() {
           
           loginUser(userToStore);
           authService.updateUserData(userToStore);
+          // Dispatch custom event to update Navbar
+          window.dispatchEvent(new Event("userUpdated"));
           alert("Sign in successful!");
           router.push("/");
         } else {
@@ -129,4 +131,4 @@ export default function SignInForm() {
       </form>
     </div>
   );
-} 
+}

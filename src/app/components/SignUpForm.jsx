@@ -136,6 +136,8 @@ export default function SignUpForm() {
           const userData = await userProfileRes.json();
           const userToStore = { ...userData, token: loginRes.token };
           localStorage.setItem('user', JSON.stringify(userToStore));
+          // Dispatch custom event to update Navbar
+          window.dispatchEvent(new Event("userUpdated"));
           alert("Sign-up successful!");
           router.push("/");
         } else {

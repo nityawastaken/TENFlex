@@ -58,24 +58,38 @@ const Navbar = () => {
 
   useEffect(() => {
     setIsMounted(true);
-    const storedUser = localStorage.getItem("user");
-    setToken(localStorage.getItem("token"));
+    const updateUserFromStorage = () => {
+      const storedUser = localStorage.getItem("user");
+      setToken(localStorage.getItem("token"));
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+        setProfileImage(parsedUser.profile_picture || null);
+        setNavLinks(getLinks(parsedUser.is_freelancer));
+      } else {
+        setUser(null);
+        setProfileImage(null);
+        setNavLinks(getLinks(null));
+      }
+    };
 
-    if (storedUser) {
-      const parsedUser = JSON.parse(storedUser);
-      setUser(parsedUser);
-      setProfileImage(parsedUser.profile_picture || null);
-      setNavLinks(getLinks(parsedUser.is_freelancer));
-    } else {
-      setNavLinks(getLinks(null));
-    }
+    updateUserFromStorage();
+
+    // Listen for custom event to update user state after login/logout
+    const handleUserUpdate = () => {
+      updateUserFromStorage();
+    };
+    window.addEventListener("userUpdated", handleUserUpdate);
 
     const handleScroll = () => {
       setIsScroll(window.scrollY > 10);
     };
-
     window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("userUpdated", handleUserUpdate);
+    };
   }, []);
 
   // Lock scroll when menu is open
