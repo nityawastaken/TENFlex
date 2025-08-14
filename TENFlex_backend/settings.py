@@ -46,7 +46,9 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'multiselectfield',
     'phonenumber_field',
-    'corsheaders'
+    'corsheaders',
+    'cloudinary',
+    'cloudinary_storage',
 ]
 
 MIDDLEWARE = [
@@ -65,7 +67,7 @@ CORS_ALLOW_ALL_ORIGINS = False
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    "https://ten-flex.vercel.app/"
+    "https://ten-flex.vercel.app"
 
 ]
 
@@ -171,6 +173,15 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'base.CustomUser'
 
-# Media files (User uploaded content)
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+# # Media files (User uploaded content)
+# MEDIA_URL = '/media/'
+# MEDIA_ROOT = BASE_DIR / 'media'
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': 'dyrilm9g2',
+    'API_KEY': '283186345258462',
+    'API_SECRET': 'CBtfayi96QOAqmmAIEmDez4akp0'
+}
+
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+

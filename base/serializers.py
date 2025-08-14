@@ -1,3 +1,4 @@
+from datetime import timedelta
 from rest_framework import serializers
 from django.db.models import Avg
 from .models import *
@@ -92,6 +93,29 @@ class ReviewSerializer(serializers.ModelSerializer):
 #         service_id = validated_data.pop('service_id')
 #         service = Gig.objects.get(id=service_id)  # Get the actual Service instance
 #         return Order.objects.create(service=service, **validated_data)
+# class OrderSerializer(serializers.ModelSerializer):
+#     type = serializers.CharField()  # project or gig
+#     buyer_id = serializers.IntegerField(source='buyer.id', read_only=True)
+#     buyer_name = serializers.CharField(source='buyer.username', read_only=True)
+#     freelancer_id = serializers.IntegerField(source='freelancer.id', read_only=True)
+#     freelancer_name = serializers.CharField(source='freelancer.username', read_only=True)
+#     gig_title = serializers.SerializerMethodField()
+#     project_title = serializers.SerializerMethodField()
+#     class Meta:
+#         model = Order
+#         fields = ['id', 'type', 'item_id', 'buyer_id', 'buyer_name', 'freelancer_id', 'freelancer_name',
+#             'gig_title', 'project_title', 'status', 'created_at']
+#     def get_gig_title(self, obj):
+#         if obj.type == 'gig':
+#             gig = Gig.objects.filter(id=obj.item_id).first()
+#             return gig.title if gig else None
+#         return None
+#     def get_project_title(self, obj):
+#         if obj.type == 'project':
+#             project = ProjectPost.objects.filter(id=obj.item_id).first()
+#             return project.title if project else None
+#         return None
+    
 class OrderSerializer(serializers.ModelSerializer):
     type = serializers.CharField()  # project or gig
     buyer_id = serializers.IntegerField(source='buyer.id', read_only=True)
@@ -100,21 +124,49 @@ class OrderSerializer(serializers.ModelSerializer):
     freelancer_name = serializers.CharField(source='freelancer.username', read_only=True)
     gig_title = serializers.SerializerMethodField()
     project_title = serializers.SerializerMethodField()
+    deadline = serializers.SerializerMethodField()
+    price = serializers.SerializerMethodField()
+
     class Meta:
         model = Order
-        fields = ['id', 'type', 'item_id', 'buyer_id', 'buyer_name', 'freelancer_id', 'freelancer_name',
-            'gig_title', 'project_title', 'status', 'created_at']
+        fields = [
+            'id', 'type', 'item_id', 'buyer_id', 'buyer_name',
+            'freelancer_id', 'freelancer_name', 'gig_title',
+            'project_title', 'status', 'created_at', 'deadline', 'price'
+        ]
+
     def get_gig_title(self, obj):
         if obj.type == 'gig':
             gig = Gig.objects.filter(id=obj.item_id).first()
             return gig.title if gig else None
         return None
+
     def get_project_title(self, obj):
         if obj.type == 'project':
             project = ProjectPost.objects.filter(id=obj.item_id).first()
             return project.title if project else None
         return None
-    
+
+    def get_deadline(self, obj):
+        if obj.type == 'gig':
+            gig = Gig.objects.filter(id=obj.item_id).first()
+            if gig:
+                return (obj.created_at + timedelta(days=gig.delivery_time)).date()
+        elif obj.type == 'project':
+            project = ProjectPost.objects.filter(id=obj.item_id).first()
+            if project:
+                return project.deadline
+        return None
+    def get_price(self, obj):
+        if obj.type == 'gig':
+            gig = Gig.objects.filter(id=obj.item_id).first()
+            return float(gig.price) if gig else None
+        elif obj.type == 'project':
+            project = ProjectPost.objects.filter(id=obj.item_id).first()
+            if project and project.accepted_bid:
+                return float(project.accepted_bid.bid_amount)
+        return None
+
 
 # class UserSerializer(serializers.ModelSerializer):
 #     avg_rating = serializers.SerializerMethodField()
