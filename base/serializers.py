@@ -314,6 +314,8 @@ class GigSerializer(serializers.ModelSerializer):
     # Write-only for POST/PUT
     category_names = serializers.ListField(child=serializers.CharField(), write_only=True, required=False)
     skill_names = serializers.ListField(child=serializers.CharField(), write_only=True, required=False)
+    picture = serializers.SerializerMethodField()
+
     class Meta:
         model = Gig
         fields = [
@@ -339,6 +341,10 @@ class GigSerializer(serializers.ModelSerializer):
         return Order.objects.filter(type='gig', item_id=obj.id, status__in=['pending', 'ongoing']).count()
     def get_order_completed_count(self, obj):
         return Order.objects.filter(type='gig', item_id=obj.id, status='completed').count()
+    def get_picture(self, obj):
+        if obj.picture:
+            return obj.picture.url
+        return None
     def create(self, validated_data):
         skill_names = validated_data.pop('skill_names', [])
         category_names = validated_data.pop('category_names', [])

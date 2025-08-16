@@ -4,6 +4,7 @@ from multiselectfield import MultiSelectField
 import pycountry
 from phonenumber_field.modelfields import PhoneNumberField
 from  django.db.models import Avg
+from cloudinary.models import CloudinaryField
 # User profile model
 # class User_profile(models.Model):
 #     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
@@ -43,7 +44,7 @@ class CustomUser(AbstractUser):
     ])
     #common
     is_freelancer = models.BooleanField(default=False)
-    profile_picture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
+    profile_picture = CloudinaryField('image',folder='profile_pictures', blank=True, null=True)
     bio = models.TextField(max_length=500, blank=True)
     location = models.CharField(max_length=100, blank=True, null=True)
     lang_spoken = MultiSelectField(choices=LANGUAGE_CHOICES, max_length=100, blank=True)
@@ -74,7 +75,9 @@ class Gig(models.Model):
     delivery_time = models.PositiveIntegerField(help_text="Delivery time in days")
     created_at = models.DateTimeField(auto_now_add=True)
     # updated_at = models.DateTimeField(auto_now=True)
-    picture = models.ImageField(upload_to='gig_pictures/', blank=True, null=True)
+    # picture = models.ImageField(upload_to='gig_pictures/', blank=True, null=True)
+    picture = CloudinaryField('image',folder='gig_pictures', blank=True, null=True)
+    # Add average rating field
     avg_rating = models.FloatField(default=0.0)
 
     def __str__(self):
@@ -104,7 +107,7 @@ class Review(models.Model):
     gig = models.ForeignKey(Gig, on_delete=models.CASCADE)
     rating = models.DecimalField(max_digits=2, decimal_places=1)
     comment = models.TextField(null=True, blank=True)
-    picture = models.ImageField(upload_to='review_pictures/', blank=True, null=True)
+    picture = CloudinaryField('image',folder='review_pictures', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
