@@ -30,10 +30,19 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': 'dyrilm9g2',
+    'API_KEY': '283186345258462',
+    'API_SECRET': 'CBtfayi96QOAqmmAIEmDez4akp0'
+}
+
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 # Application definition
 
 INSTALLED_APPS = [
+    'cloudinary',
+    'cloudinary_storage',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -47,8 +56,6 @@ INSTALLED_APPS = [
     'multiselectfield',
     'phonenumber_field',
     'corsheaders',
-    'cloudinary',
-    'cloudinary_storage',
 ]
 
 MIDDLEWARE = [
@@ -177,11 +184,10 @@ AUTH_USER_MODEL = 'base.CustomUser'
 # MEDIA_URL = '/media/'
 # MEDIA_ROOT = BASE_DIR / 'media'
 
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': 'dyrilm9g2',
-    'API_KEY': '283186345258462',
-    'API_SECRET': 'CBtfayi96QOAqmmAIEmDez4akp0'
-}
+# CLOUDINARY_STORAGE = {
+#     'CLOUD_NAME': 'dyrilm9g2',
+#     'API_KEY': '283186345258462',
+#     'API_SECRET': 'CBtfayi96QOAqmmAIEmDez4akp0'
+# }
 
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-
+# DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
