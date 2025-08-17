@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FaArrowRight } from "react-icons/fa6";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
+import { CLOUDINARY_URL } from "@/utils/constants";
 
 
 const Navbar = () => {
@@ -217,7 +218,7 @@ const Navbar = () => {
                     src={
                       profileImage.startsWith("http")
                         ? profileImage
-                        : `${process.env.NEXT_PUBLIC_API_URL}${profileImage}`
+                        : `${CLOUDINARY_URL}${profileImage}`
                     }
                     alt="Profile"
                     className="w-10 h-10 rounded-full border border-white object-cover"

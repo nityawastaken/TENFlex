@@ -16,6 +16,8 @@ export const defaultGig = {
   image: "https://picsum.photos/700/400",
 };
 
+export const CLOUDINARY_URL = "https://res.cloudinary.com/dyrilm9g2/";
+
 export const packages = {
   basic: {
     title: "Basic Package",

@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from 'react'
-import {defaultGig} from "@/utils/constants"
+import {CLOUDINARY_URL, defaultGig} from "@/utils/constants"
 import GigHeader from '../../components/GigHeader';
 import GigImage from '../../components/GigImage';
 import GigPackage from '../../components/GigPackage';
@@ -415,7 +415,7 @@ const page = ({ params }) => {
                 src={freelancerProfile?.profile_picture 
                   ? (freelancerProfile.profile_picture.startsWith('http') 
                     ? freelancerProfile.profile_picture 
-                    : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}${freelancerProfile.profile_picture}`)
+                    : `${CLOUDINARY_URL}/${freelancerProfile.profile_picture}`)
                   : "https://via.placeholder.com/80"}
                 alt={gig.freelancer}
                 className="agency-logo"

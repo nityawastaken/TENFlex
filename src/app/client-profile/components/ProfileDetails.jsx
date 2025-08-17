@@ -2,6 +2,7 @@ import useScreenWidth from "@/Hooks/useScreenWidth";
 import { FaLocationDot } from "react-icons/fa6";
 import { MdContactPhone } from "react-icons/md";
 import ISO6391 from "iso-639-1";
+import { CLOUDINARY_URL } from "@/utils/constants";
 
 // Language code-name mapping (should match page.jsx)
 const LANGUAGE_CODE_TO_NAME = {
@@ -39,7 +40,7 @@ const ProfileDetails = ({
       <div className="relative w-24 h-24 flex mx-auto rounded-full bg-[#1a0d2b] justify-center items-center shadow-md border-4 border-purple-800">
         {file ? (
           <img
-            src={`${process.env.NEXT_PUBLIC_API_URL}${file}`}
+            src={`${CLOUDINARY_URL}${file}`}
             alt="Profile"
             className="w-full h-full rounded-full object-cover mx-auto"
           />

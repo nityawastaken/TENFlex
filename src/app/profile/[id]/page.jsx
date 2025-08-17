@@ -25,6 +25,7 @@ import { userService } from '@/utils/services';
 import { reviewService } from '@/utils/services';
 import { getLanguageNames } from '@/utils/languageUtils';
 import useFetchUserByUsername from "@/Hooks/useFetchUserByUsername";
+import { CLOUDINARY_URL } from "@/utils/constants";
 // Remove: import GigCard from "@/app/components/GigCard";
 // Remove: import "@/app/gig-list/GigList.css";
 
@@ -296,7 +297,8 @@ useEffect(() => {
           avgRating: profileData.avg_rating ?? "N/A",
           ongoingOrders: profileData.inline_orders ?? 0,
           completedOrders: profileData.completed_orders ?? 0,
-          profile_picture: getProfilePictureUrl(profileData.profile_picture),
+          // profile_picture: getProfilePictureUrl(profileData.profile_picture),
+          profile_picture: profileData.profile_picture,
           username: profileData.username,
           id: profileData.id,
           languages: profileData.languages || [],
@@ -307,6 +309,7 @@ useEffect(() => {
           last_updated: profileData.last_updated,
           is_freelancer: profileData.is_freelancer, // Add the is_freelancer field
         };
+
         
         // Debug logging for mapped profile
         console.log('Profile page - Mapped profile:', mappedProfile);
@@ -599,7 +602,7 @@ useEffect(() => {
             <div className="relative">
               <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-white/30 shadow-md bg-gray-900 flex items-center justify-center">
                 {profileUser?.profile_picture ? (
-                  <img src={profileUser.profile_picture} alt="Profile" className="w-full h-full object-cover" />
+                  <img src={CLOUDINARY_URL +  profileUser.profile_picture} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-3xl font-bold text-gray-200">{profileUser?.name?.[0] || 'U'}</span>
                 )}
@@ -769,7 +772,7 @@ useEffect(() => {
               <li><button className="w-full block text-left px-4 py-2 rounded-lg font-semibold text-purple-300 hover:text-white hover:bg-purple-700/40 transition-all duration-200 sidebar-nav-item" data-tooltip-id="about-tip" onClick={() => { const element = document.getElementById('about'); if (element) { element.scrollIntoView({ behavior: 'smooth', block: 'center' }); } }}>About</button><Tooltip id="about-tip">About</Tooltip></li>
               <li><button className="w-full block text-left px-4 py-2 rounded-lg font-semibold text-purple-300 hover:text-white hover:bg-purple-700/40 transition-all duration-200 sidebar-nav-item" data-tooltip-id="gigs-tip" onClick={() => { const element = document.getElementById('gigs'); if (element) { element.scrollIntoView({ behavior: 'smooth', block: 'center' }); } }}>Gigs</button><Tooltip id="gigs-tip">Gigs</Tooltip></li>
               <li><button className="w-full block text-left px-4 py-2 rounded-lg font-semibold text-purple-300 hover:text-white hover:bg-purple-700/40 transition-all duration-200 sidebar-nav-item" data-tooltip-id="orders-tip" onClick={() => { const element = document.getElementById('orders'); if (element) { element.scrollIntoView({ behavior: 'smooth', block: 'center' }); } }}>Orders</button><Tooltip id="orders-tip">Orders</Tooltip></li>
-              <li><button className="w-full block text-left px-4 py-2 rounded-lg font-semibold text-purple-300 hover:text-white hover:bg-purple-700/40 transition-all duration-200 sidebar-nav-item" data-tooltip-id="reviews-tip" onClick={() => { const element = document.getElementById('reviews'); if (element) { element.scrollIntoView({ behavior: 'smooth', block: 'center' }); } }}>Reviews</button><Tooltip id="reviews-tip">Reviews</Tooltip></li>
+              <li><button className="w-full block text-left px-4 py-2 rounded-lg font-semibold text-purple-300 hover:text-white hover:bg-purple-700/40 transition-all duration-200 sidebar-nav-item" data-tooltip-id="reviews-tip" onClick={() => { const element = document.getElementById('reviews'); if (element) { element.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }}>Reviews</button><Tooltip id="reviews-tip">Reviews</Tooltip></li>
           </ul>
         </nav>
         </aside>
@@ -821,7 +824,7 @@ useEffect(() => {
                   const imageUrl = gig.picture
                     ? (gig.picture.startsWith("http")
                         ? gig.picture
-                        : `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}${gig.picture}`)
+                        : `${CLOUDINARY_URL }/${gig.picture}/`)
                     : "https://via.placeholder.com/300x200?text=No+Image";
                   return (
                     <div
@@ -856,7 +859,7 @@ useEffect(() => {
                       </div>
                       <div className="flex-1 flex flex-col p-3 gap-2">
                         <div className="flex items-center gap-2 mb-1">
-                          <img src={imageUrl} alt={gig.name || gig.freelancer || "Unknown"} className="w-6 h-6 rounded-full object-cover border border-purple-500 bg-gray-900" />
+                          <img src={CLOUDINARY_URL+ profileUser.profile_picture } alt={gig.name || gig.freelancer || "Unknown"} className="w-6 h-6 rounded-full object-cover border border-purple-500 bg-gray-900" />
                           <span className="text-sm font-semibold text-purple-200 truncate">{gig.freelancer || gig.name || "Unknown"}</span>
                         </div>
                         <div className="font-semibold text-purple-100 text-sm line-clamp-2 group-hover:text-white transition break-words">{gig.title || "Untitled"}</div>
@@ -1083,6 +1086,7 @@ useEffect(() => {
                       alt="Reviewer Avatar"
                       className="w-14 h-14 rounded-full object-cover border-2 border-purple-400"
                     />
+                    {/* {console.log("reviews : ", review)} */}
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="font-bold text-lg text-purple-200 hover:text-purple-500 cursor-pointer" onClick={() => handleOpenProfile(review.reviewer_name)}>{review.reviewer_name}</span>

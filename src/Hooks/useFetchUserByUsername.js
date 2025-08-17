@@ -7,7 +7,7 @@ const useFetchUserByUsername = () => {
 
     try {
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/base/get_user_by_username/${userName}`
+        `${process.env.NEXT_PUBLIC_API_URL}/base/get_user_by_username/${userName}/`
       );
 
       if (response.status === 200) {
