@@ -20,10 +20,10 @@ class ReviewSerializer(serializers.ModelSerializer):
     gig_id = serializers.IntegerField()
     reviewer_name = serializers.CharField(source='reviewer.username', read_only=True)  
     gig_title = serializers.CharField(source='gig.title', read_only=True)  
-
+    profile_picture = serializers.CharField(source='reviewer.profile_picture.url', read_only=True)  
     class Meta:
         model = Review
-        fields = ['id', 'reviewer_id', 'reviewer_name', 'gig_id', 'gig_title', 'rating', 'comment','picture', 'created_at']
+        fields = ['id', 'reviewer_id', 'reviewer_name', 'gig_id', 'gig_title', 'rating', 'comment','picture','profile_picture', 'created_at']
         read_only_fields = ['id', 'created_at', 'reviewer_name', 'gig_title','reviewer_id']
 
     def create(self, validated_data):
@@ -201,6 +201,8 @@ class CustomUserSerializer(serializers.ModelSerializer):
     category_tags = CategorySerializer(many=True, read_only=True)
     category_names = serializers.ListField(child=serializers.CharField(), write_only=True, required=False)    
     lang_spoken = serializers.ListField(child=serializers.ChoiceField(choices=CustomUser.LANGUAGE_CHOICES),required=False)
+    profile_picture = serializers.SerializerMethodField()
+
     class Meta:
         model = CustomUser
         fields = ['id', 'username', 'email','contact_number', 'first_name', 'last_name', 'is_freelancer', 'bio', 'location',
@@ -234,6 +236,12 @@ class CustomUserSerializer(serializers.ModelSerializer):
     #     if 'category_ids' in validated_data:
     #         instance.category_tags.set(validated_data.pop('category_ids'))
     #     return super().update(instance, validated_data)
+
+
+    def get_profile_picture(self, obj):
+        if obj.profile_picture:
+            return obj.profile_picture.url
+        return None
 
     def update(self, instance, validated_data):
         # Handle skill names
