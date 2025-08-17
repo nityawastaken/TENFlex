@@ -212,13 +212,13 @@ const Navbar = () => {
                     : `/client-profile/${user?.id}`
                 }
                 className="flex items-center gap-2"
-              >
+              >{console.log("profile Image from navbar : ", profileImage)}
                 {profileImage ? (
                   <img
                     src={
                       profileImage.startsWith("http")
-                        ? profileImage
-                        : `${CLOUDINARY_URL}${profileImage}`
+                        ? `${CLOUDINARY_URL}/${profileImage}`
+                        : `${CLOUDINARY_URL}/${profileImage}`
                     }
                     alt="Profile"
                     className="w-10 h-10 rounded-full border border-white object-cover"
