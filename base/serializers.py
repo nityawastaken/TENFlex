@@ -20,12 +20,19 @@ class ReviewSerializer(serializers.ModelSerializer):
     gig_id = serializers.IntegerField()
     reviewer_name = serializers.CharField(source='reviewer.username', read_only=True)  
     gig_title = serializers.CharField(source='gig.title', read_only=True)  
-    profile_picture = serializers.CharField(source='reviewer.profile_picture.url', read_only=True)  
+    # profile_picture = serializers.CharField(source='reviewer.profile_picture.url', read_only=True, allow_null=True)
+    profile_picture = serializers.SerializerMethodField()
+
     class Meta:
         model = Review
         fields = ['id', 'reviewer_id', 'reviewer_name', 'gig_id', 'gig_title', 'rating', 'comment','picture','profile_picture', 'created_at']
-        read_only_fields = ['id', 'created_at', 'reviewer_name', 'gig_title','reviewer_id']
+        read_only_fields = ['id', 'created_at', 'reviewer_name', 'gig_title','reviewer_id','profile_picture']
 
+    def get_profile_picture(self, obj):
+        if obj.reviewer and obj.reviewer.profile_picture:
+            return obj.reviewer.profile_picture.url
+        return None
+    
     def create(self, validated_data):
         # reviewer_id = validated_data.pop('reviewer_id')
         request = self.context['request']
