@@ -348,20 +348,20 @@ class GigSerializer(serializers.ModelSerializer):
     # Write-only for POST/PUT
     category_names = serializers.ListField(child=serializers.CharField(), write_only=True, required=False)
     skill_names = serializers.ListField(child=serializers.CharField(), write_only=True, required=False)
-    picture = serializers.SerializerMethodField()
+    picture_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Gig
         fields = [
             'id', 'freelancer_id','freelancer', 'title', 'description',
-            'price', 'delivery_time', 'created_at', 'picture',
+            'price', 'delivery_time', 'created_at', 'picture','picture_url',
             'avg_rating', 'review_count',
             'categories', 'category_names',
             'skills', 'skill_names','order_inline_count','order_completed_count'
         ]
         read_only_fields = [
             'id', 'created_at', 'freelancer',
-            'avg_rating', 'review_count','order_inline_count', 'order_completed_count'
+            'avg_rating', 'review_count','order_inline_count', 'order_completed_count','picture_url'
         ]
     # def get_avg_rating(self, obj):
     #     reviews = Review.objects.filter(gig=obj)
@@ -375,7 +375,7 @@ class GigSerializer(serializers.ModelSerializer):
         return Order.objects.filter(type='gig', item_id=obj.id, status__in=['pending', 'ongoing']).count()
     def get_order_completed_count(self, obj):
         return Order.objects.filter(type='gig', item_id=obj.id, status='completed').count()
-    def get_picture(self, obj):
+    def get_picture_url(self, obj):
         if obj.picture:
             return obj.picture.url
         return None
@@ -419,7 +419,20 @@ class GigSerializer(serializers.ModelSerializer):
                 skill, _ = Skill.objects.get_or_create(name=name)
                 skill_objs.append(skill)
             instance.skills.set(skill_objs)
+        if "picture" in validated_data:
+            new_picture = validated_data.get("picture")
 
+            # If user sends null → delete old picture
+            if new_picture is None and instance.picture:
+                # delete from Cloudinary using public_id
+                cloudinary.uploader.destroy(instance.picture.public_id)
+                instance.picture = None
+
+            # If user uploads a new picture → replace old one
+            elif new_picture:
+                if instance.picture:
+                    cloudinary.uploader.destroy(instance.picture.public_id)
+                instance.picture = new_picture
         return super().update(instance, validated_data)
 
     
