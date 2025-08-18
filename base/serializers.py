@@ -1,4 +1,5 @@
 from datetime import timedelta
+import cloudinary
 from rest_framework import serializers
 from django.db.models import Avg
 from .models import *
@@ -208,14 +209,15 @@ class CustomUserSerializer(serializers.ModelSerializer):
     category_tags = CategorySerializer(many=True, read_only=True)
     category_names = serializers.ListField(child=serializers.CharField(), write_only=True, required=False)    
     lang_spoken = serializers.ListField(child=serializers.ChoiceField(choices=CustomUser.LANGUAGE_CHOICES),required=False)
-    profile_picture = serializers.SerializerMethodField()
+    # profile_picture = serializers.ImageField(required=False, allow_null=True)
+    profile_picture_url = serializers.SerializerMethodField()
 
     class Meta:
         model = CustomUser
         fields = ['id', 'username', 'email','contact_number', 'first_name', 'last_name', 'is_freelancer', 'bio', 'location',
-                    'profile_picture','lang_spoken','role','use_purpose', 'experience', 'skills',
+                    'profile_picture','profile_picture_url','lang_spoken','role','use_purpose', 'experience', 'skills',
                     'category_tags', 'skill_names', 'category_names', 'avg_rating','inline_orders', 'completed_orders','created_at']
-        read_only_fields = ['id', 'username', 'email', 'avg_rating','inline_orders', 'completed_orders']
+        read_only_fields = ['id', 'username', 'email', 'avg_rating','inline_orders', 'completed_orders','profile_picture_url',]
     def to_representation(self, instance):
         data = super().to_representation(instance)
         if instance.is_freelancer:
@@ -227,6 +229,9 @@ class CustomUserSerializer(serializers.ModelSerializer):
             data.pop('skills', None)
             data.pop('category_tags', None)
             data.pop('experience', None)
+            data.pop('inline_orders', None)
+            data.pop('completed_orders', None)
+            data.pop('avg_rating', None)
 
         return data
 
@@ -245,7 +250,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
     #     return super().update(instance, validated_data)
 
 
-    def get_profile_picture(self, obj):
+    def get_profile_picture_url(self, obj):
         if obj.profile_picture:
             return obj.profile_picture.url
         return None
@@ -271,6 +276,20 @@ class CustomUserSerializer(serializers.ModelSerializer):
                 category_objs.append(category)
             instance.category_tags.set(category_objs)
 
+        if "profile_picture" in validated_data:
+            new_picture = validated_data.get("profile_picture")
+
+            # If user sends null → delete old picture
+            if new_picture is None and instance.profile_picture:
+                # delete from Cloudinary using public_id
+                cloudinary.uploader.destroy(instance.profile_picture.public_id)
+                instance.profile_picture = None
+
+            # If user uploads a new picture → replace old one
+            elif new_picture:
+                if instance.profile_picture:
+                    cloudinary.uploader.destroy(instance.profile_picture.public_id)
+                instance.profile_picture = new_picture
         return super().update(instance, validated_data)
 
     def create(self, validated_data):

@@ -50,8 +50,8 @@ class CustomUser(AbstractUser):
     lang_spoken = MultiSelectField(choices=LANGUAGE_CHOICES, max_length=100, blank=True)
     contact_number = PhoneNumberField(blank=True, null=True)
     #client only
-    role = models.CharField(max_length=20, choices=Roles, default='')
-    use_purpose = models.CharField(max_length=100,choices= Purposes,default='')
+    role = models.CharField(max_length=20, choices=Roles,null=True, blank=True)
+    use_purpose = models.CharField(max_length=100,choices= Purposes,null=True, blank=True)
     #freelancer only
     experience = models.CharField(choices=[('beginner', 'Beginner'), ('intermediate', 'Intermediate'), ('expert', 'Expert')], default='beginner')
     skills = models.ManyToManyField(Skill, blank=True, related_name='freelancers')
