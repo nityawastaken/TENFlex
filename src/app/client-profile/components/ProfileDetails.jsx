@@ -33,14 +33,14 @@ const ProfileDetails = ({
       const userObj = localStorage.getItem("user");
   const user = userObj ? JSON.parse(userObj) : "";
 
-  // console.log("file ", file)
+  // console.log("file ", typeof(file))
   // {console.log("profile Image : " , process.env.NEXT_PUBLIC_API_URL+profileImage)}
   return (
     <div className="w-full min-h-[320px] bg-[#383161] backdrop-opacity-5 pt-8 rounded-2xl shadow-lg border border-purple-900 relative flex flex-col items-center">
       <div className="relative w-24 h-24 flex mx-auto rounded-full bg-[#1a0d2b] justify-center items-center shadow-md border-4 border-purple-800">
         {file ? (
           <img
-            src={`${CLOUDINARY_URL}${file}`}
+            src={typeof(file) === "string" ? file.startsWith("http")? file : CLOUDINARY_URL+file : ""}
             alt="Profile"
             className="w-full h-full rounded-full object-cover mx-auto"
           />

@@ -1051,7 +1051,7 @@ const ProjectPage = () => {
 
       {/* Project Detail Popup */}
       {showProjectPopup && selectedProject && (
-        <div className="fixed inset-0 modal-overlay bg-black/25 flex items-center justify-center z-50">
+        <div className="fixed inset-0 modal-overlay bg-black/50 flex items-center justify-center z-50">
           <div className="modal-content rounded-xl w-[95%] sm:w-[700px] max-h-[90vh] bg-gradient-to-br from-[#2d1a4d] via-[#5a2b77] to-[#1a1333] text-white overflow-y-auto relative scrollbar-hide ">
             <button
               onClick={closeProjectPopup}

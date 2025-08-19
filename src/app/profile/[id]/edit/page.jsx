@@ -10,6 +10,7 @@ import Select from 'react-select';
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { userService, languageService } from "@/utils/services";
+import axios from "axios";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -32,6 +33,8 @@ export default function Edit() {
   ];
 
   const languageRef = useRef(null);
+    const token =
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   // Helper for E.164 international phone validation
   const isValidPhoneNumber = (number) => {
@@ -131,7 +134,7 @@ export default function Edit() {
           about: data.bio || "",
           location: data.location || "",
           languages: userLangs,
-          profile_picture: data.profile_picture || "",
+          profile_picture: data.profile_picture_url || "",
           name: data.username || "",
           contact: data.contact_number || "",
           email: data.email || "",
@@ -532,7 +535,20 @@ export default function Edit() {
                   <button
                     type="button"
                     className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded transition-all duration-200 hover:scale-105 hover:shadow-lg text-sm flex items-center gap-2"
-                    onClick={() => setUserData({ ...userData, profile_picture: "" })}
+                    onClick={(e) => {
+                                    e.preventDefault();
+                                    setUserData({ ...userData, profile_picture: "" });
+                                    axios.patch(
+                                              `${process.env.NEXT_PUBLIC_API_URL}/base/users/${id}/`,
+                                              {profile_picture:null},
+                                              {
+                                                headers: {
+                                                  Authorization: `Token ${token}`,
+                                                },
+                                              }
+                                            ).then((res) => console.log("pic removed."))
+                                            .catch((err) => console.log(err))
+                                    }}
                   >
                     <FaTrash /> Remove Photo
                   </button>

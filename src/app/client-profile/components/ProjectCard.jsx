@@ -87,8 +87,8 @@ const ProjectCard = ({ p }) => {
         </div>
         <div className="mb-4">
           <h4 className="text-sm text-gray-300 mb-1">Budget:</h4>
-          <p className="text-gray-400 bg-[#24194a] rounded-lg p-2 text-sm">
-            {p.budget} ₹
+          <p className="text-green-500 bg-[#24194a] rounded-lg p-2 text-sm">
+            ₹{p.budget} 
           </p>
         </div>
       </div>
@@ -124,15 +124,15 @@ const ProjectCard = ({ p }) => {
                       onClick={() =>
                         handleOpenProfile(acceptedBid?.freelancer_name)
                       }
-                      className=" cursor-pointer underline hover:-translate-y-0.5 hover:text-purple-500 duration-300"
+                      className=" cursor-pointer hover:underline  hover:scale-95 hover:text-purple-500 duration-300"
                     >
                       {acceptedBid?.freelancer_name}
                     </span>
                   </p>
                   <p className="text-xs text-gray-300 ">
                     Accepted At:{" "}
-                    <span className="font-semibold">
-                      ₹ {Math.floor(acceptedBid?.bid_amount)} 
+                    <span className="font-semibold text-green-500">
+                      ₹{Math.floor(acceptedBid?.bid_amount)} 
                     </span>{" "}
                   </p>
                 </div>

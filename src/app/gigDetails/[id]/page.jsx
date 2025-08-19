@@ -88,7 +88,7 @@ const page = ({ params }) => {
     try {
       const apiHost = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       
-      console.log('Fetching profile for username:', username);
+      // console.log('Fetching profile for username:', username);
       
       // Get auth token from localStorage
       const token = localStorage.getItem('token');
@@ -107,7 +107,7 @@ const page = ({ params }) => {
       });
       if (userResponse.ok) {
         const userData = await userResponse.json();
-        console.log('User data from username:', userData);
+        // console.log('User data from username:', userData);
         
         // Then, get the full profile data using the user ID
         const profileResponse = await fetch(`${apiHost}/base/users/${userData.id}/`, {
@@ -115,7 +115,7 @@ const page = ({ params }) => {
         });
         if (profileResponse.ok) {
           const profileData = await profileResponse.json();
-          console.log('Full profile data:', profileData);
+          // console.log('Full profile data:', profileData);
           setFreelancerProfile(profileData);
         } else {
           console.error('Failed to fetch profile data:', profileResponse.status);
@@ -190,9 +190,9 @@ const page = ({ params }) => {
     setAddReviewError("");
     
     // Debug: Log user and gig info to see what we're comparing
-    console.log('Current user:', currentUser);
-    console.log('Gig data:', gig);
-    console.log('Comparing:', currentUser?.id, 'with', gig?.user_id);
+    // console.log('Current user:', currentUser);
+    // console.log('Gig data:', gig);
+    // console.log('Comparing:', currentUser?.id, 'with', gig?.user_id);
     
     // Check if current user is the gig owner - prevent API call entirely
     if (currentUser && gig.user_id && currentUser.id === gig.user_id) {
@@ -354,7 +354,7 @@ const page = ({ params }) => {
         {" "}
         {/* gig-content itself is wrapped by content-wrapper */}
         <div className="gig-details relative">
-          <GigImage image={getImageUrl(gig.picture)} />
+          <GigImage image={gig.picture_url} />
 
           {/* Add to giglist button */}
           { !user?.is_freelancer && <div className='absolute right-2 top-2 z-500'>
@@ -411,10 +411,11 @@ const page = ({ params }) => {
           <div className="about-agency">
             <h2>Get to know {gig.freelancer}</h2>
             <div className="agency-info">
+              {console.log("profile  : ", freelancerProfile)}
               <img
                 src={freelancerProfile?.profile_picture 
-                  ? (freelancerProfile.profile_picture.startsWith('http') 
-                    ? freelancerProfile.profile_picture 
+                  ? (freelancerProfile.profile_picture_url.startsWith('http') 
+                    ? freelancerProfile.profile_picture_url
                     : `${CLOUDINARY_URL}/${freelancerProfile.profile_picture}`)
                   : "https://via.placeholder.com/80"}
                 alt={gig.freelancer}
@@ -674,7 +675,7 @@ const page = ({ params }) => {
                   <div key={review.id} className="review-item">
                     <div className="review-header">
                       <img
-                        src={review.avatar || 'https://via.placeholder.com/40'}
+                        src={review.profile_picture || 'https://via.placeholder.com/40'}
                         alt="Reviewer Avatar"
                         className="reviewer-avatar cursor-pointer" onClick={() => handleOpenProfile(review.reviewer_name)}
                       />

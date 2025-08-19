@@ -14,10 +14,12 @@ const GigCard = ({ f }) => {
   };
 
   const fetchUser = useFetchUserByUsername();
+
   const Details = async () => {
     const getDetails = await fetchUser(f.name);
     serUserProfielPic(getDetails.profile_picture)
   };
+// console.log("f : " , f)
 
   Details();
 

@@ -67,7 +67,7 @@ export default function ProfilePage() {
           freshUser = await response.json();
           setUser(freshUser);
           // Debug: Log the values for inline_orders and completed_orders
-          console.log("Fetched user from backend:", freshUser);
+          // console.log("Fetched user from backend:", freshUser);
           // Update localStorage only for token/id, not for rendering
           localStorage.setItem("user", JSON.stringify({ ...freshUser, token }));
         } catch (error) {
@@ -92,14 +92,14 @@ export default function ProfilePage() {
 
         // For freelancers, fetch their gigs
         if (freshUser.is_freelancer) {
-          console.log("Fetching gigs for userId:", userId);
+          // console.log("Fetching gigs for userId:", userId);
           try {
             const gigsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/base/user/${userId}/gigs/`, {
               headers: { Authorization: `Token ${token}` },
             });
             if (gigsRes.ok) {
               const gigsData = await gigsRes.json();
-              console.log("Fetched gigs data:", gigsData);
+              // console.log("Fetched gigs data:", gigsData);
               setMyGigs(gigsData || []);
             }
           } catch (err) {
@@ -265,12 +265,12 @@ export default function ProfilePage() {
           </div>
         </div>
         {/* Stats */}
-        {console.log("Sidebar user object:", user)}
+        {/* {console.log("Sidebar user object:", user)} */}
         <div className="space-y-3 mb-6">
           {user.is_freelancer && (
             <>
               {/* Debug: Print experience value at render time */}
-              {console.log("Sidebar user.experience:", user.experience)}
+              {/* {console.log("Sidebar user.experience:", user.experience)} */}
               <div className="flex justify-between items-center">
                 <span className="text-gray-400">Experience</span>
                 <span className="px-2 py-0.5 rounded bg-gray-800 text-white">

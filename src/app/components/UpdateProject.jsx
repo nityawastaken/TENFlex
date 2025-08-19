@@ -108,7 +108,7 @@ const UpdateProject = ({
   }, [categoryQuery]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center  backdrop-blur-sm px-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
       <div className="bg-gradient-to-br from-[#2d1a4d] via-[#5a2b77] to-[#1a1333] text-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 sm:p-8 relative shadow-2xl border border-purple-900 scrollbar-hide">
         {/* Close Button */}
         <button

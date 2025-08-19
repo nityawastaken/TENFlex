@@ -9,6 +9,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { gigService } from "@/utils/services";
 import { useRouter } from "next/router";
+import { CLOUDINARY_URL } from "@/utils/constants";
 
 // Remove hardcoded language array and add state for dynamic data
 const allLocations = [
@@ -97,7 +98,7 @@ function GigLists() {
             return cat.name || cat;
           });
           setCategories(['Any', ...categoryNames]);
-          console.log('Fetched categories:', categoryNames);
+          // console.log('Fetched categories:', categoryNames);
         }
       } catch (err) {
         console.error('Failed to fetch filter options:', err);
@@ -125,7 +126,6 @@ function GigLists() {
         const backendGigs = await gigService.getAllGigs(filters);
         
         const mapped = backendGigs.map(gig => {
-          
           return {
             id: gig.id,
             name: gig.freelancer || "Unknown",
@@ -135,10 +135,10 @@ function GigLists() {
             avg_rating: gig.avg_rating ?? 0,
             reviews: gig.review_count ?? 0,
             price: gig.price ?? 0,
-            image: gig.picture
-              ? (gig.picture.startsWith("http")
-                  ? gig.picture
-                  : `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}${gig.picture}`)
+            image: gig.picture_url
+              ? (gig.picture_url.startsWith("http")
+                  ? gig.picture_url
+                  : `${CLOUDINARY_URL}/${gig.picture}/`)
               : "https://via.placeholder.com/300x200?text=No+Image",
             badge: "",
             tag: "",
@@ -407,7 +407,7 @@ function GigLists() {
               value={category}
               onChange={(e) => {
                 setCategory(e.target.value);
-                console.log('Selected category:', e.target.value);
+                // console.log('Selected category:', e.target.value);
               }}
               style={{ width: '120px' }}
             >
@@ -446,11 +446,12 @@ function GigLists() {
           {filtered.map((f, i) => {
             // console.log('Gig in list:', f);
             return (
-              <Link href={`/gigDetails/${f.id}`} key={i}>
+              <Link href={`/gigDetails/${f.id}/`} key={i}>
               <GigCard f={f} />
             </Link>
             );
           })}
+          {console.log("filtered  : ", filtered)}
         </div>
       )}
     </div>

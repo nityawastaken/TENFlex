@@ -82,7 +82,7 @@ const OrdersCard = ({ order }) => {
                   <h6 className="text-sm">Freelancer:</h6>
                   <h6
                     onClick={() => handleOpenProfile(order?.freelancer_name)}
-                    className="text-sm cursor-pointer underline hover:-translate-y-0.5 hover:text-purple-500 duration-300"
+                    className="text-sm cursor-pointer hover:underline hover:scale-95 hover:text-purple-500 duration-300"
                   >
                     {order.freelancer_name}
                   </h6>
@@ -90,7 +90,7 @@ const OrdersCard = ({ order }) => {
                 <div className="flex flex-wrap gap-2">
                   <h6 className="text-sm">Price</h6>
                   <h6 className="text-sm text-green-500">
-                    ${order?.price || "N/A"}
+                    ₹{order?.price || "N/A"}
                   </h6>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -126,7 +126,7 @@ const OrdersCard = ({ order }) => {
                   <h6 className="text-sm">Freelancer:</h6>
                   <h6
                     onClick={() => handleOpenProfile(order?.freelancer_name)}
-                    className="text-sm cursor-pointer underline hover:-translate-y-0.5 hover:text-purple-500 duration-300"
+                    className="text-sm cursor-pointer hover:underline hover:scale-95 hover:text-purple-500 duration-300"
                   >
                     {order.freelancer_name}
                   </h6>
@@ -134,7 +134,7 @@ const OrdersCard = ({ order }) => {
                 <div className="flex flex-wrap gap-2">
                   <h6 className="text-sm">Price</h6>
                   <h6 className="text-sm text-green-500">
-                    ${order?.price || "N/A"}
+                    ₹{order?.price || "N/A"}
                   </h6>
                 </div>
                 <div className="flex flex-wrap gap-2">

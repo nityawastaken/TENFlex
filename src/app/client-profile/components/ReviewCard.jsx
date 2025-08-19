@@ -1,4 +1,5 @@
 import useFetchUserByUsername from "@/Hooks/useFetchUserByUsername";
+import { CLOUDINARY_URL } from "@/utils/constants";
 import axios from "axios";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -11,11 +12,12 @@ const ReviewCard = ({ r }) => {
 
   const fetchDetals = async () => {
     const res = await axios.get(
-      process.env.NEXT_PUBLIC_API_URL + "/base/gigs/" + r.gig_id
+      `${process.env.NEXT_PUBLIC_API_URL}/base/gigs/${r.gig_id}/`
     );
     setGigDetails(res.data);
   };
 
+  // console.log(r)
   const fetchUser = useFetchUserByUsername()
 
   const handleOpenProfile = async (userName) =>{
@@ -41,7 +43,9 @@ const ReviewCard = ({ r }) => {
     >
       <div className="flex-shrink-0 flex flex-col items-center justify-center w-20 ">
         <div className="bg-purple-900 rounded-full w-14 h-14 flex items-center justify-center mb-2 ">
-          <FaRegStar className="text-yellow-400 text-3xl" />
+          <img 
+            className="rounded-full w-full h-full object-cover"
+            src={r.profile_picture.startsWith("http") ? r.profile_picture : CLOUDINARY_URL + r.profile_picture} alt={r.gig_title} />
         </div>
         <div className="text-yellow-300 font-bold text-xl">{r.rating}</div>
       </div>
@@ -51,7 +55,7 @@ const ReviewCard = ({ r }) => {
             <p className="text-sm ">Freelancer:</p>{" "}
             <h2
               onClick={() => handleOpenProfile(gigDetails?.freelancer)}
-              className="cursor-pointer text-purple-200 text-sm hover:underline underline hover:-translate-y-0.5 hover:text-purple-500 duration-300 truncate"
+              className="cursor-pointer text-purple-200 text-sm hover:underline  hover:scale-95 hover:text-purple-500 duration-300 truncate"
             >
               {gigDetails?.freelancer}
             </h2>
@@ -60,7 +64,7 @@ const ReviewCard = ({ r }) => {
             <p className="text-sm ">Gig : </p>
             <Link
               href={`/gigDetails/${r.gig_id}`}
-              className="text-sm cursor-pointer text-purple-200 hover:underline truncate"
+              className="text-sm cursor-pointer text-purple-200 hover:underline hover:scale-95 truncate"
             >
               {r.gig_title}
             </Link>

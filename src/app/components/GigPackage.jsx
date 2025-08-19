@@ -20,9 +20,9 @@ const GigPackage = ({ gig = {}, basePrice, standardPrice, premiumPrice, currency
         if (userString) {
             try {
                 const user = JSON.parse(userString);
-                console.log('GigPackage - User data loaded:', user);
-                console.log('GigPackage - is_freelancer field:', user.is_freelancer);
-                console.log('GigPackage - userType field:', user.userType);
+                // console.log('GigPackage - User data loaded:', user);
+                // console.log('GigPackage - is_freelancer field:', user.is_freelancer);
+                // console.log('GigPackage - userType field:', user.userType);
                 setCurrentUser(user);
             } catch (error) {
                 console.error("Error parsing user data:", error);
@@ -66,7 +66,7 @@ const GigPackage = ({ gig = {}, basePrice, standardPrice, premiumPrice, currency
     const handleOrder = async () => {
         // Prevent multiple simultaneous orders
         if (orderInProgress.current) {
-            console.log('Order already in progress, ignoring click');
+            // console.log('Order already in progress, ignoring click');
             return;
         }
 
@@ -78,7 +78,7 @@ const GigPackage = ({ gig = {}, basePrice, standardPrice, premiumPrice, currency
         const token = localStorage.getItem('token');
         const user = localStorage.getItem('user');
         
-        console.log('Order attempt - Token exists:', !!token, 'User exists:', !!user);
+        // console.log('Order attempt - Token exists:', !!token, 'User exists:', !!user);
         
         if (!token || !user) {
             setOrderError('Please log in to place an order');
@@ -95,9 +95,9 @@ const GigPackage = ({ gig = {}, basePrice, standardPrice, premiumPrice, currency
             const apiHost = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
             const orderData = { status: "pending" };
             
-            console.log('Making order request to:', `${apiHost}/base/orders/gigs/${currentPackage.gig_id}/book/`);
-            console.log('Order data:', orderData);
-            console.log('Gig ID:', currentPackage.gig_id);
+            // console.log('Making order request to:', `${apiHost}/base/orders/gigs/${currentPackage.gig_id}/book/`);
+            // console.log('Order data:', orderData);
+            // console.log('Gig ID:', currentPackage.gig_id);
             
             const response = await axios.post(
                 `${apiHost}/base/orders/gigs/${currentPackage.gig_id}/book/`,
@@ -110,9 +110,9 @@ const GigPackage = ({ gig = {}, basePrice, standardPrice, premiumPrice, currency
                 }
             );
 
-            console.log('Order response:', response);
-            console.log('Response status:', response.status);
-            console.log('Response data:', response.data);
+            // console.log('Order response:', response);
+            // console.log('Response status:', response.status);
+            // console.log('Response data:', response.data);
 
             if (response.status === 201) {
                 setOrderSuccess(true);
@@ -159,11 +159,11 @@ const GigPackage = ({ gig = {}, basePrice, standardPrice, premiumPrice, currency
     const isClient = currentUser && !currentUser.is_freelancer;
     
     // Debug logging for user type detection
-    console.log('GigPackage - Current user:', currentUser);
-    console.log('GigPackage - is_freelancer value:', currentUser?.is_freelancer);
-    console.log('GigPackage - isClient calculated:', isClient);
-    console.log('GigPackage - Should show order button:', isClient);
-    console.log('GigPackage - Should show freelancer message:', currentUser && currentUser.is_freelancer);
+    // console.log('GigPackage - Current user:', currentUser);
+    // console.log('GigPackage - is_freelancer value:', currentUser?.is_freelancer);
+    // console.log('GigPackage - isClient calculated:', isClient);
+    // console.log('GigPackage - Should show order button:', isClient);
+    // console.log('GigPackage - Should show freelancer message:', currentUser && currentUser.is_freelancer);
 
   return (
         <div className="gig-sidebar ">

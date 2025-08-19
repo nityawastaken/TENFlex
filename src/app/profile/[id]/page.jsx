@@ -235,8 +235,8 @@ export default function ProfilePage() {
   const filteredProjectOrders = projectOrders.filter(
     o => !selectedOrderStatus || (o.status && o.status.toLowerCase() === selectedOrderStatus.toLowerCase())
   );
-  console.log('gigOrders:', gigOrders);
-  console.log('filteredGigOrders:', filteredGigOrders);
+  // console.log('gigOrders:', gigOrders);
+  // console.log('filteredGigOrders:', filteredGigOrders);
   const orderStatusOptions = [
     { value: "pending", label: "Pending" },
     { value: "ongoing", label: "Ongoing" },
@@ -278,7 +278,7 @@ useEffect(() => {
       .then(async ([profileData, reviewsData]) => {
         // Debug logging
         console.log('Profile page - Raw profile data:', profileData);
-        console.log('Profile page - is_freelancer field:', profileData.is_freelancer);
+        // console.log('Profile page - is_freelancer field:', profileData.is_freelancer);
         
         // Map backend fields to frontend fields
         const getProfilePictureUrl = (picture) => {
@@ -298,7 +298,7 @@ useEffect(() => {
           ongoingOrders: profileData.inline_orders ?? 0,
           completedOrders: profileData.completed_orders ?? 0,
           // profile_picture: getProfilePictureUrl(profileData.profile_picture),
-          profile_picture: profileData.profile_picture,
+          profile_picture_url: profileData.profile_picture_url,
           username: profileData.username,
           id: profileData.id,
           languages: profileData.languages || [],
@@ -312,8 +312,8 @@ useEffect(() => {
 
         
         // Debug logging for mapped profile
-        console.log('Profile page - Mapped profile:', mappedProfile);
-        console.log('Profile page - Mapped is_freelancer:', mappedProfile.is_freelancer);
+        // console.log('Profile page - Mapped profile:', mappedProfile);
+        // console.log('Profile page - Mapped is_freelancer:', mappedProfile.is_freelancer);
         
         setProfileUser(mappedProfile);
         setReviews(reviewsData.results || reviewsData);
@@ -348,10 +348,6 @@ useEffect(() => {
     }
   }, [profileUser?.lang_spoken]);
 
-  const handleSelectOrderFilter = () => {
-    setSelectedOrderFilter(selectedOption.current.value);
-  };
-
   const handleDeleteAccount = async () => {
     const confirmDelete = window.confirm("Are you sure you want to delete your account? This action is irreversible.");
     if (!confirmDelete) return;
@@ -378,7 +374,7 @@ useEffect(() => {
         pauseOnHover: true,
         draggable: true,
       });
-      console.log("Delete response:", data);
+      // console.log("Delete response:", data);
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       setTimeout(() => {
@@ -601,8 +597,8 @@ useEffect(() => {
           <div className="flex flex-col items-center gap-6 py-8 px-6 bg-white/10 rounded-xl shadow-xl border border-white/10 backdrop-blur-md transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 animate-popIn" style={{ animationDelay: '0.25s' }}>
             <div className="relative">
               <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-white/30 shadow-md bg-gray-900 flex items-center justify-center">
-                {profileUser?.profile_picture ? (
-                  <img src={CLOUDINARY_URL +  profileUser.profile_picture} alt="Profile" className="w-full h-full object-cover" />
+                {profileUser?.profile_picture_url ? (
+                  <img src={  profileUser.profile_picture_url.startsWith("http") ? profileUser.profile_picture_url : CLOUDINARY_URL + profileUser.profile_picture} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-3xl font-bold text-gray-200">{profileUser?.name?.[0] || 'U'}</span>
                 )}
@@ -821,9 +817,9 @@ useEffect(() => {
                 <div className="text-gray-300">No gigs found.</div>
               ) : (
                 gigs.map(gig => {
-                  const imageUrl = gig.picture
-                    ? (gig.picture.startsWith("http")
-                        ? gig.picture
+                  const imageUrl = gig.picture_url
+                    ? (gig.picture_url.startsWith("http")
+                        ? gig.picture_url
                         : `${CLOUDINARY_URL }/${gig.picture}/`)
                     : "https://via.placeholder.com/300x200?text=No+Image";
                   return (
@@ -832,9 +828,10 @@ useEffect(() => {
                       className="bg-gradient-to-br from-gray-900 via-[#1a1333] to-[#24194a] rounded-xl shadow-lg border border-purple-900/30 hover:border-purple-500 hover:shadow-2xl transition-all duration-300 flex flex-col overflow-hidden group w-[270px] min-w-[270px] flex-shrink-0 cursor-pointer"
                       onClick={() => router.push(`/gigDetails/${gig.id}`)}
                     >
+                      {console.log("gig" , gig)}
                       <div className="relative w-full h-[130px] bg-gray-800 flex items-center justify-center">
                         <img src={imageUrl} alt={gig.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                        <button className="absolute top-2 right-2 bg-transparent border-none text-xl text-gray-400 hover:text-[#A020F0] transition-colors">♡</button>
+                        {/* <button className="absolute top-2 right-2 bg-transparent border-none text-xl text-gray-400 hover:text-[#A020F0] transition-colors">♡</button> */}
                         {isOwnProfile && (
                           <div className="absolute top-2 left-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
                             <button 
@@ -859,7 +856,12 @@ useEffect(() => {
                       </div>
                       <div className="flex-1 flex flex-col p-3 gap-2">
                         <div className="flex items-center gap-2 mb-1">
-                          <img src={CLOUDINARY_URL+ profileUser.profile_picture } alt={gig.name || gig.freelancer || "Unknown"} className="w-6 h-6 rounded-full object-cover border border-purple-500 bg-gray-900" />
+                          <img src={profileUser.profile_picture_url 
+                                    ? profileUser.profile_picture_url.startsWith("http") 
+                                      ? profileUser.profile_picture_url 
+                                      : CLOUDINARY_URL+ profileUser.profile_picture_url 
+                                    : "https://via.placeholder.com/300x200?text=No+Image" } 
+                                    alt={gig.name || gig.freelancer || "Unknown"} className="w-6 h-6 rounded-full object-cover border border-purple-500 bg-gray-900" />
                           <span className="text-sm font-semibold text-purple-200 truncate">{gig.freelancer || gig.name || "Unknown"}</span>
                         </div>
                         <div className="font-semibold text-purple-100 text-sm line-clamp-2 group-hover:text-white transition break-words">{gig.title || "Untitled"}</div>
@@ -1011,7 +1013,7 @@ useEffect(() => {
                                 </div>
                                 <div>
                                   <span className="text-gray-400">Price:</span>
-                                  <div className="text-green-400 font-bold">${order.price || 'N/A'}</div>
+                                  <div className="text-green-400 font-bold">₹{order.price || 'N/A'}</div>
                                 </div>
                                 <div>
                                   <span className="text-gray-400">Deadline:</span>
@@ -1040,7 +1042,7 @@ useEffect(() => {
                                 </div>
                                 <div>
                                   <span className="text-gray-400">Price:</span>
-                                  <div className="text-green-400 font-bold">${order.price || 'N/A'}</div>
+                                  <div className="text-green-400 font-bold">₹{order.price || 'N/A'}</div>
                                 </div>
                                 <div>
                                   <span className="text-gray-400">Deadline:</span>
@@ -1082,11 +1084,14 @@ useEffect(() => {
                 reviews.map((review, i) => (
                   <div key={review.id || i} className="flex gap-4 items-start border-b border-purple-900/30 pb-6 mb-6">
                     <img
-                      src={review.avatar || 'https://via.placeholder.com/40'}
+                      src={review.profile_picture ? 
+                            review.profile_picture.startsWith("http") 
+                              ? review.profile_picture 
+                              : CLOUDINARY_URL+review.profile_picture 
+                            :  "https://via.placeholder.com/300x200?text=No+Image"}
                       alt="Reviewer Avatar"
                       className="w-14 h-14 rounded-full object-cover border-2 border-purple-400"
                     />
-                    {/* {console.log("reviews : ", review)} */}
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="font-bold text-lg text-purple-200 hover:text-purple-500 cursor-pointer" onClick={() => handleOpenProfile(review.reviewer_name)}>{review.reviewer_name}</span>

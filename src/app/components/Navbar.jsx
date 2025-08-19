@@ -208,16 +208,17 @@ const Navbar = () => {
               <Link
                 href={
                   user?.is_freelancer
-                    ? `/profile/${user?.id}`
-                    : `/client-profile/${user?.id}`
+                    ? `/profile/${user?.id}/`
+                    : `/client-profile/${user?.id}/`
                 }
                 className="flex items-center gap-2"
-              >{console.log("profile Image from navbar : ", profileImage)}
+              >
+                
                 {profileImage ? (
                   <img
                     src={
                       profileImage.startsWith("http")
-                        ? `${CLOUDINARY_URL}/${profileImage}`
+                        ? `${profileImage}`
                         : `${CLOUDINARY_URL}/${profileImage}`
                     }
                     alt="Profile"
@@ -306,8 +307,8 @@ const Navbar = () => {
               <Link
                 href={
                   user?.is_freelancer
-                    ? `/profile/${user?.id}`
-                    : `/client-profile/${user?.id}`
+                    ? `/profile/${user?.id}/`
+                    : `/client-profile/${user?.id}/`
                 }
                 className="flex items-center gap-2"
                 onClick={closeMenu}
@@ -317,8 +318,8 @@ const Navbar = () => {
                     <img
                       src={
                         profileImage.startsWith("http")
-                          ? profileImage
-                          : `${process.env.NEXT_PUBLIC_API_URL}/${profileImage}`
+                          ? `${profileImage}`
+                          : `${CLOUDINARY_URL}/${profileImage}`
                       }
                       alt="Profile"
                       className="w-10 h-10 rounded-full border border-white object-cover"

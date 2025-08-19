@@ -202,7 +202,7 @@ const Updateform = ({
               }}
               className="bg-purple-600 hover:bg-purple-500 text-white rounded-lg px-4 py-2 text-lg font-bold"
             >
-              +
+              Add
             </button>
           </div>
           <datalist id="language-suggestions">
@@ -223,7 +223,8 @@ const Updateform = ({
             type="file"
             id="fileUpload"
             className="hidden"
-            onChange={(e) => setFile(e.target.files[0])}
+            onChange={(e) => {setFile(e.target.files[0]);
+               console.log("fileChange : ", e.target.files[0])}}
           />
           <label
             htmlFor="fileUpload"

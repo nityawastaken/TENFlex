@@ -94,7 +94,7 @@ const ClientProfilePage = ({ params }) => {
       setEditContact(response.data.contact_number || "");
       setEditLocation(response.data.location || "");
       setEditBio(response.data.bio || "");
-      setFile(response.data.profile_picture || "");
+      setFile(response.data.profile_picture_url || "");
       setEditRole(response.data.role || "");
       setEditUsePurpose(response.data.use_purpose || "");
 
@@ -132,6 +132,7 @@ const ClientProfilePage = ({ params }) => {
         formData.append("last_name", editLastName);
         formData.append("email", editEmail);
         formData.append("location", editLocation);
+        formData.append("contact_number",editContact)
         formData.append("bio", editBio);
         formData.append("role", editRole);
         formData.append("use_purpose", editUsePurpose);
@@ -139,6 +140,7 @@ const ClientProfilePage = ({ params }) => {
           formData.append("lang_spoken", lang);
         });
         formData.append("profile_picture", file);
+
         const response = await axios.patch(
           `${process.env.NEXT_PUBLIC_API_URL}/base/users/${userData.currentUser.id}/`,
           formData,
@@ -148,9 +150,17 @@ const ClientProfilePage = ({ params }) => {
             },
           }
         );
+        // console.log("response : ", response)
         if (response.data.id) {
           toast.success("Profile update succcess!");
           fetchUserData();
+      
+          // Update local storage
+          const updatedUser = {
+            ...user,
+            ...response
+          };
+          localStorage.setItem('user', JSON.stringify(updatedUser));
         }
       } else {
         const updatedData = {
@@ -177,6 +187,12 @@ const ClientProfilePage = ({ params }) => {
         if (response.data.id) {
           toast.success("Profile update succcess!");
           fetchUserData();
+          // Update local storage
+          const updatedUser = {
+            ...user,
+            ...response
+          };
+          localStorage.setItem('user', JSON.stringify(updatedUser));
         }
       }
     } catch (err) {
