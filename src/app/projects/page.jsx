@@ -432,7 +432,7 @@ const ProjectPage = () => {
 
   // Debug currentUser changes
   useEffect(() => {
-    console.log("Current user changed:", currentUser);
+    // console.log("Current user changed:", currentUser);
   }, [currentUser]);
 
   const handleDeleteProject = async () => {

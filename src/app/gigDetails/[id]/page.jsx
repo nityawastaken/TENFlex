@@ -675,7 +675,7 @@ const page = ({ params }) => {
                   <div key={review.id} className="review-item">
                     <div className="review-header">
                       <img
-                        src={review.profile_picture || 'https://via.placeholder.com/40'}
+                        src={review.profile_picture || 'https://www.mauicardiovascularsymposium.com/wp-content/uploads/2019/08/dummy-profile-pic-300x300.png'}
                         alt="Reviewer Avatar"
                         className="reviewer-avatar cursor-pointer" onClick={() => handleOpenProfile(review.reviewer_name)}
                       />

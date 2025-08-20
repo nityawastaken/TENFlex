@@ -277,7 +277,7 @@ useEffect(() => {
     ])
       .then(async ([profileData, reviewsData]) => {
         // Debug logging
-        console.log('Profile page - Raw profile data:', profileData);
+        // console.log('Profile page - Raw profile data:', profileData);
         // console.log('Profile page - is_freelancer field:', profileData.is_freelancer);
         
         // Map backend fields to frontend fields
@@ -828,7 +828,6 @@ useEffect(() => {
                       className="bg-gradient-to-br from-gray-900 via-[#1a1333] to-[#24194a] rounded-xl shadow-lg border border-purple-900/30 hover:border-purple-500 hover:shadow-2xl transition-all duration-300 flex flex-col overflow-hidden group w-[270px] min-w-[270px] flex-shrink-0 cursor-pointer"
                       onClick={() => router.push(`/gigDetails/${gig.id}`)}
                     >
-                      {console.log("gig" , gig)}
                       <div className="relative w-full h-[130px] bg-gray-800 flex items-center justify-center">
                         <img src={imageUrl} alt={gig.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                         {/* <button className="absolute top-2 right-2 bg-transparent border-none text-xl text-gray-400 hover:text-[#A020F0] transition-colors">♡</button> */}
@@ -1088,7 +1087,7 @@ useEffect(() => {
                             review.profile_picture.startsWith("http") 
                               ? review.profile_picture 
                               : CLOUDINARY_URL+review.profile_picture 
-                            :  "https://via.placeholder.com/300x200?text=No+Image"}
+                            :  "https://www.mauicardiovascularsymposium.com/wp-content/uploads/2019/08/dummy-profile-pic-300x300.png"}
                       alt="Reviewer Avatar"
                       className="w-14 h-14 rounded-full object-cover border-2 border-purple-400"
                     />

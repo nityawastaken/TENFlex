@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import "@/app/gig-list/GigList.css";
 import useFetchUserByUsername from "@/Hooks/useFetchUserByUsername";
+import { CLOUDINARY_URL } from "@/utils/constants";
 
 const GigCard = ({ f }) => {
   // Helper function to get proper image URL
@@ -18,6 +19,7 @@ const GigCard = ({ f }) => {
   const Details = async () => {
     const getDetails = await fetchUser(f.name);
     serUserProfielPic(getDetails.profile_picture)
+    // console.log("getDetails : ", getDetails.profile_picture)
   };
 // console.log("f : " , f)
 
@@ -32,14 +34,20 @@ const GigCard = ({ f }) => {
     <div className="gig-card">
       <div className="gig-card-img-wrap">
         <img
-          src={getImageUrl(f.image)}
+          src={f.image? f.image.startsWith("http") ? f.image : CLOUDINARY_URL+f.image : "https://dummy-image.jpg"}
           alt={f.title}
-          className="gig-card-img"
+          className="gig-card-img "
         />
       </div>
       <div className="gig-card-info">
         <div className="gig-card-user">
-          <img src={userProfilePic? userProfilePic: profilePic} alt={f.name} className="gig-card-user-img" />
+          <img src={userProfilePic 
+              ? userProfilePic.startsWith("http")  
+                ? userProfilePic
+                : CLOUDINARY_URL+userProfilePic 
+              : "https://www.mauicardiovascularsymposium.com/wp-content/uploads/2019/08/dummy-profile-pic-300x300.png"
+              } 
+              alt={f.name} className="gig-card-user-img" />
           <span className="gig-card-user-name">{f.name}</span>
           {f.badge && <span className="gig-card-badge">{f.badge}</span>}
           {f.tag && <span className="gig-card-tag">{f.tag}</span>}

@@ -51,7 +51,6 @@ const ProjectCard = ({ p }) => {
     }
   };
 
-  // console.log("project : ",p)
 
   return (
     <div

@@ -41,7 +41,7 @@ const PopularServices = () => {
                     }));
                     
                     setPopularGigs(transformedGigs);
-                    console.log("Popular gigs fetched:", transformedGigs);
+                    // console.log("Popular gigs fetched:", transformedGigs);
                 }
             } catch (err) {
                 console.error("Error fetching popular gigs:", err);

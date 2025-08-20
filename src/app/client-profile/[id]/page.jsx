@@ -11,11 +11,9 @@ import OrdersSection from "../components/OrdersSection";
 import ReviewsSection from "../components/ReviewsSection";
 import GiglistsSection from "../components/GiglistsSection";
 import Sidebar from "../components/Sidebar";
-import Updateform from "../components/Updateform";
 import useScreenWidth from "@/Hooks/useScreenWidth";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import ISO6391 from "iso-639-1";
 
 
 const ClientProfilePage = ({ params }) => {
@@ -50,7 +48,6 @@ const ClientProfilePage = ({ params }) => {
   const [orders, setOrders] = useState({});
   const [reviews, setReviews] = useState([]);
   const [user, setUser] = useState([]);
-  const [inputValue, setInputValue] = useState("");
   const [languages, setLanguages] = useState([]);
 
   // const [id, setId] = useState(null);
@@ -124,85 +121,6 @@ const ClientProfilePage = ({ params }) => {
     }
   }, [token, id]);
 
-  const handleSave = async () => {
-    try {
-      if (file instanceof File) {
-        const formData = new FormData();
-        formData.append("first_name", editFirstName);
-        formData.append("last_name", editLastName);
-        formData.append("email", editEmail);
-        formData.append("location", editLocation);
-        formData.append("contact_number",editContact)
-        formData.append("bio", editBio);
-        formData.append("role", editRole);
-        formData.append("use_purpose", editUsePurpose);
-        languages.forEach((lang) => {
-          formData.append("lang_spoken", lang);
-        });
-        formData.append("profile_picture", file);
-
-        const response = await axios.patch(
-          `${process.env.NEXT_PUBLIC_API_URL}/base/users/${userData.currentUser.id}/`,
-          formData,
-          {
-            headers: {
-              Authorization: `Token ${token}`,
-            },
-          }
-        );
-        // console.log("response : ", response)
-        if (response.data.id) {
-          toast.success("Profile update succcess!");
-          fetchUserData();
-      
-          // Update local storage
-          const updatedUser = {
-            ...user,
-            ...response
-          };
-          localStorage.setItem('user', JSON.stringify(updatedUser));
-        }
-      } else {
-        const updatedData = {
-          first_name: editFirstName,
-          last_name: editLastName,
-          email: editEmail,
-          contact_number: editContact,
-          location: editLocation,
-          bio: editBio,
-          role: editRole,
-          use_purpose: editUsePurpose,
-          lang_spoken: languages,
-        };
-        const response = await axios.patch(
-          `${process.env.NEXT_PUBLIC_API_URL}/base/users/${userData.currentUser.id}/`,
-          updatedData,
-          {
-            headers: {
-              Authorization: `Token ${token}`,
-            },
-          }
-        );
-        // console.log("response : ", response);
-        if (response.data.id) {
-          toast.success("Profile update succcess!");
-          fetchUserData();
-          // Update local storage
-          const updatedUser = {
-            ...user,
-            ...response
-          };
-          localStorage.setItem('user', JSON.stringify(updatedUser));
-        }
-      }
-    } catch (err) {
-      console.error("Error saving profile data:", err);
-      toast.error("Error saving profile data!");
-    }
-
-    setEditMode(false);
-  };
-
   const handleDeleteProfile = async () => {
     try {
       const res = await axios.delete(
@@ -227,7 +145,7 @@ const ClientProfilePage = ({ params }) => {
   };
 
   const handleNav = (ref) => {
-    console.log("ref  : ", ref)
+    // console.log("ref  : ", ref)
     if (ref?.current) {
       ref.current.scrollIntoView({ behavior: "smooth", block: "center" });
     }
@@ -293,7 +211,6 @@ const ClientProfilePage = ({ params }) => {
           editContact={editContact}
           editLocation={editLocation}
           editBio={editBio}
-          handleSave={handleSave}
           file={file}
           editRole={editRole}
           editUsePurpose={editUsePurpose}
@@ -314,34 +231,6 @@ const ClientProfilePage = ({ params }) => {
           />
         )}
       </div>
-
-      {/* Update Form - Responsive */}
-      {editMode && (
-        <div className="w-full max-w-2xl mx-auto mb-4">
-          <Updateform
-            handleSave={handleSave}
-            editFirstName={editFirstName}
-            setEditFirstName={setEditFirstName}
-            editLastName={editLastName}
-            setEditLastName={setEditLastName}
-            editBio={editBio}
-            setEditBio={setEditBio}
-            editContact={editContact}
-            setEditContact={setEditContact}
-            editLocation={editLocation}
-            setEditLocation={setEditLocation}
-            setEditMode={setEditMode}
-            file={file}
-            setFile={setFile}
-            setEditUsePurpose={setEditUsePurpose}
-            editUsePurpose={editUsePurpose}
-            editRole={editRole}
-            setEditRole={setEditRole}
-            setLanguages={setLanguages}
-            languages={languages}
-          />
-        </div>
-      )}
 
       {/* Main Content - Responsive */}
       <div className="flex-1 w-full max-w-4xl mx-auto">
@@ -389,10 +278,7 @@ const ClientProfilePage = ({ params }) => {
           setReviews={setReviews}
         />
         <GiglistsSection refProp={giglistsRef} />
-        {/* <FreelancersSection
-          refProp={freelancersRef}
-          freelancers={freelancers}
-        /> */}
+        
         {/* Delete Profile Button for mobile: below giglists */}
         {width < 768 && user?.id === +id && (
           <div className="w-full flex justify-end  mb-3">

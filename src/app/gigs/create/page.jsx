@@ -62,7 +62,7 @@ export default function CreateGig() {
   const handleSkillSearch = useCallback((e) => {
     if (e.key === 'Enter' && skillsInputValue.trim().length > 0) {
       e.preventDefault();
-      console.log('Manual search triggered for:', skillsInputValue);
+      // console.log('Manual search triggered for:', skillsInputValue);
       searchSkills(skillsInputValue).then(() => {
         // Force component update after search results are updated
         setForceUpdate(prev => prev + 1);
@@ -74,7 +74,7 @@ export default function CreateGig() {
   const handleCategorySearch = useCallback((e) => {
     if (e.key === 'Enter' && categoriesInputValue.trim().length > 0) {
       e.preventDefault();
-      console.log('Manual category search triggered for:', categoriesInputValue);
+      // console.log('Manual category search triggered for:', categoriesInputValue);
       searchCategories(categoriesInputValue).then(() => {
         // Force component update after search results are updated
         setForceUpdate(prev => prev + 1);
@@ -84,7 +84,7 @@ export default function CreateGig() {
 
   // Add useEffect to log when forceUpdate changes
   useEffect(() => {
-    console.log('Component forced to update, iteration:', forceUpdate);
+    // console.log('Component forced to update, iteration:', forceUpdate);
   }, [forceUpdate]);
 
   useEffect(() => {

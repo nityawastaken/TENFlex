@@ -3,7 +3,6 @@ import Section from "./Section";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import ProjectCard from "./ProjectCard";
-import Link from "next/link";
 
 const ProjectsSection = ({ refProp, projects, setProjects, id }) => {
   const [projectStatus, setProjectStatus] = useState("All");

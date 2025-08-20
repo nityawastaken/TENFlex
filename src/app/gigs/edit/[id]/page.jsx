@@ -67,7 +67,7 @@ export default function EditGig() {
   const handleSkillSearch = useCallback((e) => {
     if (e.key === 'Enter' && skillsInputValue.trim().length > 0) {
       e.preventDefault();
-      console.log('Manual skill search triggered for:', skillsInputValue);
+      // console.log('Manual skill search triggered for:', skillsInputValue);
       searchSkills(skillsInputValue).then(() => {
         setForceUpdate(prev => prev + 1);
       });
@@ -77,7 +77,7 @@ export default function EditGig() {
   const handleCategorySearch = useCallback((e) => {
     if (e.key === 'Enter' && categoriesInputValue.trim().length > 0) {
       e.preventDefault();
-      console.log('Manual category search triggered for:', categoriesInputValue);
+      // console.log('Manual category search triggered for:', categoriesInputValue);
       searchCategories(categoriesInputValue).then(() => {
         setForceUpdate(prev => prev + 1);
       });

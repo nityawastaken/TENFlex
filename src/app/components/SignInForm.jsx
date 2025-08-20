@@ -53,8 +53,8 @@ export default function SignInForm() {
             token: response.token,
           };
           
-          console.log("SignIn - User data loaded:", userToStore);
-          console.log("SignIn - is_freelancer field:", userToStore.is_freelancer);
+          // console.log("SignIn - User data loaded:", userToStore);
+          // console.log("SignIn - is_freelancer field:", userToStore.is_freelancer);
           
           loginUser(userToStore);
           authService.updateUserData(userToStore);

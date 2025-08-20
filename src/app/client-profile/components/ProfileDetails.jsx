@@ -1,19 +1,8 @@
-import useScreenWidth from "@/Hooks/useScreenWidth";
 import { FaLocationDot } from "react-icons/fa6";
 import { MdContactPhone } from "react-icons/md";
 import ISO6391 from "iso-639-1";
 import { CLOUDINARY_URL } from "@/utils/constants";
-
-// Language code-name mapping (should match page.jsx)
-const LANGUAGE_CODE_TO_NAME = {
-  en: "English",
-  hi: "Hindi",
-  fr: "French",
-  es: "Spanish",
-  de: "German",
-  zh: "Chinese",
-  ru: "Russian",
-};
+import Link from "next/link";
 
 const ProfileDetails = ({
   editMode,
@@ -22,7 +11,6 @@ const ProfileDetails = ({
   editLastName,
   editEmail,
   editLocation,
-  editProfilePicture,
   file,
   editRole,
   editUsePurpose,
@@ -30,17 +18,21 @@ const ProfileDetails = ({
   languages,
   id,
 }) => {
-      const userObj = localStorage.getItem("user");
+  const userObj = localStorage.getItem("user");
   const user = userObj ? JSON.parse(userObj) : "";
 
-  // console.log("file ", typeof(file))
-  // {console.log("profile Image : " , process.env.NEXT_PUBLIC_API_URL+profileImage)}
   return (
     <div className="w-full min-h-[320px] bg-[#383161] backdrop-opacity-5 pt-8 rounded-2xl shadow-lg border border-purple-900 relative flex flex-col items-center">
       <div className="relative w-24 h-24 flex mx-auto rounded-full bg-[#1a0d2b] justify-center items-center shadow-md border-4 border-purple-800">
         {file ? (
           <img
-            src={typeof(file) === "string" ? file.startsWith("http")? file : CLOUDINARY_URL+file : ""}
+            src={
+              typeof file === "string"
+                ? file.startsWith("http")
+                  ? file
+                  : CLOUDINARY_URL + file
+                : "https://www.mauicardiovascularsymposium.com/wp-content/uploads/2019/08/dummy-profile-pic-300x300.png"
+            }
             alt="Profile"
             className="w-full h-full rounded-full object-cover mx-auto"
           />
@@ -50,13 +42,14 @@ const ProfileDetails = ({
           </span>
         )}
         {!editMode && user.id === +id && (
-          <button
+          <Link
+            href={`/client-profile/${id}/edit/`}
             className="cursor-pointer fixed right-1 top-1 bg-purple-600 hover:bg-purple-800 text-white rounded-xl p-2 shadow-md transition"
-            onClick={() => setEditMode(true)}
+            // onClick={() => setEditMode(true)}
             aria-label="Edit Profile"
           >
             Edit
-          </button>
+          </Link>
         )}
       </div>
       <div className="flex flex-col gap-2 justify-center items-center mt-6 w-full">

@@ -4,11 +4,10 @@ import axios from "axios";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
-import { FaRegStar } from "react-icons/fa6";
 
 const ReviewCard = ({ r }) => {
   const [gigDetails, setGigDetails] = useState(null);
-  const router = useRouter()
+  const router = useRouter();
 
   const fetchDetals = async () => {
     const res = await axios.get(
@@ -18,10 +17,10 @@ const ReviewCard = ({ r }) => {
   };
 
   // console.log(r)
-  const fetchUser = useFetchUserByUsername()
+  const fetchUser = useFetchUserByUsername();
 
-  const handleOpenProfile = async (userName) =>{
-    const userProfile = await fetchUser(userName)
+  const handleOpenProfile = async (userName) => {
+    const userProfile = await fetchUser(userName);
     if (userProfile) {
       const { id, is_freelancer } = userProfile;
       const path = is_freelancer ? `/profile/${id}/` : `/client-profile/${id}/`;
@@ -30,7 +29,7 @@ const ReviewCard = ({ r }) => {
       // Show error to user, or handle accordingly
       console.log("User not found");
     }
-  }
+  };
 
   useEffect(() => {
     fetchDetals();
@@ -43,9 +42,17 @@ const ReviewCard = ({ r }) => {
     >
       <div className="flex-shrink-0 flex flex-col items-center justify-center w-20 ">
         <div className="bg-purple-900 rounded-full w-14 h-14 flex items-center justify-center mb-2 ">
-          <img 
+          <img
             className="rounded-full w-full h-full object-cover"
-            src={r.profile_picture.startsWith("http") ? r.profile_picture : CLOUDINARY_URL + r.profile_picture} alt={r.gig_title} />
+            src={
+              r.profile_picture
+                ? r.profile_picture.startsWith("http")
+                  ? r.profile_picture
+                  : CLOUDINARY_URL + r.profile_picture
+                : "https://www.mauicardiovascularsymposium.com/wp-content/uploads/2019/08/dummy-profile-pic-300x300.png"
+            }
+            alt={r.gig_title}
+          />
         </div>
         <div className="text-yellow-300 font-bold text-xl">{r.rating}</div>
       </div>

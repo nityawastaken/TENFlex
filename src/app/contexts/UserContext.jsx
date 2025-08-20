@@ -113,13 +113,13 @@ export function UserProvider({ children }) {
 
   useEffect(() => {
     if (currentUser) {
-      console.log("Current user changed:", currentUser);
+      // console.log("Current user changed:", currentUser);
     }
   }, [currentUser]);
 
   const loginUser = async (userData) => {
-    console.log("UserContext - loginUser called with:", userData);
-    console.log("UserContext - is_freelancer field:", userData?.is_freelancer);
+    // console.log("UserContext - loginUser called with:", userData);
+    // console.log("UserContext - is_freelancer field:", userData?.is_freelancer);
     
     setCurrentUser(userData);
     authService.updateUserData(userData);

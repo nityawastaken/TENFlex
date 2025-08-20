@@ -3,7 +3,6 @@ import Section from "./Section";
 import axios from "axios";
 import { IoIosArrowDown, IoIosArrowUp } from "react-icons/io";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { CreateNewGigList } from "@/app/components/CreateNewGigList";
 
 const GiglistsSection = ({ refProp }) => {
@@ -33,14 +32,11 @@ const GiglistsSection = ({ refProp }) => {
     } else {
       fetchGigs();
     }
-    // eslint-disable-next-line
   }, []);
 
   const toggleSection = (index) => {
     setActiveIndex(activeIndex === index ? null : index);
   };
-
-
 
   // Rename giglist
   const handleRenameGigList = async (id) => {
