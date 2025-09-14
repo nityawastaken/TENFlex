@@ -451,7 +451,7 @@ function GigLists() {
             </Link>
             );
           })}
-          {console.log("filtered  : ", filtered)}
+          {/* {console.log("filtered  : ", filtered)} */}
         </div>
       )}
     </div>

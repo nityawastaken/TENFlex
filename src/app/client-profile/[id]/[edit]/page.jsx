@@ -56,7 +56,7 @@ const Updateform = () => {
       const userString = localStorage.getItem("user");
       const userr = userString ? JSON.parse(userString) : null;
       setUser(userr);
-      console.log(userr);
+      // console.log(userr);
       setEditFirstName(userr?.first_name);
       setEditLastName(userr?.last_name);
       setEditBio(userr?.bio);

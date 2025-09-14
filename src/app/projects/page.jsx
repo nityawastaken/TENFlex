@@ -20,6 +20,7 @@ import UpdateProject from "../components/UpdateProject";
 import { useRouter } from "next/navigation";
 import useFetchUserByUsername from "@/Hooks/useFetchUserByUsername";
 import Link from "next/link";
+import ProjectBids from "../components/ProjectBids";
 
 // Add CSS animations
 const projectPageStyles = `
@@ -1262,71 +1263,7 @@ const ProjectPage = () => {
                     {selectedProject.bids?.length > 0 ? (
                       <div className="space-y-3">
                         {selectedProject.bids.map((bid, index) => (
-                          <div
-                            key={bid.id}
-                            className={`border rounded-lg p-4 bid-item animate-slideIn ${
-                              bid.is_accepted
-                                ? "bg-[#241b46] border-green-300"
-                                : "bg-[#241b46] border-gray-700"
-                            }`}
-                            style={{ animationDelay: `${index * 0.1}s` }}
-                          >
-                            <div className="flex justify-between items-start">
-                              <div className="flex-1">
-                                <div className="font-semibold text-purple-200">
-                                  ₹{bid.bid_amount}
-                                </div>
-                                <div className="text-sm text-purple-200  mt-1">
-                                  Freelancer:{" "}
-                                  <span
-                                    onClick={() =>
-                                      handleOpenProfile(
-                                        bid.freelancer_name || bid.freelancer
-                                      )
-                                    }
-                                    className="cursor-pointer font-semibold hover:underline hover:scale-110 hover:text-purple-400 duration-300"
-                                  >
-                                    {bid.freelancer_name || bid.freelancer}
-                                  </span>
-                                </div>
-                                {bid.message && (
-                                  <div className="text-sm text-purple-200 mt-1">
-                                    "{bid.message}"
-                                  </div>
-                                )}
-                              </div>
-                              <div className="flex flex-col items-end gap-2">
-                                <div className="text-xs text-purple-200">
-                                  {bid.created_at
-                                    ? new Date(bid.created_at).toLocaleString()
-                                    : ""}
-                                </div>
-                                {selectedProject.is_open &&
-                                  !bid.is_accepted && (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleAcceptBid(bid.id);
-                                      }}
-                                      className="px-4 py-1 bg-purple-600 text-white rounded font-semibold hover:bg-purple-700 transition-all duration-200 hover:scale-105 transform cursor-pointer"
-                                    >
-                                      Accept
-                                    </button>
-                                  )}
-                                {bid.is_accepted && (
-                                  <div className="flex items-center text-green-500 font-semibold">
-                                    <CheckCircle
-                                      size={16}
-                                      className="mr-1 text-xl"
-                                    />
-                                    <span className="text-sm font-semibold">
-                                      Accepted
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
+                          <ProjectBids key={bid.id} selectedProject={selectedProject} bid={bid} index={index} handleAcceptBid={handleAcceptBid} />
                         ))}
                       </div>
                     ) : (

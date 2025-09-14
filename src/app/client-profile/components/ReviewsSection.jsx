@@ -14,7 +14,7 @@ const ReviewsSection = ({ refProp, reviews, setReviews }) => {
   const id = user.currentUser.id;
   const fetchReviews = async () => {
     const response = await axios.get(
-      process.env.NEXT_PUBLIC_API_URL + "/base/reviews/?reviewer_id=" + id
+      process.env.NEXT_PUBLIC_API_URL + "/base/reviews/?reviewer_id=" + id + "/"
     );
     // console.log("reviews : ", response.data)
     setReviews(response.data);

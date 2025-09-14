@@ -21,7 +21,7 @@ const OrdersSection = ({
     setLoading(true); // Set loading to true when starting to fetch
     try {
       const response = await axios.get(
-        process.env.NEXT_PUBLIC_API_URL + "/base/buyer/orders",
+        process.env.NEXT_PUBLIC_API_URL + "/base/buyer/orders/",
         {
           headers: {
             Authorization: `Token ${token}`,
